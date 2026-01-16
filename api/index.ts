@@ -1,0 +1,8 @@
+import './shared/health.js'
+import './shared/login.js'
+import './admin/companies.js'
+import './admin/employers.js'
+import './employer/employees.js'
+import './employer/tests.js'
+import './employer/testInstances.js'
+import './employee/testInstances.js'
