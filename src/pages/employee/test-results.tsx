@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
 import { fetchEmployeeTestInstanceResults } from '../../services/employee'
-import type { ResponseRecord, TestComponent, TestInstanceResults } from '../../types'
+import type { ResponseRecord, TestComponent } from '../../types'
 import { formatDateTime } from '../../utils/date'
 
 const buildResponseMap = (responses: ResponseRecord[]) =>
