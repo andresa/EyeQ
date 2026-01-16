@@ -89,11 +89,11 @@ const EmployeeTestPage = () => {
   }, [data])
 
   const getSectionIndex = (sectionId?: string) =>
-    data.test.sections.findIndex((section) => section.id === sectionId)
+    data?.test.sections.findIndex((section) => section.id === sectionId)
 
   const validateSectionRequired = async (sectionId?: string) => {
     if (!sectionId) return true
-    const section = data.test.sections.find((item) => item.id === sectionId)
+    const section = data?.test.sections.find((item) => item.id === sectionId)
     if (!section) return true
     const requiredFields = section.components
       .filter((component) => component.type !== 'info' && component.required)
@@ -116,7 +116,7 @@ const EmployeeTestPage = () => {
     }
     const currentIndex = getSectionIndex(activeSectionId)
     const nextIndex = getSectionIndex(nextSectionId)
-    if (nextIndex > currentIndex) {
+    if (nextIndex && currentIndex && nextIndex > currentIndex) {
       const isValid = await validateSectionRequired(activeSectionId)
       if (!isValid) return
     }

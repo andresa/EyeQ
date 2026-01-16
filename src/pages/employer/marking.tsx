@@ -14,11 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import EmployerLayout from '../../layouts/EmployerLayout'
 import CompanyEmployerSelector from '../../components/molecules/CompanyEmployerSelector'
 import { fetchTestInstanceResults, markTestInstance } from '../../services/employer'
-import type {
-  ResponseRecord,
-  TestComponent,
-  TestInstanceResults,
-} from '../../types'
+import type { ResponseRecord, TestComponent } from '../../types'
 import { useSession } from '../../hooks/useSession'
 
 interface MarkState {

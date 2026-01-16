@@ -21,14 +21,7 @@ import {
   listTestInstances,
   listTests,
 } from '../../services/employer'
-import type {
-  Employee,
-  ResponseRecord,
-  TestComponent,
-  TestInstance,
-  TestInstanceResults,
-  TestTemplate,
-} from '../../types'
+import type { Employee, ResponseRecord, TestComponent, TestTemplate } from '../../types'
 import { formatDateTime } from '../../utils/date'
 import { useSession } from '../../hooks/useSession'
 
