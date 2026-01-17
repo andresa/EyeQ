@@ -1,4 +1,16 @@
 import { CosmosClient, type Container } from '@azure/cosmos'
+import { randomUUID, webcrypto } from 'node:crypto'
+
+const globalAny = globalThis as unknown as { crypto?: { randomUUID?: () => string } }
+
+if (!globalAny.crypto) {
+  // Polyfill for runtimes that don't expose global crypto (e.g. Node 16).
+  globalAny.crypto = webcrypto as unknown as { randomUUID?: () => string }
+}
+
+if (!globalAny.crypto.randomUUID) {
+  globalAny.crypto.randomUUID = randomUUID
+}
 
 const connectionString = process.env.COSMOS_CONNECTION_STRING
 const databaseName = process.env.COSMOS_DB_NAME || 'EyeQDB'
