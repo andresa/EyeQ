@@ -18,13 +18,6 @@ npm install
 npm run dev
 ```
 
-Create a `.env.local` file in the project root with your Supabase credentials:
-
-```
-VITE_SUPABASE_URL=your-project-url
-VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-publishable-or-anon-key
-```
-
 ## API & Database
 
 API endpoints live under `api/` and are Azure Functions-compatible. Cosmos DB configuration lives in `api/shared/cosmos.ts`.
