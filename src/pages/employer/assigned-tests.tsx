@@ -2,8 +2,7 @@ import { Card, Select, Space, Table, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import EmployerLayout from '../../layouts/EmployerLayout'
-import CompanyEmployerSelector from '../../components/molecules/CompanyEmployerSelector'
-import { listEmployers } from '../../services/admin'
+import { listEmployersShared } from '../../services/shared'
 import { listEmployees, listTestInstances, listTests } from '../../services/employer'
 import type { Employee, Employer, TestInstance, TestTemplate } from '../../types'
 import { useSession } from '../../hooks/useSession'
@@ -22,8 +21,8 @@ import {
 } from 'date-fns'
 
 const AssignedTestsPage = () => {
-  const { session } = useSession()
-  const companyId = session?.companyId
+  const { userProfile } = useSession()
+  const companyId = userProfile?.companyId
   const [employeeFilter, setEmployeeFilter] = useState<string[]>([])
   const [statusFilter, setStatusFilter] = useState<string[]>([])
   const [assignedFilter, setAssignedFilter] = useState<string>('all')
@@ -56,7 +55,7 @@ const AssignedTestsPage = () => {
     queryKey: ['admin', 'employers', companyId],
     queryFn: async () => {
       if (!companyId) return [] as Employer[]
-      const response = await listEmployers(companyId)
+      const response = await listEmployersShared(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load employers')
       }
@@ -138,10 +137,7 @@ const AssignedTestsPage = () => {
 
     return (instances || [])
       .filter((instance) => {
-        if (
-          employeeFilter.length > 0 &&
-          !employeeFilter.includes(instance.employeeId)
-        ) {
+        if (employeeFilter.length > 0 && !employeeFilter.includes(instance.employeeId)) {
           return false
         }
         if (statusFilter.length > 0 && !statusFilter.includes(instance.status)) {
@@ -161,9 +157,8 @@ const AssignedTestsPage = () => {
 
   return (
     <EmployerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <Space direction="vertical" size="large" className="w-full">
         <Typography.Title level={3}>Assigned tests</Typography.Title>
-        <CompanyEmployerSelector />
         <Card>
           <Typography.Text type="secondary">
             View all assigned tests and their current status.

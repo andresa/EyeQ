@@ -2,6 +2,7 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
+import { getAuthenticatedUser, requireEmployer } from '../shared/auth.js'
 
 export const listTestInstancesHandler = async (
   request: HttpRequest,
@@ -105,6 +106,11 @@ export const getTestInstanceResultsHandler = async (
 export const markTestInstanceHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify employer role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployer(user)
+  if (authError) return authError
+
   const instanceId = request.params.instanceId
   if (!instanceId) {
     return jsonResponse(400, { success: false, error: 'instanceId is required.' })
@@ -124,6 +130,27 @@ export const markTestInstanceHandler = async (
   const instance = resources[0]
   if (!instance) {
     return jsonResponse(404, { success: false, error: 'Test instance not found.' })
+  }
+
+  // Verify the test belongs to the employer's company
+  const testContainer = await getContainer('tests', '/companyId')
+  const { resources: tests } = await testContainer.items
+    .query({
+      query: 'SELECT * FROM c WHERE c.id = @id',
+      parameters: [{ name: '@id', value: instance.testId }],
+    })
+    .fetchAll()
+  const test = tests[0]
+  if (!test) {
+    return jsonResponse(404, { success: false, error: 'Test template not found.' })
+  }
+
+  // Employers can only mark tests from their own company
+  if (user!.role !== 'admin' && user!.companyId !== test.companyId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only mark tests from your own company.',
+    })
   }
 
   const responsesContainer = await getContainer('responses', '/testInstanceId')
@@ -150,9 +177,7 @@ export const markTestInstanceHandler = async (
         markedAt,
         markedByEmployerId: body.markedByEmployerId ?? existing.markedByEmployerId,
       }
-      await responsesContainer
-        .item(existing.id, instanceId)
-        .replace(updated)
+      await responsesContainer.item(existing.id, instanceId).replace(updated)
     } else {
       const record = {
         id: createId('response'),
@@ -183,9 +208,7 @@ export const markTestInstanceHandler = async (
     score: scoreValue,
   }
 
-  await instanceContainer
-    .item(instance.id, instance.employeeId)
-    .replace(updatedInstance)
+  await instanceContainer.item(instance.id, instance.employeeId).replace(updatedInstance)
 
   return jsonResponse(200, { success: true, data: updatedInstance })
 }
@@ -194,14 +217,57 @@ app.http('employerTestInstances', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'employer/testInstances',
-  handler: listTestInstancesHandler,
+  handler: async (request) => {
+    // Verify employer role
+    const user = await getAuthenticatedUser(request)
+    const authError = requireEmployer(user)
+    if (authError) return authError
+
+    // Verify user can only list test instances from their own company
+    const companyId = request.query.get('companyId')
+    const testId = request.query.get('testId')
+
+    if (testId) {
+      // If filtering by testId, verify the test belongs to the user's company
+      const testContainer = await getContainer('tests', '/companyId')
+      const { resources: tests } = await testContainer.items
+        .query({
+          query: 'SELECT * FROM c WHERE c.id = @id',
+          parameters: [{ name: '@id', value: testId }],
+        })
+        .fetchAll()
+      const test = tests[0]
+      if (test && user!.role !== 'admin' && user!.companyId !== test.companyId) {
+        return jsonResponse(403, {
+          success: false,
+          error: 'You can only view test instances from your own company.',
+        })
+      }
+    } else if (companyId && user!.role !== 'admin' && user!.companyId !== companyId) {
+      return jsonResponse(403, {
+        success: false,
+        error: 'You can only view test instances from your own company.',
+      })
+    }
+
+    return listTestInstancesHandler(request)
+  },
 })
 
 app.http('employerTestInstanceResults', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'employer/testInstances/{instanceId}',
-  handler: getTestInstanceResultsHandler,
+  handler: async (request) => {
+    // Verify employer role
+    const user = await getAuthenticatedUser(request)
+    const authError = requireEmployer(user)
+    if (authError) return authError
+
+    // Note: Additional company ownership check could be added here
+    // For now, we rely on the employer role check
+    return getTestInstanceResultsHandler(request)
+  },
 })
 
 app.http('employerTestInstanceMark', {

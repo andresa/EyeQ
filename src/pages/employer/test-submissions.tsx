@@ -1,20 +1,10 @@
-import {
-  Button,
-  Card,
-  Drawer,
-  Dropdown,
-  Select,
-  Space,
-  Table,
-  Typography,
-} from 'antd'
+import { Button, Card, Drawer, Dropdown, Select, Space, Table, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployerLayout from '../../layouts/EmployerLayout'
-import CompanyEmployerSelector from '../../components/molecules/CompanyEmployerSelector'
 import {
   fetchTestInstanceResults,
   listEmployees,
@@ -31,10 +21,7 @@ const buildResponseMap = (responses: ResponseRecord[]) =>
     return map
   }, new Map<string, ResponseRecord>())
 
-const resolveAnswer = (
-  component: TestComponent,
-  response?: ResponseRecord,
-) => {
+const resolveAnswer = (component: TestComponent, response?: ResponseRecord) => {
   if (!response) return 'No response'
   if (component.type === 'text') {
     return response.textAnswer || 'No response'
@@ -43,7 +30,9 @@ const resolveAnswer = (
   if (Array.isArray(rawAnswer)) {
     if (!component.options) return rawAnswer.join(', ')
     return rawAnswer
-      .map((optionId) => component.options?.find((option) => option.id === optionId)?.label)
+      .map(
+        (optionId) => component.options?.find((option) => option.id === optionId)?.label,
+      )
       .filter(Boolean)
       .join(', ')
   }
@@ -57,12 +46,10 @@ const resolveAnswer = (
 const TestSubmissionsPage = () => {
   const { testId } = useParams()
   const navigate = useNavigate()
-  const { session } = useSession()
-  const companyId = session?.companyId
+  const { userProfile } = useSession()
+  const companyId = userProfile?.companyId
 
-  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(
-    null,
-  )
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null)
 
   const { data: tests } = useQuery({
     queryKey: ['employer', 'tests', companyId],
@@ -103,10 +90,7 @@ const TestSubmissionsPage = () => {
     enabled: Boolean(companyId),
   })
 
-  const {
-    data: results,
-    isFetching: isLoadingResults,
-  } = useQuery({
+  const { data: results, isFetching: isLoadingResults } = useQuery({
     queryKey: ['employer', 'testInstanceResults', selectedInstanceId],
     enabled: Boolean(selectedInstanceId),
     queryFn: async () => {
@@ -133,10 +117,7 @@ const TestSubmissionsPage = () => {
     [employees],
   )
 
-  const responseMap = useMemo(
-    () => buildResponseMap(results?.responses || []),
-    [results],
-  )
+  const responseMap = useMemo(() => buildResponseMap(results?.responses || []), [results])
 
   const sortedInstances = useMemo(() => {
     return (instances || []).slice().sort((a, b) => {
@@ -173,9 +154,8 @@ const TestSubmissionsPage = () => {
 
   return (
     <EmployerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <Space direction="vertical" size="large" className="w-full">
         <Typography.Title level={3}>{testName}</Typography.Title>
-        <CompanyEmployerSelector />
         <Card>
           <Space orientation="vertical" className="w-full">
             <Select
@@ -195,9 +175,7 @@ const TestSubmissionsPage = () => {
               ]}
               aria-label="Select test"
             />
-            <Button onClick={() => navigate('/employer/tests')}>
-              Back to tests
-            </Button>
+            <Button onClick={() => navigate('/employer/tests')}>Back to tests</Button>
           </Space>
         </Card>
         <Table
@@ -233,10 +211,7 @@ const TestSubmissionsPage = () => {
             {
               title: 'Actions',
               render: (_, record) => (
-                <Dropdown
-                  menu={{ items: getMenuItems(record.id) }}
-                  trigger={['click']}
-                >
+                <Dropdown menu={{ items: getMenuItems(record.id) }} trigger={['click']}>
                   <Button
                     type="text"
                     icon={<EllipsisOutlined />}
@@ -263,7 +238,9 @@ const TestSubmissionsPage = () => {
               <Space orientation="vertical">
                 <Typography.Text strong>{results.test.name}</Typography.Text>
                 <Typography.Text type="secondary">
-                  Employee: {employeeMap[results.instance.employeeId] || results.instance.employeeId}
+                  Employee:{' '}
+                  {employeeMap[results.instance.employeeId] ||
+                    results.instance.employeeId}
                 </Typography.Text>
                 <Typography.Text type="secondary">
                   Status: {results.instance.status}

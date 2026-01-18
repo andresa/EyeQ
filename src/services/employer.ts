@@ -9,16 +9,27 @@ import { apiRequest } from './api'
 
 export const createEmployees = (payload: {
   companyId: string
-  employees: Omit<Employee, 'id' | 'companyId' | 'createdAt' | 'isActive'>[]
+  employees: Omit<Employee, 'id' | 'companyId' | 'createdAt' | 'isActive' | 'role'>[]
 }): Promise<ApiResponse<Employee[]>> =>
   apiRequest('/employer/employees', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 
-export const listEmployees = (
+export const updateEmployee = (
+  employeeId: string,
   companyId: string,
-): Promise<ApiResponse<Employee[]>> =>
+  payload: Partial<Employee>,
+): Promise<ApiResponse<Employee>> =>
+  apiRequest(
+    `/employer/employees/${employeeId}?companyId=${encodeURIComponent(companyId)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    },
+  )
+
+export const listEmployees = (companyId: string): Promise<ApiResponse<Employee[]>> =>
   apiRequest(`/employer/employees?companyId=${encodeURIComponent(companyId)}`)
 
 export const createTestTemplate = (payload: {
@@ -48,16 +59,12 @@ export const duplicateTestTemplate = (
     method: 'POST',
   })
 
-export const deleteTestTemplate = (
-  testId: string,
-): Promise<ApiResponse<TestTemplate>> =>
+export const deleteTestTemplate = (testId: string): Promise<ApiResponse<TestTemplate>> =>
   apiRequest(`/employer/tests/${testId}`, {
     method: 'DELETE',
   })
 
-export const listTests = (
-  companyId: string,
-): Promise<ApiResponse<TestTemplate[]>> =>
+export const listTests = (companyId: string): Promise<ApiResponse<TestTemplate[]>> =>
   apiRequest(`/employer/tests?companyId=${encodeURIComponent(companyId)}`)
 
 export const assignTest = (

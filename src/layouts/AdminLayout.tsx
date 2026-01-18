@@ -11,6 +11,7 @@ const AdminLayout = ({ children }: PropsWithChildren) => {
     { key: '/admin', label: 'Dashboard' },
     { key: '/admin/companies', label: 'Companies' },
     { key: '/admin/employers', label: 'Employers' },
+    { key: '/admin/employees', label: 'Employees' },
   ]
 
   return (
