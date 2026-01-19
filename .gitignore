@@ -26,3 +26,6 @@ dist-ssr
 
 # Azure Functions local settings (secrets)
 api/local.settings.json
+
+# Admin seeding script (contains secrets)
+scripts/seed-admins.ts

@@ -1,6 +1,5 @@
 import {
   Button,
-  Card,
   DatePicker,
   Dropdown,
   Modal,
@@ -16,7 +15,6 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import EmployerLayout from '../../layouts/EmployerLayout'
-import CompanyEmployerSelector from '../../components/molecules/CompanyEmployerSelector'
 import {
   assignTest,
   deleteTestTemplate,
@@ -32,8 +30,8 @@ import { formatDateTime } from '../../utils/date'
 const EmployerTestsPage = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { session } = useSession()
-  const companyId = session?.companyId
+  const { userProfile } = useSession()
+  const companyId = userProfile?.companyId
 
   const [assignOpen, setAssignOpen] = useState(false)
   const [assignTestId, setAssignTestId] = useState<string>('')
@@ -192,16 +190,15 @@ const EmployerTestsPage = () => {
 
   return (
     <EmployerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
-        <Typography.Title level={3}>Tests</Typography.Title>
-        <Card>
-          <Space orientation="vertical" className="w-full">
-            <CompanyEmployerSelector />
-            <Button type="primary" onClick={() => navigate('/employer/test-builder')}>
-              Create Test
-            </Button>
-          </Space>
-        </Card>
+      <Space direction="vertical" size="large" className="w-full">
+        <div className="flex items-center justify-between">
+          <Typography.Title level={3} className="m-0">
+            Tests
+          </Typography.Title>
+          <Button type="primary" onClick={() => navigate('/employer/test-builder')}>
+            Create Test
+          </Button>
+        </div>
         <Table
           dataSource={sortedTests}
           rowKey="id"

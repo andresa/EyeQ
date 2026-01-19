@@ -1,18 +1,8 @@
-import {
-  Button,
-  Card,
-  Input,
-  Radio,
-  Space,
-  Tag,
-  Typography,
-  message,
-} from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { Button, Card, Input, Radio, Space, Tag, Typography, message } from 'antd'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployerLayout from '../../layouts/EmployerLayout'
-import CompanyEmployerSelector from '../../components/molecules/CompanyEmployerSelector'
 import { fetchTestInstanceResults, markTestInstance } from '../../services/employer'
 import type { ResponseRecord, TestComponent } from '../../types'
 import { useSession } from '../../hooks/useSession'
@@ -38,7 +28,9 @@ const resolveAnswer = (component: TestComponent, response?: ResponseRecord) => {
   if (Array.isArray(rawAnswer)) {
     if (!component.options) return rawAnswer.join(', ')
     return rawAnswer
-      .map((optionId) => component.options?.find((option) => option.id === optionId)?.label)
+      .map(
+        (optionId) => component.options?.find((option) => option.id === optionId)?.label,
+      )
       .filter(Boolean)
       .join(', ')
   }
@@ -67,7 +59,9 @@ const isAnswerCorrect = (
     if (!Array.isArray(employeeAnswer) || !Array.isArray(correctAnswer)) return false
     const left = [...employeeAnswer].sort()
     const right = [...correctAnswer].sort()
-    return left.length === right.length && left.every((value, index) => value === right[index])
+    return (
+      left.length === right.length && left.every((value, index) => value === right[index])
+    )
   }
   return false
 }
@@ -77,21 +71,27 @@ const formatCorrectAnswer = (
   correctAnswer?: string | string[] | null,
 ) => {
   if (!correctAnswer) return null
-  if (!component.options) return Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer
+  if (!component.options)
+    return Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer
   if (Array.isArray(correctAnswer)) {
     return correctAnswer
-      .map((optionId) => component.options?.find((option) => option.id === optionId)?.label)
+      .map(
+        (optionId) => component.options?.find((option) => option.id === optionId)?.label,
+      )
       .filter(Boolean)
       .join(', ')
   }
-  return component.options.find((option) => option.id === correctAnswer)?.label || correctAnswer
+  return (
+    component.options.find((option) => option.id === correctAnswer)?.label ||
+    correctAnswer
+  )
 }
 
 const MarkingPage = () => {
   const { instanceId } = useParams()
   const navigate = useNavigate()
-  const { session } = useSession()
-  const [marks, setMarks] = useState<Record<string, MarkState>>({})
+  const { userProfile } = useSession()
+  const [marksOverrides, setMarksOverrides] = useState<Record<string, MarkState>>({})
 
   const { data, isLoading } = useQuery({
     queryKey: ['employer', 'testInstanceResults', instanceId],
@@ -105,10 +105,7 @@ const MarkingPage = () => {
     },
   })
 
-  const responseMap = useMemo(
-    () => buildResponseMap(data?.responses || []),
-    [data],
-  )
+  const responseMap = useMemo(() => buildResponseMap(data?.responses || []), [data])
   const componentMap = useMemo(() => {
     if (!data) return new Map<string, TestComponent>()
     return data.test.sections.reduce((map, section) => {
@@ -119,8 +116,8 @@ const MarkingPage = () => {
     }, new Map<string, TestComponent>())
   }, [data])
 
-  useEffect(() => {
-    if (!data) return
+  const initialMarks = useMemo(() => {
+    if (!data) return {}
     const initial: Record<string, MarkState> = {}
     data.test.sections.forEach((section) => {
       section.components.forEach((component) => {
@@ -135,20 +132,31 @@ const MarkingPage = () => {
             : null)
         initial[component.id] = {
           correctAnswer:
-            presetCorrectAnswer ??
-            (component.type === 'multiple_choice' ? [] : null),
+            presetCorrectAnswer ?? (component.type === 'multiple_choice' ? [] : null),
           isCorrect: presetIsCorrect,
           note: response?.note ?? '',
         }
       })
     })
-    setMarks(initial)
+    return initial
   }, [data, responseMap])
 
+  const marks = useMemo(
+    () => ({
+      ...initialMarks,
+      ...marksOverrides,
+    }),
+    [initialMarks, marksOverrides],
+  )
+
   const updateMark = (questionId: string, updates: Partial<MarkState>) => {
-    setMarks((prev) => ({
+    setMarksOverrides((prev) => ({
       ...prev,
-      [questionId]: { ...prev[questionId], ...updates },
+      [questionId]: {
+        ...(initialMarks[questionId] || {}),
+        ...prev[questionId],
+        ...updates,
+      },
     }))
   }
 
@@ -157,8 +165,7 @@ const MarkingPage = () => {
     const marksPayload = Object.entries(marks).map(([questionId, mark]) => {
       const component = componentMap.get(questionId)
       const response = responseMap.get(questionId)
-      const correctAnswer =
-        mark.correctAnswer ?? component?.correctAnswer ?? null
+      const correctAnswer = mark.correctAnswer ?? component?.correctAnswer ?? null
       const isCorrect =
         mark.isCorrect ??
         (component && component.type !== 'text'
@@ -173,7 +180,8 @@ const MarkingPage = () => {
     })
     const response = await markTestInstance(instanceId, {
       marks: marksPayload,
-      markedByEmployerId: session?.employerId,
+      markedByEmployerId:
+        userProfile?.userType === 'employer' ? userProfile.id : undefined,
     })
     if (!response.success) {
       message.error(response.error || 'Unable to submit marks')
@@ -193,9 +201,8 @@ const MarkingPage = () => {
 
   return (
     <EmployerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <Space direction="vertical" size="large" className="w-full">
         <Typography.Title level={3}>Mark submission</Typography.Title>
-        <CompanyEmployerSelector />
         <Card>
           <Space orientation="vertical">
             <Typography.Text strong>{data.test.name}</Typography.Text>
@@ -206,15 +213,13 @@ const MarkingPage = () => {
         </Card>
         {data.test.sections.map((section) => (
           <Card key={section.id} title={section.title}>
-                  <Space orientation="vertical" className="w-full">
+            <Space orientation="vertical" className="w-full">
               {section.components.map((component) => {
                 if (component.type === 'info') {
                   return (
                     <Card key={component.id} type="inner">
                       <Typography.Text strong>{component.title}</Typography.Text>
-                      <Typography.Paragraph>
-                        {component.description}
-                      </Typography.Paragraph>
+                      <Typography.Paragraph>{component.description}</Typography.Paragraph>
                     </Card>
                   )
                 }
@@ -223,14 +228,11 @@ const MarkingPage = () => {
                 const mark = marks[component.id]
                 const correctAnswer = mark?.correctAnswer ?? null
                 const isCorrectValue = mark?.isCorrect ?? false
-                const correctAnswerLabel = formatCorrectAnswer(
-                  component,
-                  correctAnswer,
-                )
+                const correctAnswerLabel = formatCorrectAnswer(component, correctAnswer)
 
                 return (
                   <Card key={component.id} type="inner">
-                      <Space orientation="vertical" className="w-full">
+                    <Space orientation="vertical" className="w-full">
                       <Typography.Text strong>{component.title}</Typography.Text>
                       <Typography.Paragraph type="secondary">
                         {component.description}

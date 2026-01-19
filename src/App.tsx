@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { Spin } from 'antd'
 import LoginPage from './pages/shared/login'
 import EmployeeDashboard from './pages/employee'
 import EmployeeTestPage from './pages/employee/test'
@@ -13,51 +14,163 @@ import EmployerAssignedTestsPage from './pages/employer/assigned-tests'
 import AdminDashboard from './pages/admin'
 import AdminCompaniesPage from './pages/admin/companies'
 import AdminEmployersPage from './pages/admin/employers'
+import AdminEmployeesPage from './pages/admin/employees'
+import RouteGuard from './components/RouteGuard'
 import { useSession } from './hooks/useSession'
+import { getDashboardRoute } from './utils/auth'
 
 const App = () => {
-  const { session } = useSession()
+  const { swaUser, userProfile, isLoading, profileError } = useSession()
 
-  const defaultRoute = session?.role
-    ? `/${session.role}`
-    : '/login'
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Spin size="large" />
+      </div>
+    )
+  }
+
+  // Determine default route based on authentication and database role
+  const getDefaultRoute = () => {
+    if (!swaUser) return '/login'
+    if (profileError || !userProfile) return '/login'
+    return getDashboardRoute(userProfile.role)
+  }
+
+  const defaultRoute = getDefaultRoute()
 
   return (
     <Routes>
       <Route path="/" element={<Navigate to={defaultRoute} replace />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/employee" element={<EmployeeDashboard />} />
-      <Route path="/employee/test/:instanceId" element={<EmployeeTestPage />} />
+
+      {/* Employee routes - accessible by employee and admin */}
+      <Route
+        path="/employee"
+        element={
+          <RouteGuard allowedRoles={['employee']}>
+            <EmployeeDashboard />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/employee/test/:instanceId"
+        element={
+          <RouteGuard allowedRoles={['employee']}>
+            <EmployeeTestPage />
+          </RouteGuard>
+        }
+      />
       <Route
         path="/employee/test-results/:instanceId"
-        element={<EmployeeTestResultsPage />}
+        element={
+          <RouteGuard allowedRoles={['employee']}>
+            <EmployeeTestResultsPage />
+          </RouteGuard>
+        }
       />
-      <Route path="/employer" element={<EmployerDashboard />} />
-      <Route path="/employer/employees" element={<EmployerEmployeesPage />} />
-      <Route path="/employer/tests" element={<EmployerTestsPage />} />
+
+      {/* Employer routes - accessible by employer and admin */}
+      <Route
+        path="/employer"
+        element={
+          <RouteGuard allowedRoles={['employer']}>
+            <EmployerDashboard />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/employer/employees"
+        element={
+          <RouteGuard allowedRoles={['employer']}>
+            <EmployerEmployeesPage />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/employer/tests"
+        element={
+          <RouteGuard allowedRoles={['employer']}>
+            <EmployerTestsPage />
+          </RouteGuard>
+        }
+      />
       <Route
         path="/employer/test-submissions"
-        element={<EmployerTestSubmissionsPage />}
+        element={
+          <RouteGuard allowedRoles={['employer']}>
+            <EmployerTestSubmissionsPage />
+          </RouteGuard>
+        }
       />
       <Route
         path="/employer/test-builder/:testId?"
-        element={<EmployerTestBuilderPage />}
+        element={
+          <RouteGuard allowedRoles={['employer']}>
+            <EmployerTestBuilderPage />
+          </RouteGuard>
+        }
       />
       <Route
         path="/employer/test-submissions/:testId"
-        element={<EmployerTestSubmissionsPage />}
+        element={
+          <RouteGuard allowedRoles={['employer']}>
+            <EmployerTestSubmissionsPage />
+          </RouteGuard>
+        }
       />
       <Route
         path="/employer/assigned-tests"
-        element={<EmployerAssignedTestsPage />}
+        element={
+          <RouteGuard allowedRoles={['employer']}>
+            <EmployerAssignedTestsPage />
+          </RouteGuard>
+        }
       />
       <Route
         path="/employer/marking/:instanceId"
-        element={<EmployerMarkingPage />}
+        element={
+          <RouteGuard allowedRoles={['employer']}>
+            <EmployerMarkingPage />
+          </RouteGuard>
+        }
       />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/companies" element={<AdminCompaniesPage />} />
-      <Route path="/admin/employers" element={<AdminEmployersPage />} />
+
+      {/* Admin routes - accessible by admin only */}
+      <Route
+        path="/admin"
+        element={
+          <RouteGuard allowedRoles={['admin']}>
+            <AdminDashboard />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/admin/companies"
+        element={
+          <RouteGuard allowedRoles={['admin']}>
+            <AdminCompaniesPage />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/admin/employers"
+        element={
+          <RouteGuard allowedRoles={['admin']}>
+            <AdminEmployersPage />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/admin/employees"
+        element={
+          <RouteGuard allowedRoles={['admin']}>
+            <AdminEmployeesPage />
+          </RouteGuard>
+        }
+      />
+
       <Route path="*" element={<Navigate to={defaultRoute} replace />} />
     </Routes>
   )

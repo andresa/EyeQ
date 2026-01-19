@@ -1,11 +1,13 @@
 import {
   Button,
   Card,
+  DatePicker,
   Form,
   Input,
   Modal,
   Select,
   Space,
+  Switch,
   Table,
   Tag,
   message,
@@ -13,20 +15,21 @@ import {
 import { EditOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import AdminLayout from '../../layouts/AdminLayout'
 import {
-  createEmployer,
-  updateEmployer,
+  createEmployee,
+  updateEmployee,
   listCompanies,
-  listEmployers,
+  listEmployees,
 } from '../../services/admin'
-import type { Company, Employer } from '../../types'
+import type { Company, Employee } from '../../types'
 import PhoneInput from '../../components/atoms/PhoneInput'
 
 // Only employee and employer roles are allowed (not admin)
 const roleOptions = [
-  { label: 'Employer', value: 'employer' },
   { label: 'Employee', value: 'employee' },
+  { label: 'Employer', value: 'employer' },
 ]
 
 const roleColors: Record<string, string> = {
@@ -34,10 +37,10 @@ const roleColors: Record<string, string> = {
   employee: 'green',
 }
 
-const AdminEmployersPage = () => {
+const AdminEmployeesPage = () => {
   const [form] = Form.useForm()
   const [open, setOpen] = useState(false)
-  const [editingEmployer, setEditingEmployer] = useState<Employer | null>(null)
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
 
   const { data: companies } = useQuery({
@@ -52,76 +55,88 @@ const AdminEmployersPage = () => {
   })
 
   const {
-    data: employers,
+    data: employees,
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['admin', 'employers', companyId],
+    queryKey: ['admin', 'employees', companyId],
     queryFn: async () => {
-      if (!companyId) return [] as Employer[]
-      const response = await listEmployers(companyId)
+      if (!companyId) return [] as Employee[]
+      const response = await listEmployees(companyId)
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load employers')
+        throw new Error(response.error || 'Unable to load employees')
       }
       return response.data
     },
   })
 
   const openCreate = () => {
-    setEditingEmployer(null)
+    setEditingEmployee(null)
     form.resetFields()
-    form.setFieldsValue({ companyId, role: 'employer' })
+    form.setFieldsValue({ companyId, role: 'employee', isActive: true })
     setOpen(true)
   }
 
-  const openEdit = (employer: Employer) => {
-    setEditingEmployer(employer)
+  const openEdit = (employee: Employee) => {
+    setEditingEmployee(employee)
     form.setFieldsValue({
-      companyId: employer.companyId,
-      firstName: employer.firstName,
-      lastName: employer.lastName,
-      email: employer.email,
-      phone: employer.phone,
-      role: employer.role || 'employer',
+      companyId: employee.companyId,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      phone: employee.phone,
+      dob: employee.dob ? dayjs(employee.dob) : undefined,
+      role: employee.role || 'employee',
+      isActive: employee.isActive,
     })
     setOpen(true)
   }
 
   const closeModal = () => {
     setOpen(false)
-    setEditingEmployer(null)
+    setEditingEmployee(null)
     form.resetFields()
   }
 
   const onSubmit = async () => {
     const values = await form.validateFields()
 
-    if (editingEmployer) {
-      // Update existing employer
-      const response = await updateEmployer(
-        editingEmployer.id,
-        editingEmployer.companyId,
+    if (editingEmployee) {
+      // Update existing employee
+      const response = await updateEmployee(
+        editingEmployee.id,
+        editingEmployee.companyId,
         {
           firstName: values.firstName,
           lastName: values.lastName,
           email: values.email,
           phone: values.phone,
+          dob: values.dob?.format('YYYY-MM-DD'),
           role: values.role,
+          isActive: values.isActive,
         },
       )
       if (!response.success) {
-        message.error(response.error || 'Unable to update employer')
+        message.error(response.error || 'Unable to update employee')
         return
       }
-      message.success('Employer updated')
+      message.success('Employee updated')
     } else {
-      // Create new employer
-      const response = await createEmployer(values)
+      // Create new employee
+      const response = await createEmployee({
+        companyId: values.companyId,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phone: values.phone,
+        dob: values.dob?.format('YYYY-MM-DD'),
+        role: values.role,
+      })
       if (!response.success) {
-        message.error(response.error || 'Unable to create employer')
+        message.error(response.error || 'Unable to create employee')
         return
       }
-      message.success('Employer created')
+      message.success('Employee created')
     }
 
     closeModal()
@@ -145,13 +160,13 @@ const AdminEmployersPage = () => {
               className="w-full"
             />
             <Button type="primary" onClick={openCreate} disabled={!companyId}>
-              Add employer
+              Add employee
             </Button>
           </Space>
         </Card>
         <Table
           loading={isLoading}
-          dataSource={employers || []}
+          dataSource={employees || []}
           rowKey="id"
           columns={[
             {
@@ -160,11 +175,12 @@ const AdminEmployersPage = () => {
             },
             { title: 'Email', dataIndex: 'email' },
             { title: 'Phone', dataIndex: 'phone' },
+            { title: 'DOB', dataIndex: 'dob' },
             {
               title: 'Role',
               dataIndex: 'role',
               render: (role: string) => (
-                <Tag color={roleColors[role] || 'blue'}>{role || 'employer'}</Tag>
+                <Tag color={roleColors[role] || 'green'}>{role || 'employee'}</Tag>
               ),
             },
             {
@@ -188,13 +204,17 @@ const AdminEmployersPage = () => {
         />
       </Space>
       <Modal
-        title={editingEmployer ? 'Edit employer' : 'Add employer'}
+        title={editingEmployee ? 'Edit employee' : 'Add employee'}
         open={open}
         onOk={onSubmit}
         onCancel={closeModal}
-        okText={editingEmployer ? 'Save changes' : 'Create employer'}
+        okText={editingEmployee ? 'Save changes' : 'Create employee'}
       >
-        <Form form={form} layout="vertical">
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ role: 'employee', isActive: true }}
+        >
           <Form.Item
             name="companyId"
             label="Company"
@@ -205,7 +225,7 @@ const AdminEmployersPage = () => {
                 label: company.name,
                 value: company.id,
               }))}
-              disabled={!!editingEmployer}
+              disabled={!!editingEmployee}
             />
           </Form.Item>
           <Form.Item
@@ -235,6 +255,9 @@ const AdminEmployersPage = () => {
           <Form.Item name="phone" label="Phone">
             <PhoneInput />
           </Form.Item>
+          <Form.Item name="dob" label="Date of birth">
+            <DatePicker className="w-full" />
+          </Form.Item>
           <Form.Item
             name="role"
             label="Role"
@@ -242,10 +265,13 @@ const AdminEmployersPage = () => {
           >
             <Select options={roleOptions} aria-label="Role" />
           </Form.Item>
+          <Form.Item name="isActive" label="Active" valuePropName="checked">
+            <Switch />
+          </Form.Item>
         </Form>
       </Modal>
     </AdminLayout>
   )
 }
 
-export default AdminEmployersPage
+export default AdminEmployeesPage

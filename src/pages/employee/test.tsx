@@ -17,31 +17,24 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
 import { fetchTestInstanceDetails, submitTestInstance } from '../../services/employee'
-import type { ResponsePayload, TestComponent } from '../../types'
+import type { ResponsePayload, TestInstanceDetails } from '../../types'
 import { formatDateTime } from '../../utils/date'
 import { formatDistanceToNowStrict, parseISO } from 'date-fns'
 
-const EmployeeTestPage = () => {
-  const { instanceId } = useParams()
+interface TestFormProps {
+  instanceId: string
+  data: TestInstanceDetails
+}
+
+const TestForm = ({ instanceId, data }: TestFormProps) => {
   const navigate = useNavigate()
   const [form] = Form.useForm()
   const [timeRemaining, setTimeRemaining] = useState('')
-  const [activeSectionId, setActiveSectionId] = useState<string | undefined>()
-
-  const { data } = useQuery({
-    queryKey: ['employee', 'testInstance', instanceId],
-    queryFn: async () => {
-      if (!instanceId) return null
-      const response = await fetchTestInstanceDetails(instanceId)
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load test')
-      }
-      return response.data
-    },
-  })
+  const [activeSectionId, setActiveSectionId] = useState<string | undefined>(
+    data.test.sections[0]?.id,
+  )
 
   const components = useMemo(() => {
-    if (!data) return [] as TestComponent[]
     return data.test.sections.flatMap((section) => section.components)
   }, [data])
 
@@ -71,29 +64,26 @@ const EmployeeTestPage = () => {
     : 0
 
   useEffect(() => {
-    const expiresAt = data?.instance.expiresAt
+    const expiresAt = data.instance.expiresAt
     if (!expiresAt) return undefined
 
     const update = () => {
-      setTimeRemaining(formatDistanceToNowStrict(parseISO(expiresAt), { addSuffix: true }))
+      setTimeRemaining(
+        formatDistanceToNowStrict(parseISO(expiresAt), { addSuffix: true }),
+      )
     }
 
     update()
     const interval = setInterval(update, 60000)
     return () => clearInterval(interval)
-  }, [data?.instance.expiresAt])
-
-  useEffect(() => {
-    if (!data) return
-    setActiveSectionId(data.test.sections[0]?.id)
-  }, [data])
+  }, [data.instance.expiresAt])
 
   const getSectionIndex = (sectionId?: string) =>
-    data?.test.sections.findIndex((section) => section.id === sectionId)
+    data.test.sections.findIndex((section) => section.id === sectionId)
 
   const validateSectionRequired = async (sectionId?: string) => {
     if (!sectionId) return true
-    const section = data?.test.sections.find((item) => item.id === sectionId)
+    const section = data.test.sections.find((item) => item.id === sectionId)
     if (!section) return true
     const requiredFields = section.components
       .filter((component) => component.type !== 'info' && component.required)
@@ -125,7 +115,7 @@ const EmployeeTestPage = () => {
 
   const handleSubmit = async () => {
     try {
-      if (data?.instance.status === 'completed' || data?.instance.status === 'marked') {
+      if (data.instance.status === 'completed' || data.instance.status === 'marked') {
         message.warning('This test has already been completed.')
         return
       }
@@ -147,7 +137,6 @@ const EmployeeTestPage = () => {
             textAnswer: null,
           }
         })
-      if (!instanceId) return
       const response = await submitTestInstance(instanceId, {
         responses,
         completedAt: new Date().toISOString(),
@@ -165,7 +154,144 @@ const EmployeeTestPage = () => {
     }
   }
 
-  if (!data) {
+  return (
+    <Space orientation="vertical" size="large" className="w-full">
+      <Affix offsetTop={0}>
+        <Card>
+          <Space orientation="vertical" className="w-full">
+            <Typography.Title level={4}>{data.test.name}</Typography.Title>
+            <Progress percent={progressPercent} />
+            {data.instance.expiresAt ? (
+              <Typography.Text type="secondary">
+                Due {formatDateTime(data.instance.expiresAt)} ({timeRemaining})
+              </Typography.Text>
+            ) : null}
+          </Space>
+        </Card>
+      </Affix>
+      <Form form={form} layout="vertical">
+        <Collapse
+          accordion
+          activeKey={activeSectionId}
+          onChange={(key) => handleSectionChange(Array.isArray(key) ? key[0] : key)}
+        >
+          {data.test.sections.map((section) => (
+            <Collapse.Panel key={section.id} header={section.title}>
+              <Space orientation="vertical" className="w-full">
+                {section.components.map((component) => {
+                  if (component.type === 'info') {
+                    return (
+                      <Card key={component.id}>
+                        <Typography.Title level={5}>{component.title}</Typography.Title>
+                        <Typography.Paragraph>
+                          {component.description}
+                        </Typography.Paragraph>
+                      </Card>
+                    )
+                  }
+
+                  return (
+                    <Form.Item
+                      key={component.id}
+                      name={`q_${component.id}`}
+                      label={component.title}
+                      extra={component.description}
+                      rules={
+                        component.required
+                          ? [{ required: true, message: 'This question is required.' }]
+                          : []
+                      }
+                    >
+                      {component.type === 'single_choice' ? (
+                        <Radio.Group>
+                          <Space orientation="vertical">
+                            {(component.options || []).map((option) => (
+                              <Radio key={option.id} value={option.id}>
+                                {option.label}
+                              </Radio>
+                            ))}
+                          </Space>
+                        </Radio.Group>
+                      ) : component.type === 'multiple_choice' ? (
+                        <Checkbox.Group>
+                          <Space orientation="vertical">
+                            {(component.options || []).map((option) => (
+                              <Checkbox key={option.id} value={option.id}>
+                                {option.label}
+                              </Checkbox>
+                            ))}
+                          </Space>
+                        </Checkbox.Group>
+                      ) : (
+                        <Input.TextArea rows={4} />
+                      )}
+                    </Form.Item>
+                  )
+                })}
+                <Space className="w-full justify-between">
+                  <Button
+                    onClick={() => {
+                      const index = data.test.sections.findIndex(
+                        (item) => item.id === section.id,
+                      )
+                      const prev = data.test.sections[index - 1]
+                      if (prev) setActiveSectionId(prev.id)
+                    }}
+                    disabled={
+                      data.test.sections.findIndex((item) => item.id === section.id) === 0
+                    }
+                  >
+                    Previous
+                  </Button>
+                  {data.test.sections.findIndex((item) => item.id === section.id) ===
+                  data.test.sections.length - 1 ? (
+                    <Button type="primary" onClick={handleSubmit}>
+                      Submit test
+                    </Button>
+                  ) : (
+                    <Button
+                      type="primary"
+                      onClick={async () => {
+                        const index = data.test.sections.findIndex(
+                          (item) => item.id === section.id,
+                        )
+                        const next = data.test.sections[index + 1]
+                        if (!next) return
+                        const isValid = await validateSectionRequired(section.id)
+                        if (!isValid) return
+                        setActiveSectionId(next.id)
+                      }}
+                    >
+                      Next
+                    </Button>
+                  )}
+                </Space>
+              </Space>
+            </Collapse.Panel>
+          ))}
+        </Collapse>
+      </Form>
+    </Space>
+  )
+}
+
+const EmployeeTestPage = () => {
+  const { instanceId } = useParams()
+  const navigate = useNavigate()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['employee', 'testInstance', instanceId],
+    queryFn: async () => {
+      if (!instanceId) return null
+      const response = await fetchTestInstanceDetails(instanceId)
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Unable to load test')
+      }
+      return response.data
+    },
+  })
+
+  if (isLoading || !data) {
     return (
       <EmployeeLayout>
         <Typography.Text>Loading test...</Typography.Text>
@@ -185,15 +311,11 @@ const EmployeeTestPage = () => {
             <Space>
               <Button
                 type="primary"
-                onClick={() =>
-                  navigate(`/employee/test-results/${data.instance.id}`)
-                }
+                onClick={() => navigate(`/employee/test-results/${data.instance.id}`)}
               >
                 View answers
               </Button>
-              <Button onClick={() => navigate('/employee')}>
-                Back to dashboard
-              </Button>
+              <Button onClick={() => navigate('/employee')}>Back to dashboard</Button>
             </Space>
           </Space>
         </Card>
@@ -210,9 +332,7 @@ const EmployeeTestPage = () => {
             <Typography.Text type="secondary">
               This test has expired and can no longer be completed.
             </Typography.Text>
-            <Button onClick={() => navigate('/employee')}>
-              Back to dashboard
-            </Button>
+            <Button onClick={() => navigate('/employee')}>Back to dashboard</Button>
           </Space>
         </Card>
       </EmployeeLayout>
@@ -221,130 +341,7 @@ const EmployeeTestPage = () => {
 
   return (
     <EmployeeLayout>
-      <Space orientation="vertical" size="large" className="w-full">
-        <Affix offsetTop={0}>
-          <Card>
-            <Space orientation="vertical" className="w-full">
-              <Typography.Title level={4}>{data.test.name}</Typography.Title>
-              <Progress percent={progressPercent} />
-              {data.instance.expiresAt ? (
-                <Typography.Text type="secondary">
-                  Due {formatDateTime(data.instance.expiresAt)} ({timeRemaining})
-                </Typography.Text>
-              ) : null}
-            </Space>
-          </Card>
-        </Affix>
-        <Form form={form} layout="vertical">
-          <Collapse
-            accordion
-            activeKey={activeSectionId}
-            onChange={(key) =>
-              handleSectionChange(Array.isArray(key) ? key[0] : key)
-            }
-          >
-            {data.test.sections.map((section) => (
-              <Collapse.Panel key={section.id} header={section.title}>
-                <Space orientation="vertical" className="w-full">
-                  {section.components.map((component) => {
-                    if (component.type === 'info') {
-                      return (
-                        <Card key={component.id}>
-                          <Typography.Title level={5}>
-                            {component.title}
-                          </Typography.Title>
-                          <Typography.Paragraph>
-                            {component.description}
-                          </Typography.Paragraph>
-                        </Card>
-                      )
-                    }
-
-                    return (
-                      <Form.Item
-                        key={component.id}
-                        name={`q_${component.id}`}
-                        label={component.title}
-                        extra={component.description}
-                        rules={
-                          component.required
-                            ? [{ required: true, message: 'This question is required.' }]
-                            : []
-                        }
-                      >
-                        {component.type === 'single_choice' ? (
-                          <Radio.Group>
-                            <Space orientation="vertical">
-                              {(component.options || []).map((option) => (
-                                <Radio key={option.id} value={option.id}>
-                                  {option.label}
-                                </Radio>
-                              ))}
-                            </Space>
-                          </Radio.Group>
-                        ) : component.type === 'multiple_choice' ? (
-                          <Checkbox.Group>
-                            <Space orientation="vertical">
-                              {(component.options || []).map((option) => (
-                                <Checkbox key={option.id} value={option.id}>
-                                  {option.label}
-                                </Checkbox>
-                              ))}
-                            </Space>
-                          </Checkbox.Group>
-                        ) : (
-                          <Input.TextArea rows={4} />
-                        )}
-                      </Form.Item>
-                    )
-                  })}
-                  <Space className="w-full justify-between">
-                    <Button
-                      onClick={() => {
-                        const index = data.test.sections.findIndex(
-                          (item) => item.id === section.id,
-                        )
-                        const prev = data.test.sections[index - 1]
-                        if (prev) setActiveSectionId(prev.id)
-                      }}
-                      disabled={
-                        data.test.sections.findIndex(
-                          (item) => item.id === section.id,
-                        ) === 0
-                      }
-                    >
-                      Previous
-                    </Button>
-                    {data.test.sections.findIndex(
-                      (item) => item.id === section.id,
-                    ) === data.test.sections.length - 1 ? (
-                      <Button type="primary" onClick={handleSubmit}>
-                        Submit test
-                      </Button>
-                    ) : (
-                      <Button
-                        type="primary"
-                        onClick={async () => {
-                          const index = data.test.sections.findIndex(
-                            (item) => item.id === section.id,
-                          )
-                          const next = data.test.sections[index + 1]
-                          if (!next) return
-                          const isValid = await validateSectionRequired(section.id)
-                          if (!isValid) return
-                          setActiveSectionId(next.id)
-                        }}
-                      >
-                        Next
-                      </Button>
-                    )}
-                  </Space>
-                </Space>
-              </Collapse.Panel>
-            ))}
-          </Collapse>
-        </Form>
-      </Space>
+      <TestForm key={instanceId} instanceId={instanceId!} data={data} />
     </EmployeeLayout>
   )
 }

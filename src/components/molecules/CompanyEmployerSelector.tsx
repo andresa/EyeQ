@@ -1,7 +1,7 @@
 import { Card, Select, Space } from 'antd'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listCompanies, listEmployers } from '../../services/admin'
+import { listCompaniesShared, listEmployersShared } from '../../services/shared'
 import type { Company, Employer } from '../../types'
 import { useSession } from '../../hooks/useSession'
 
@@ -11,9 +11,9 @@ const CompanyEmployerSelector = () => {
   const [employerId, setEmployerId] = useState(session?.employerId || '')
 
   const { data: companies } = useQuery({
-    queryKey: ['admin', 'companies'],
+    queryKey: ['shared', 'companies'],
     queryFn: async () => {
-      const response = await listCompanies()
+      const response = await listCompaniesShared()
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
       }
@@ -22,10 +22,10 @@ const CompanyEmployerSelector = () => {
   })
 
   const { data: employers } = useQuery({
-    queryKey: ['admin', 'employers', companyId],
+    queryKey: ['shared', 'employers', companyId],
     queryFn: async () => {
       if (!companyId) return [] as Employer[]
-      const response = await listEmployers(companyId)
+      const response = await listEmployersShared(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load employers')
       }
@@ -37,10 +37,7 @@ const CompanyEmployerSelector = () => {
     if (!session) return
     const nextCompanyId = companyId || undefined
     const nextEmployerId = employerId || undefined
-    if (
-      session.companyId === nextCompanyId &&
-      session.employerId === nextEmployerId
-    ) {
+    if (session.companyId === nextCompanyId && session.employerId === nextEmployerId) {
       return
     }
     setSession({
@@ -50,10 +47,12 @@ const CompanyEmployerSelector = () => {
     })
   }, [companyId, employerId, session, setSession])
 
-  useEffect(() => {
-    if (companyId) return
-    setEmployerId('')
-  }, [companyId])
+  const handleCompanyChange = (value: string) => {
+    setCompanyId(value)
+    if (!value) {
+      setEmployerId('')
+    }
+  }
 
   return (
     <Card>
@@ -61,7 +60,7 @@ const CompanyEmployerSelector = () => {
         <Select
           placeholder="Select company"
           value={companyId || undefined}
-          onChange={(value) => setCompanyId(value)}
+          onChange={handleCompanyChange}
           allowClear
           options={(companies || []).map((company: Company) => ({
             label: company.name,

@@ -2,6 +2,7 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
+import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
 
 interface CompanyBody {
   name?: string
@@ -18,6 +19,11 @@ export const listCompaniesHandler = async (): Promise<HttpResponseInit> => {
 export const createCompanyHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify admin role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireAdmin(user)
+  if (authError) return authError
+
   const body = await parseJsonBody<CompanyBody>(request)
   if (!body?.name) {
     return jsonResponse(400, { success: false, error: 'Company name is required.' })
@@ -39,6 +45,11 @@ export const createCompanyHandler = async (
 export const updateCompanyHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify admin role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireAdmin(user)
+  if (authError) return authError
+
   const companyId = request.params.companyId
   const body = await parseJsonBody<CompanyBody>(request)
   if (!companyId) {
@@ -72,10 +83,16 @@ app.http('adminCompanies', {
   methods: ['GET', 'POST'],
   authLevel: 'anonymous',
   route: 'management/companies',
-  handler: async (request) =>
-    request.method === 'GET'
-      ? listCompaniesHandler()
-      : createCompanyHandler(request),
+  handler: async (request) => {
+    if (request.method === 'GET') {
+      // List is admin-only for management endpoint
+      const user = await getAuthenticatedUser(request)
+      const authError = requireAdmin(user)
+      if (authError) return authError
+      return listCompaniesHandler()
+    }
+    return createCompanyHandler(request)
+  },
 })
 
 app.http('adminCompanyUpdate', {
@@ -83,4 +100,12 @@ app.http('adminCompanyUpdate', {
   authLevel: 'anonymous',
   route: 'management/companies/{companyId}',
   handler: updateCompanyHandler,
+})
+
+// Shared read-only endpoint for all authenticated users
+app.http('sharedCompanies', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'shared/companies',
+  handler: listCompaniesHandler,
 })

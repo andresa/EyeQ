@@ -1,8 +1,7 @@
 import { Card, Select, Space } from 'antd'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listCompanies } from '../../services/admin'
-import { listEmployees } from '../../services/employer'
+import { listCompaniesShared, listEmployeesShared } from '../../services/shared'
 import type { Company, Employee } from '../../types'
 import { useSession } from '../../hooks/useSession'
 
@@ -12,9 +11,9 @@ const CompanyEmployeeSelector = () => {
   const [employeeId, setEmployeeId] = useState(session?.employeeId || '')
 
   const { data: companies } = useQuery({
-    queryKey: ['admin', 'companies'],
+    queryKey: ['shared', 'companies'],
     queryFn: async () => {
-      const response = await listCompanies()
+      const response = await listCompaniesShared()
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
       }
@@ -23,10 +22,10 @@ const CompanyEmployeeSelector = () => {
   })
 
   const { data: employees } = useQuery({
-    queryKey: ['employer', 'employees', companyId],
+    queryKey: ['shared', 'employees', companyId],
     queryFn: async () => {
       if (!companyId) return [] as Employee[]
-      const response = await listEmployees(companyId)
+      const response = await listEmployeesShared(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load employees')
       }
@@ -38,10 +37,7 @@ const CompanyEmployeeSelector = () => {
     if (!session) return
     const nextCompanyId = companyId || undefined
     const nextEmployeeId = employeeId || undefined
-    if (
-      session.companyId === nextCompanyId &&
-      session.employeeId === nextEmployeeId
-    ) {
+    if (session.companyId === nextCompanyId && session.employeeId === nextEmployeeId) {
       return
     }
     setSession({
@@ -51,10 +47,12 @@ const CompanyEmployeeSelector = () => {
     })
   }, [companyId, employeeId, session, setSession])
 
-  useEffect(() => {
-    if (companyId) return
-    setEmployeeId('')
-  }, [companyId])
+  const handleCompanyChange = (value: string) => {
+    setCompanyId(value)
+    if (!value) {
+      setEmployeeId('')
+    }
+  }
 
   return (
     <Card>
@@ -62,7 +60,7 @@ const CompanyEmployeeSelector = () => {
         <Select
           placeholder="Select company"
           value={companyId || undefined}
-          onChange={(value) => setCompanyId(value)}
+          onChange={handleCompanyChange}
           allowClear
           options={(companies || []).map((company: Company) => ({
             label: company.name,

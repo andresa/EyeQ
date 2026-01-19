@@ -2,6 +2,7 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
+import { getAuthenticatedUser, requireEmployee } from '../shared/auth.js'
 
 interface SubmitBody {
   responses?: {
@@ -44,9 +45,7 @@ export const listEmployeeTestInstancesHandler = async (
     }
   }
 
-  const testIds = [...new Set(updated.map((instance) => instance.testId))].filter(
-    Boolean,
-  )
+  const testIds = [...new Set(updated.map((instance) => instance.testId))].filter(Boolean)
   if (testIds.length === 0) {
     return jsonResponse(200, { success: true, data: updated })
   }
@@ -111,6 +110,11 @@ export const getTestInstanceDetailsHandler = async (
 export const submitTestInstanceHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify employee role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployee(user)
+  if (authError) return authError
+
   const instanceId = request.params.instanceId
   if (!instanceId) {
     return jsonResponse(400, { success: false, error: 'instanceId is required.' })
@@ -136,6 +140,15 @@ export const submitTestInstanceHandler = async (
   if (!instance) {
     return jsonResponse(404, { success: false, error: 'Test instance not found.' })
   }
+
+  // Employees can only submit their own test instances
+  if (user!.role !== 'admin' && user!.id !== instance.employeeId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only submit your own test instances.',
+    })
+  }
+
   if (instance.status === 'completed' || instance.status === 'marked') {
     return jsonResponse(409, {
       success: false,
@@ -213,14 +226,38 @@ app.http('employeeTestInstances', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'employee/testInstances',
-  handler: listEmployeeTestInstancesHandler,
+  handler: async (request) => {
+    // Verify employee role
+    const user = await getAuthenticatedUser(request)
+    const authError = requireEmployee(user)
+    if (authError) return authError
+
+    // Employees can only view their own test instances
+    const employeeId = request.query.get('employeeId')
+    if (user!.role !== 'admin' && user!.id !== employeeId) {
+      return jsonResponse(403, {
+        success: false,
+        error: 'You can only view your own test instances.',
+      })
+    }
+
+    return listEmployeeTestInstancesHandler(request)
+  },
 })
 
 app.http('employeeTestInstanceDetails', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'employee/testInstances/{instanceId}',
-  handler: getTestInstanceDetailsHandler,
+  handler: async (request) => {
+    // Verify employee role
+    const user = await getAuthenticatedUser(request)
+    const authError = requireEmployee(user)
+    if (authError) return authError
+
+    // Additional ownership check is done inside the handler
+    return getTestInstanceDetailsHandler(request)
+  },
 })
 
 app.http('employeeTestInstanceSubmit', {
@@ -234,5 +271,31 @@ app.http('employeeTestInstanceResults', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'employee/testInstances/{instanceId}/results',
-  handler: getEmployeeTestInstanceResultsHandler,
+  handler: async (request) => {
+    // Verify employee role
+    const user = await getAuthenticatedUser(request)
+    const authError = requireEmployee(user)
+    if (authError) return authError
+
+    // Employees can only view their own test results
+    const instanceId = request.params.instanceId
+    if (instanceId) {
+      const instanceContainer = await getContainer('testInstances', '/employeeId')
+      const { resources } = await instanceContainer.items
+        .query({
+          query: 'SELECT * FROM c WHERE c.id = @id',
+          parameters: [{ name: '@id', value: instanceId }],
+        })
+        .fetchAll()
+      const instance = resources[0]
+      if (instance && user!.role !== 'admin' && user!.id !== instance.employeeId) {
+        return jsonResponse(403, {
+          success: false,
+          error: 'You can only view your own test results.',
+        })
+      }
+    }
+
+    return getEmployeeTestInstanceResultsHandler(request)
+  },
 })

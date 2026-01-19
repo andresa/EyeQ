@@ -1,13 +1,12 @@
-import { Card, Space, Statistic, Typography } from 'antd'
+import { Alert, Card, Space, Statistic, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import EmployerLayout from '../../layouts/EmployerLayout'
-import CompanyEmployerSelector from '../../components/molecules/CompanyEmployerSelector'
 import { listEmployees, listTests } from '../../services/employer'
 import { useSession } from '../../hooks/useSession'
 
 const EmployerDashboard = () => {
-  const { session } = useSession()
-  const companyId = session?.companyId
+  const { userProfile, profileError } = useSession()
+  const companyId = userProfile?.companyId
 
   const { data: employees } = useQuery({
     queryKey: ['employer', 'employees', companyId],
@@ -19,6 +18,7 @@ const EmployerDashboard = () => {
       }
       return response.data
     },
+    enabled: !!companyId,
   })
 
   const { data: tests } = useQuery({
@@ -31,13 +31,35 @@ const EmployerDashboard = () => {
       }
       return response.data
     },
+    enabled: !!companyId,
   })
+
+  // Show error if user profile failed to load
+  if (profileError) {
+    return (
+      <EmployerLayout>
+        <Alert
+          type="error"
+          message="Account not found"
+          description={profileError}
+          showIcon
+        />
+      </EmployerLayout>
+    )
+  }
 
   return (
     <EmployerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
-        <Typography.Title level={3}>Employer dashboard</Typography.Title>
-        <CompanyEmployerSelector />
+      <Space direction="vertical" size="large" className="w-full">
+        <div>
+          <Typography.Title level={3}>
+            Welcome, {userProfile?.firstName || 'Employer'}
+          </Typography.Title>
+          {userProfile?.companyName && (
+            <Typography.Text type="secondary">{userProfile.companyName}</Typography.Text>
+          )}
+        </div>
+
         <div className="card-grid">
           <Card>
             <Statistic title="Employees" value={employees?.length || 0} />

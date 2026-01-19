@@ -6,34 +6,40 @@ import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
 
 type UserRole = 'employee' | 'employer' | 'admin'
 
-interface EmployerBody {
+interface EmployeeBody {
   companyId?: string
   firstName?: string
   lastName?: string
   email?: string
   phone?: string
+  dob?: string
   role?: UserRole
   isActive?: boolean
 }
 
-export const listEmployersHandler = async (
+export const listAllEmployeesHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
-  if (!companyId) {
-    return jsonResponse(400, { success: false, error: 'companyId is required.' })
+  const container = await getContainer('employees', '/companyId')
+
+  if (companyId) {
+    // Filter by company if provided
+    const { resources } = await container.items
+      .query({
+        query: 'SELECT * FROM c WHERE c.companyId = @companyId',
+        parameters: [{ name: '@companyId', value: companyId }],
+      })
+      .fetchAll()
+    return jsonResponse(200, { success: true, data: resources })
   }
-  const container = await getContainer('employers', '/companyId')
-  const { resources } = await container.items
-    .query({
-      query: 'SELECT * FROM c WHERE c.companyId = @companyId',
-      parameters: [{ name: '@companyId', value: companyId }],
-    })
-    .fetchAll()
+
+  // Return all employees
+  const { resources } = await container.items.query('SELECT * FROM c').fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }
 
-export const createEmployerHandler = async (
+export const createEmployeeHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   // Verify admin role
@@ -41,7 +47,7 @@ export const createEmployerHandler = async (
   const authError = requireAdmin(user)
   if (authError) return authError
 
-  const body = await parseJsonBody<EmployerBody>(request)
+  const body = await parseJsonBody<EmployeeBody>(request)
   if (!body?.companyId || !body.firstName || !body.lastName || !body.email) {
     return jsonResponse(400, {
       success: false,
@@ -58,24 +64,40 @@ export const createEmployerHandler = async (
     })
   }
 
-  const employer = {
-    id: createId('employer'),
+  // Check if email already exists
+  const container = await getContainer('employees', '/companyId')
+  const { resources: existing } = await container.items
+    .query({
+      query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
+      parameters: [{ name: '@email', value: body.email.toLowerCase() }],
+    })
+    .fetchAll()
+
+  if (existing.length > 0) {
+    return jsonResponse(409, {
+      success: false,
+      error: 'An employee with this email already exists.',
+    })
+  }
+
+  const employee = {
+    id: createId('employee'),
     companyId: body.companyId,
     firstName: body.firstName,
     lastName: body.lastName,
-    email: body.email,
+    email: body.email.toLowerCase(),
     phone: body.phone,
-    role: (body.role || 'employer') as 'employee' | 'employer',
+    dob: body.dob,
+    role: body.role || 'employee',
     createdAt: nowIso(),
-    isActive: true,
+    isActive: body.isActive !== false,
   }
 
-  const container = await getContainer('employers', '/companyId')
-  await container.items.create(employer)
-  return jsonResponse(201, { success: true, data: employer })
+  await container.items.create(employee)
+  return jsonResponse(201, { success: true, data: employee })
 }
 
-export const updateEmployerHandler = async (
+export const updateEmployeeHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   // Verify admin role
@@ -83,17 +105,17 @@ export const updateEmployerHandler = async (
   const authError = requireAdmin(user)
   if (authError) return authError
 
-  const employerId = request.params.employerId
+  const employeeId = request.params.employeeId
   const companyId = request.query.get('companyId')
 
-  if (!employerId) {
-    return jsonResponse(400, { success: false, error: 'employerId is required.' })
+  if (!employeeId) {
+    return jsonResponse(400, { success: false, error: 'employeeId is required.' })
   }
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  const body = await parseJsonBody<EmployerBody>(request)
+  const body = await parseJsonBody<EmployeeBody>(request)
   if (!body) {
     return jsonResponse(400, { success: false, error: 'Request body is required.' })
   }
@@ -107,12 +129,12 @@ export const updateEmployerHandler = async (
     })
   }
 
-  const container = await getContainer('employers', '/companyId')
+  const container = await getContainer('employees', '/companyId')
 
-  // Fetch existing employer
-  const { resource: existing } = await container.item(employerId, companyId).read()
+  // Fetch existing employee
+  const { resource: existing } = await container.item(employeeId, companyId).read()
   if (!existing) {
-    return jsonResponse(404, { success: false, error: 'Employer not found.' })
+    return jsonResponse(404, { success: false, error: 'Employee not found.' })
   }
 
   // Update only provided fields
@@ -122,42 +144,35 @@ export const updateEmployerHandler = async (
     lastName: body.lastName ?? existing.lastName,
     email: body.email ?? existing.email,
     phone: body.phone ?? existing.phone,
-    role: body.role ?? existing.role ?? 'employer',
+    dob: body.dob ?? existing.dob,
+    role: body.role ?? existing.role ?? 'employee',
     isActive: body.isActive ?? existing.isActive,
     updatedAt: nowIso(),
   }
 
-  await container.item(employerId, companyId).replace(updated)
+  await container.item(employeeId, companyId).replace(updated)
   return jsonResponse(200, { success: true, data: updated })
 }
 
-app.http('adminEmployers', {
+app.http('adminEmployees', {
   methods: ['GET', 'POST'],
   authLevel: 'anonymous',
-  route: 'management/employers',
+  route: 'management/employees',
   handler: async (request) => {
-    // Verify admin role for all management operations
+    // Verify admin role
     const user = await getAuthenticatedUser(request)
     const authError = requireAdmin(user)
     if (authError) return authError
 
     return request.method === 'GET'
-      ? listEmployersHandler(request)
-      : createEmployerHandler(request)
+      ? listAllEmployeesHandler(request)
+      : createEmployeeHandler(request)
   },
 })
 
-app.http('adminEmployerUpdate', {
+app.http('adminEmployeeUpdate', {
   methods: ['PUT'],
   authLevel: 'anonymous',
-  route: 'management/employers/{employerId}',
-  handler: updateEmployerHandler,
-})
-
-// Shared read-only endpoint for all authenticated users
-app.http('sharedEmployers', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'shared/employers',
-  handler: listEmployersHandler,
+  route: 'management/employees/{employeeId}',
+  handler: updateEmployeeHandler,
 })

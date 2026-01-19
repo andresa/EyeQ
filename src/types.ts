@@ -23,6 +23,37 @@ export interface Session {
   employeeId?: UUID
 }
 
+// Azure SWA authentication types
+export interface SwaUserClaim {
+  typ: string
+  val: string
+}
+
+export interface SwaClientPrincipal {
+  identityProvider: string
+  userId: string
+  userDetails: string
+  userRoles: string[]
+  claims: SwaUserClaim[]
+}
+
+export interface SwaAuthResponse {
+  clientPrincipal: SwaClientPrincipal | null
+}
+
+// User profile returned by /api/shared/me
+export interface UserProfile {
+  id: UUID
+  email: string
+  firstName: string
+  lastName: string
+  role: UserRole
+  companyId: UUID
+  companyName?: string
+  lastLogin?: string
+  userType: 'employee' | 'employer'
+}
+
 export interface Company {
   id: UUID
   name: string
@@ -38,7 +69,9 @@ export interface Employer {
   lastName: string
   email: string
   phone?: string
+  role?: UserRole
   createdAt: string
+  lastLogin?: string
   isActive: boolean
 }
 
@@ -50,7 +83,9 @@ export interface Employee {
   email: string
   phone?: string
   dob?: string
+  role?: UserRole
   createdAt: string
+  lastLogin?: string
   isActive: boolean
 }
 

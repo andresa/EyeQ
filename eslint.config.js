@@ -18,12 +18,11 @@ export default defineConfig([
       react.configs.flat.recommended,
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
-      jsxA11y.configs.recommended,
+      jsxA11y.flatConfigs.recommended,
       prettier,
     ],
     plugins: {
       react,
-      'jsx-a11y': jsxA11y,
     },
     languageOptions: {
       ecmaVersion: 2020,

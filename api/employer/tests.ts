@@ -2,6 +2,7 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
+import { getAuthenticatedUser, requireEmployer } from '../shared/auth.js'
 
 interface TestBody {
   companyId?: string
@@ -37,7 +38,8 @@ export const listTestsHandler = async (
   const container = await getContainer('tests', '/companyId')
   const { resources } = await container.items
     .query({
-      query: 'SELECT * FROM c WHERE c.companyId = @companyId AND (c.isActive = true OR NOT IS_DEFINED(c.isActive))',
+      query:
+        'SELECT * FROM c WHERE c.companyId = @companyId AND (c.isActive = true OR NOT IS_DEFINED(c.isActive))',
       parameters: [{ name: '@companyId', value: companyId }],
     })
     .fetchAll()
@@ -47,11 +49,24 @@ export const listTestsHandler = async (
 export const createTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify employer role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployer(user)
+  if (authError) return authError
+
   const body = await parseJsonBody<TestBody>(request)
   if (!body?.companyId || !body.employerId || !body.name || !body.sections) {
     return jsonResponse(400, {
       success: false,
       error: 'companyId, employerId, name, and sections are required.',
+    })
+  }
+
+  // Employers can only create tests in their own company
+  if (user!.role !== 'admin' && user!.companyId !== body.companyId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only create tests in your own company.',
     })
   }
 
@@ -74,6 +89,11 @@ export const createTestHandler = async (
 export const updateTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify employer role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployer(user)
+  if (authError) return authError
+
   const testId = request.params.testId
   if (!testId) {
     return jsonResponse(400, { success: false, error: 'testId is required.' })
@@ -82,6 +102,14 @@ export const updateTestHandler = async (
   const existing = await getTestById(testId)
   if (!existing) {
     return jsonResponse(404, { success: false, error: 'Test not found.' })
+  }
+
+  // Employers can only update tests in their own company
+  if (user!.role !== 'admin' && user!.companyId !== existing.companyId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only update tests in your own company.',
+    })
   }
 
   const updated = {
@@ -100,6 +128,11 @@ export const updateTestHandler = async (
 export const assignTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify employer role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployer(user)
+  if (authError) return authError
+
   const testId = request.params.testId
   const body = await parseJsonBody<AssignBody>(request)
   if (!testId || !body?.employeeIds || body.employeeIds.length === 0) {
@@ -112,6 +145,14 @@ export const assignTestHandler = async (
   const test = await getTestById(testId)
   if (!test) {
     return jsonResponse(404, { success: false, error: 'Test not found.' })
+  }
+
+  // Employers can only assign tests from their own company
+  if (user!.role !== 'admin' && user!.companyId !== test.companyId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only assign tests from your own company.',
+    })
   }
 
   const container = await getContainer('testInstances', '/employeeId')
@@ -135,14 +176,32 @@ export const assignTestHandler = async (
   return jsonResponse(201, { success: true, data: created })
 }
 
-const cloneSections = (sections: any[]) =>
+interface TestOption {
+  id: string
+  label: string
+  [key: string]: unknown
+}
+
+interface TestComponent {
+  id: string
+  options?: TestOption[]
+  [key: string]: unknown
+}
+
+interface TestSection {
+  id: string
+  components?: TestComponent[]
+  [key: string]: unknown
+}
+
+const cloneSections = (sections: TestSection[]) =>
   sections.map((section) => ({
     ...section,
     id: createId('section'),
-    components: (section.components || []).map((component: any) => ({
+    components: (section.components || []).map((component: TestComponent) => ({
       ...component,
       id: createId('component'),
-      options: (component.options || []).map((option: any) => ({
+      options: (component.options || []).map((option: TestOption) => ({
         ...option,
         id: createId('option'),
       })),
@@ -152,6 +211,11 @@ const cloneSections = (sections: any[]) =>
 export const duplicateTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify employer role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployer(user)
+  if (authError) return authError
+
   const testId = request.params.testId
   if (!testId) {
     return jsonResponse(400, { success: false, error: 'testId is required.' })
@@ -160,6 +224,14 @@ export const duplicateTestHandler = async (
   const existing = await getTestById(testId)
   if (!existing) {
     return jsonResponse(404, { success: false, error: 'Test not found.' })
+  }
+
+  // Employers can only duplicate tests from their own company
+  if (user!.role !== 'admin' && user!.companyId !== existing.companyId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only duplicate tests from your own company.',
+    })
   }
 
   const duplicated = {
@@ -180,6 +252,11 @@ export const duplicateTestHandler = async (
 export const deleteTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
+  // Verify employer role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployer(user)
+  if (authError) return authError
+
   const testId = request.params.testId
   if (!testId) {
     return jsonResponse(400, { success: false, error: 'testId is required.' })
@@ -188,6 +265,14 @@ export const deleteTestHandler = async (
   const existing = await getTestById(testId)
   if (!existing) {
     return jsonResponse(404, { success: false, error: 'Test not found.' })
+  }
+
+  // Employers can only delete tests from their own company
+  if (user!.role !== 'admin' && user!.companyId !== existing.companyId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only delete tests from your own company.',
+    })
   }
 
   const updated = {
@@ -205,8 +290,25 @@ app.http('employerTests', {
   methods: ['GET', 'POST'],
   authLevel: 'anonymous',
   route: 'employer/tests',
-  handler: async (request) =>
-    request.method === 'GET' ? listTestsHandler(request) : createTestHandler(request),
+  handler: async (request) => {
+    // Verify employer role
+    const user = await getAuthenticatedUser(request)
+    const authError = requireEmployer(user)
+    if (authError) return authError
+
+    if (request.method === 'GET') {
+      // Verify user can only list tests from their own company
+      const companyId = request.query.get('companyId')
+      if (user!.role !== 'admin' && user!.companyId !== companyId) {
+        return jsonResponse(403, {
+          success: false,
+          error: 'You can only view tests from your own company.',
+        })
+      }
+      return listTestsHandler(request)
+    }
+    return createTestHandler(request)
+  },
 })
 
 app.http('employerTestUpdate', {

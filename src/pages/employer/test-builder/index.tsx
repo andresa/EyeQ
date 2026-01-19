@@ -1,21 +1,22 @@
-import {
-  Button,
-  Card,
-  Input,
-  Space,
-  Typography,
-  message,
-} from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { Button, Card, Input, Space, Typography, message } from 'antd'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployerLayout from '../../../layouts/EmployerLayout'
-import CompanyEmployerSelector from '../../../components/molecules/CompanyEmployerSelector'
 import SectionList from '../../../components/test-builder/SectionList'
 import ComponentCard from '../../../components/test-builder/ComponentCard'
 import { createUUID } from '../../../utils/uuid'
-import type { ComponentType, TestComponent, TestSection, TestTemplate } from '../../../types'
-import { createTestTemplate, listTests, updateTestTemplate } from '../../../services/employer'
+import type {
+  ComponentType,
+  TestComponent,
+  TestSection,
+  TestTemplate,
+} from '../../../types'
+import {
+  createTestTemplate,
+  listTests,
+  updateTestTemplate,
+} from '../../../services/employer'
 import { useSession } from '../../../hooks/useSession'
 
 const componentPalette: { type: ComponentType; label: string }[] = [
@@ -45,42 +46,31 @@ const createComponent = (type: ComponentType): TestComponent => {
   return base
 }
 
-const TestBuilderPage = () => {
+interface TestBuilderFormProps {
+  testId?: string
+  existingTest?: TestTemplate
+  companyId?: string
+  employerId?: string
+}
+
+const TestBuilderForm = ({
+  testId,
+  existingTest,
+  companyId,
+  employerId,
+}: TestBuilderFormProps) => {
   const navigate = useNavigate()
-  const { testId } = useParams()
-  const { session } = useSession()
-  const companyId = session?.companyId
-  const employerId = session?.employerId
 
-  const [name, setName] = useState('')
-  const [sections, setSections] = useState<TestSection[]>([])
-  const [selectedSectionId, setSelectedSectionId] = useState<string>('')
-
-  const { data: tests } = useQuery({
-    queryKey: ['employer', 'tests', companyId],
-    queryFn: async () => {
-      if (!companyId) return [] as TestTemplate[]
-      const response = await listTests(companyId)
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load tests')
-      }
-      return response.data
-    },
-  })
+  const [name, setName] = useState(existingTest?.name || '')
+  const [sections, setSections] = useState<TestSection[]>(existingTest?.sections || [])
+  const [selectedSectionId, setSelectedSectionId] = useState<string>(
+    existingTest?.sections[0]?.id || '',
+  )
 
   const activeSection = useMemo(
     () => sections.find((section) => section.id === selectedSectionId),
     [sections, selectedSectionId],
   )
-
-  useEffect(() => {
-    if (!testId || !tests) return
-    const existing = tests.find((test) => test.id === testId)
-    if (!existing) return
-    setName(existing.name)
-    setSections(existing.sections)
-    setSelectedSectionId(existing.sections[0]?.id || '')
-  }, [testId, tests])
 
   const addSection = () => {
     const newSection = {
@@ -93,7 +83,9 @@ const TestBuilderPage = () => {
   }
 
   const renameSection = (id: string, title: string) => {
-    setSections((prev) => prev.map((section) => (section.id === id ? { ...section, title } : section)))
+    setSections((prev) =>
+      prev.map((section) => (section.id === id ? { ...section, title } : section)),
+    )
   }
 
   const moveSection = (id: string, direction: 'up' | 'down') => {
@@ -155,7 +147,9 @@ const TestBuilderPage = () => {
         section.id === selectedSectionId
           ? {
               ...section,
-              components: section.components.filter((component) => component.id !== componentId),
+              components: section.components.filter(
+                (component) => component.id !== componentId,
+              ),
             }
           : section,
       ),
@@ -216,79 +210,121 @@ const TestBuilderPage = () => {
   }
 
   return (
-    <EmployerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
-        <Typography.Title level={3}>Test builder</Typography.Title>
-        <CompanyEmployerSelector />
+    <Space direction="vertical" size="large" className="w-full">
+      <Typography.Title level={3}>Test builder</Typography.Title>
+      <Card>
+        <Space orientation="vertical" className="w-full">
+          <Typography.Text strong>Test name</Typography.Text>
+          <Input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Safety Induction"
+            aria-label="Test name"
+          />
+        </Space>
+      </Card>
+      <div className="builder-grid">
+        <SectionList
+          sections={sections}
+          selectedId={selectedSectionId}
+          onSelect={setSelectedSectionId}
+          onAdd={addSection}
+          onRename={renameSection}
+          onMove={moveSection}
+          onDelete={deleteSection}
+        />
+        <div>
+          {activeSection ? (
+            <>
+              <Typography.Title level={4}>{activeSection.title}</Typography.Title>
+              {activeSection.components.length === 0 ? (
+                <Card>
+                  <Typography.Text type="secondary">
+                    Add components to start building this section.
+                  </Typography.Text>
+                </Card>
+              ) : null}
+              {activeSection.components.map((component, index) => (
+                <ComponentCard
+                  key={component.id}
+                  component={component}
+                  index={index}
+                  onChange={(updated) => updateComponent(component.id, updated)}
+                  onMove={(direction) => moveComponent(component.id, direction)}
+                  onDelete={() => removeComponent(component.id)}
+                />
+              ))}
+            </>
+          ) : (
+            <Card>
+              <Typography.Text type="secondary">
+                Select or create a section to start editing.
+              </Typography.Text>
+            </Card>
+          )}
+        </div>
         <Card>
           <Space orientation="vertical" className="w-full">
-            <Typography.Text strong>Test name</Typography.Text>
-            <Input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Safety Induction"
-              aria-label="Test name"
-            />
+            <Typography.Text strong>Component palette</Typography.Text>
+            {componentPalette.map((item) => (
+              <Button key={item.type} onClick={() => addComponentToSection(item.type)}>
+                {item.label}
+              </Button>
+            ))}
           </Space>
         </Card>
-        <div className="builder-grid">
-          <SectionList
-            sections={sections}
-            selectedId={selectedSectionId}
-            onSelect={setSelectedSectionId}
-            onAdd={addSection}
-            onRename={renameSection}
-            onMove={moveSection}
-            onDelete={deleteSection}
-          />
-          <div>
-            {activeSection ? (
-              <>
-                <Typography.Title level={4}>{activeSection.title}</Typography.Title>
-                {activeSection.components.length === 0 ? (
-                  <Card>
-                    <Typography.Text type="secondary">
-                      Add components to start building this section.
-                    </Typography.Text>
-                  </Card>
-                ) : null}
-                {activeSection.components.map((component, index) => (
-                  <ComponentCard
-                    key={component.id}
-                    component={component}
-                    index={index}
-                    onChange={(updated) => updateComponent(component.id, updated)}
-                    onMove={(direction) => moveComponent(component.id, direction)}
-                    onDelete={() => removeComponent(component.id)}
-                  />
-                ))}
-              </>
-            ) : (
-              <Card>
-                <Typography.Text type="secondary">
-                  Select or create a section to start editing.
-                </Typography.Text>
-              </Card>
-            )}
-          </div>
-          <Card>
-            <Space orientation="vertical" className="w-full">
-              <Typography.Text strong>Component palette</Typography.Text>
-              {componentPalette.map((item) => (
-                <Button key={item.type} onClick={() => addComponentToSection(item.type)}>
-                  {item.label}
-                </Button>
-              ))}
-            </Space>
-          </Card>
-        </div>
-        <Space>
-          <Button onClick={() => navigate('/employer/tests')}>Cancel</Button>
-          <Button type="primary" onClick={handleSave}>
-            Save test
-          </Button>
-        </Space>
+      </div>
+      <Space>
+        <Button onClick={() => navigate('/employer/tests')}>Cancel</Button>
+        <Button type="primary" onClick={handleSave}>
+          Save test
+        </Button>
       </Space>
+    </Space>
+  )
+}
+
+const TestBuilderPage = () => {
+  const { testId } = useParams()
+  const { userProfile } = useSession()
+  const companyId = userProfile?.companyId
+  const employerId = userProfile?.userType === 'employer' ? userProfile.id : undefined
+
+  const { data: tests, isLoading } = useQuery({
+    queryKey: ['employer', 'tests', companyId],
+    queryFn: async () => {
+      if (!companyId) return [] as TestTemplate[]
+      const response = await listTests(companyId)
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Unable to load tests')
+      }
+      return response.data
+    },
+  })
+
+  const existingTest = useMemo(
+    () => (testId && tests ? tests.find((test) => test.id === testId) : undefined),
+    [testId, tests],
+  )
+
+  // Show loading while fetching existing test
+  if (testId && isLoading) {
+    return (
+      <EmployerLayout>
+        <Typography.Text>Loading test...</Typography.Text>
+      </EmployerLayout>
+    )
+  }
+
+  return (
+    <EmployerLayout>
+      <TestBuilderForm
+        key={testId || 'new'}
+        testId={testId}
+        existingTest={existingTest}
+        companyId={companyId}
+        employerId={employerId}
+      />
     </EmployerLayout>
   )
 }
