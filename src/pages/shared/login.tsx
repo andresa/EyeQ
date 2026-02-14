@@ -1,36 +1,135 @@
-import { Alert, Button, Card, Divider, Space, Typography } from 'antd'
-import { GoogleOutlined, WindowsOutlined } from '@ant-design/icons'
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import {
+  Alert,
+  Button,
+  Card,
+  Divider,
+  Form,
+  Input,
+  Select,
+  Space,
+  Spin,
+  Typography,
+} from 'antd'
+import {
+  MailOutlined,
+  CheckCircleOutlined,
+  UserOutlined,
+  TeamOutlined,
+  CrownOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../hooks/useSession'
-import { getDashboardRoute } from '../../utils/auth'
+import { getDashboardRoute, isDevMode } from '../../utils/auth'
+import {
+  requestMagicLink,
+  getDevUsers,
+  devLogin,
+  type DevUser,
+  type DevUsersResponse,
+} from '../../services/shared'
+import { setSessionToken } from '../../services/api'
 
 const LoginPage = () => {
   const navigate = useNavigate()
-  const { swaUser, userProfile, profileError, isLoading, clearSession } = useSession()
+  const { userProfile, isLoading, isAuthenticated, refetchProfile } = useSession()
+  const [email, setEmail] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Dev login state
+  const [devModeEnabled, setDevModeEnabled] = useState(false)
+  const [devUsers, setDevUsers] = useState<DevUsersResponse | null>(null)
+  const [devUsersLoading, setDevUsersLoading] = useState(false)
+  const [devLoginLoading, setDevLoginLoading] = useState(false)
 
   // Redirect authenticated users to their role-specific dashboard
   useEffect(() => {
-    if (!isLoading && swaUser && userProfile) {
+    if (!isLoading && isAuthenticated && userProfile) {
       const targetRoute = getDashboardRoute(userProfile.role)
       navigate(targetRoute, { replace: true })
     }
-  }, [swaUser, userProfile, isLoading, navigate])
+  }, [isAuthenticated, userProfile, isLoading, navigate])
 
-  const handleMicrosoftSignIn = () => {
-    // After login, return to the home page which will redirect based on role
-    window.location.href = '/.auth/login/aad?post_login_redirect_uri=/'
+  // Check if dev mode is enabled and fetch dev users
+  useEffect(() => {
+    if (!devModeEnabled && !devUsersLoading && isDevMode()) {
+      setDevModeEnabled(true)
+      setDevUsersLoading(true)
+      // Fetch dev users since dev mode is enabled
+      getDevUsers()
+        .then((usersResponse) => {
+          if (usersResponse?.success && usersResponse.data) {
+            setDevUsers(usersResponse.data)
+          }
+        })
+        .catch(() => {
+          // Silently fail - dev login just won't be available
+        })
+        .finally(() => {
+          setDevUsersLoading(false)
+        })
+    }
+  }, [devModeEnabled, devUsersLoading])
+
+  const handleSubmit = async () => {
+    if (!email.trim()) {
+      setError('Please enter your email address.')
+      return
+    }
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const response = await requestMagicLink(email.trim())
+      if (response.success) {
+        setSuccess(true)
+      } else {
+        setError(response.error || 'Failed to send login link.')
+      }
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleGoogleSignIn = () => {
-    // After login, return to the home page which will redirect based on role
-    window.location.href = '/.auth/login/google?post_login_redirect_uri=/'
+  const handleReset = () => {
+    setSuccess(false)
+    setEmail('')
+    setError(null)
   }
 
-  const handleTryDifferentAccount = () => {
-    clearSession()
-    window.location.href = '/.auth/logout?post_logout_redirect_uri=/login'
+  const handleDevLogin = async (
+    userId: string,
+    userType: 'admin' | 'manager' | 'employee',
+  ) => {
+    setDevLoginLoading(true)
+    setError(null)
+
+    try {
+      const response = await devLogin(userId, userType)
+      if (response.success && response.data) {
+        setSessionToken(response.data.token)
+        await refetchProfile()
+        const targetRoute = getDashboardRoute(response.data.user.role)
+        navigate(targetRoute, { replace: true })
+      } else {
+        setError(response.error || 'Dev login failed.')
+      }
+    } catch {
+      setError('Dev login failed. Is the API running?')
+    } finally {
+      setDevLoginLoading(false)
+    }
   }
+
+  const formatUserOption = (user: DevUser) => ({
+    value: user.id,
+    label: `${user.firstName} ${user.lastName}${user.email ? ` (${user.email})` : ''}`,
+  })
 
   if (isLoading) {
     return (
@@ -44,61 +143,149 @@ const LoginPage = () => {
     )
   }
 
-  // User is authenticated via SWA but not found in database
-  const showNotRegisteredError = swaUser && profileError
+  const showDevLogin = devModeEnabled && devUsers
 
   return (
     <div className="page-center">
       <Card className="w-full max-w-md">
-        <Space direction="vertical" size="large" className="w-full">
+        <Space orientation="vertical" size="large" className="w-full">
           <div className="text-center">
-            <Typography.Title level={3}>Welcome to EyeQ</Typography.Title>
+            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl text-white font-bold">EyeQ</span>
+            </div>
+            <Typography.Title level={3} className="mb-1">
+              Welcome to EyeQ
+            </Typography.Title>
             <Typography.Text type="secondary">
-              Sign in with your account to continue.
+              {success
+                ? 'Check your email for a login link'
+                : 'Enter your email to sign in'}
             </Typography.Text>
           </div>
 
-          {showNotRegisteredError && (
-            <Alert
-              type="warning"
-              showIcon
-              message="Account not registered"
-              description="Your email is not registered in the system. Please contact your administrator to create your account."
-              action={
-                <Button size="small" onClick={handleTryDifferentAccount}>
-                  Try different account
-                </Button>
-              }
-            />
+          {/* Dev Login Section */}
+          {showDevLogin && !success && (
+            <>
+              <div
+                style={{
+                  background: '#f6ffed',
+                  border: '1px solid #b7eb8f',
+                  borderRadius: 8,
+                  padding: 16,
+                }}
+              >
+                <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
+                  Dev Login (EyeQDBDev)
+                </Typography.Text>
+
+                {devLoginLoading ? (
+                  <div className="text-center py-4">
+                    <Spin />
+                  </div>
+                ) : (
+                  <Space orientation="vertical" className="w-full" size="small">
+                    {devUsers.admins.length > 0 && (
+                      <Select
+                        placeholder={
+                          <span>
+                            <CrownOutlined /> Select Admin
+                          </span>
+                        }
+                        options={devUsers.admins.map(formatUserOption)}
+                        onChange={(userId) => handleDevLogin(userId, 'admin')}
+                        style={{ width: '100%' }}
+                        allowClear
+                      />
+                    )}
+
+                    {devUsers.managers.length > 0 && (
+                      <Select
+                        placeholder={
+                          <span>
+                            <TeamOutlined /> Select Manager
+                          </span>
+                        }
+                        options={devUsers.managers.map(formatUserOption)}
+                        onChange={(userId) => handleDevLogin(userId, 'manager')}
+                        style={{ width: '100%' }}
+                        allowClear
+                      />
+                    )}
+
+                    {devUsers.employees.length > 0 && (
+                      <Select
+                        placeholder={
+                          <span>
+                            <UserOutlined /> Select Employee
+                          </span>
+                        }
+                        options={devUsers.employees.map(formatUserOption)}
+                        onChange={(userId) => handleDevLogin(userId, 'employee')}
+                        style={{ width: '100%' }}
+                        allowClear
+                      />
+                    )}
+                  </Space>
+                )}
+              </div>
+
+              <Divider className="my-2">
+                <Typography.Text type="secondary" className="text-xs">
+                  or use magic link
+                </Typography.Text>
+              </Divider>
+            </>
           )}
 
-          {!showNotRegisteredError && (
-            <div className="flex flex-col gap-3">
-              <Button
-                size="large"
-                icon={<WindowsOutlined />}
-                onClick={handleMicrosoftSignIn}
-                block
-                className="flex items-center justify-center"
-              >
-                Sign in with Microsoft
-              </Button>
-
-              <Button
-                size="large"
-                icon={<GoogleOutlined />}
-                onClick={handleGoogleSignIn}
-                block
-                className="flex items-center justify-center"
-              >
-                Sign in with Google
+          {success ? (
+            <div className="text-center py-4">
+              <CheckCircleOutlined
+                style={{ fontSize: 48, color: '#52c41a' }}
+                className="mb-4"
+              />
+              <Typography.Paragraph>
+                We&apos;ve sent a login link to <strong>{email}</strong>
+              </Typography.Paragraph>
+              <Typography.Paragraph type="secondary" className="text-sm">
+                Click the link in the email to sign in. The link expires in 15 minutes.
+              </Typography.Paragraph>
+              <Button type="link" onClick={handleReset}>
+                Use a different email
               </Button>
             </div>
+          ) : (
+            <Form onFinish={handleSubmit} layout="vertical">
+              {error && <Alert type="error" message={error} showIcon className="mb-4" />}
+
+              <Form.Item label="Email address" required className="mb-4">
+                <Input
+                  size="large"
+                  type="email"
+                  placeholder="you@example.com"
+                  prefix={<MailOutlined className="text-gray-400" />}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus={!showDevLogin}
+                />
+              </Form.Item>
+
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                block
+                loading={isSubmitting}
+              >
+                Send Login Link
+              </Button>
+            </Form>
           )}
 
           <Divider className="my-2">
             <Typography.Text type="secondary" className="text-xs">
-              Secure authentication via Azure
+              Passwordless authentication
             </Typography.Text>
           </Divider>
 

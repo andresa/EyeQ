@@ -2,7 +2,7 @@ import { Button, Card, Input, Space, Typography, message } from 'antd'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import EmployerLayout from '../../../layouts/EmployerLayout'
+import ManagerLayout from '../../../layouts/ManagerLayout'
 import SectionList from '../../../components/test-builder/SectionList'
 import ComponentCard from '../../../components/test-builder/ComponentCard'
 import { createUUID } from '../../../utils/uuid'
@@ -16,7 +16,7 @@ import {
   createTestTemplate,
   listTests,
   updateTestTemplate,
-} from '../../../services/employer'
+} from '../../../services/manager'
 import { useSession } from '../../../hooks/useSession'
 
 const componentPalette: { type: ComponentType; label: string }[] = [
@@ -50,14 +50,14 @@ interface TestBuilderFormProps {
   testId?: string
   existingTest?: TestTemplate
   companyId?: string
-  employerId?: string
+  managerId?: string
 }
 
 const TestBuilderForm = ({
   testId,
   existingTest,
   companyId,
-  employerId,
+  managerId,
 }: TestBuilderFormProps) => {
   const navigate = useNavigate()
 
@@ -178,8 +178,8 @@ const TestBuilderForm = ({
   }
 
   const handleSave = async () => {
-    if (!companyId || !employerId) {
-      message.error('Select a company and employer first.')
+    if (!companyId || !managerId) {
+      message.error('Select a company and manager first.')
       return
     }
     if (!name) {
@@ -192,7 +192,7 @@ const TestBuilderForm = ({
     }
     const payload = {
       companyId,
-      employerId,
+      managerId,
       name,
       sections,
     }
@@ -206,11 +206,11 @@ const TestBuilderForm = ({
       return
     }
     message.success('Test saved')
-    navigate('/employer/tests')
+    navigate('/manager/tests')
   }
 
   return (
-    <Space direction="vertical" size="large" className="w-full">
+    <Space orientation="vertical" size="large" className="w-full">
       <Typography.Title level={3}>Test builder</Typography.Title>
       <Card>
         <Space orientation="vertical" className="w-full">
@@ -275,7 +275,7 @@ const TestBuilderForm = ({
         </Card>
       </div>
       <Space>
-        <Button onClick={() => navigate('/employer/tests')}>Cancel</Button>
+        <Button onClick={() => navigate('/manager/tests')}>Cancel</Button>
         <Button type="primary" onClick={handleSave}>
           Save test
         </Button>
@@ -288,10 +288,10 @@ const TestBuilderPage = () => {
   const { testId } = useParams()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
-  const employerId = userProfile?.userType === 'employer' ? userProfile.id : undefined
+  const managerId = userProfile?.userType === 'manager' ? userProfile.id : undefined
 
   const { data: tests, isLoading } = useQuery({
-    queryKey: ['employer', 'tests', companyId],
+    queryKey: ['manager', 'tests', companyId],
     queryFn: async () => {
       if (!companyId) return [] as TestTemplate[]
       const response = await listTests(companyId)
@@ -310,22 +310,22 @@ const TestBuilderPage = () => {
   // Show loading while fetching existing test
   if (testId && isLoading) {
     return (
-      <EmployerLayout>
+      <ManagerLayout>
         <Typography.Text>Loading test...</Typography.Text>
-      </EmployerLayout>
+      </ManagerLayout>
     )
   }
 
   return (
-    <EmployerLayout>
+    <ManagerLayout>
       <TestBuilderForm
         key={testId || 'new'}
         testId={testId}
         existingTest={existingTest}
         companyId={companyId}
-        employerId={employerId}
+        managerId={managerId}
       />
-    </EmployerLayout>
+    </ManagerLayout>
   )
 }
 

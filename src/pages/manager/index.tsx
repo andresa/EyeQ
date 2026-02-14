@@ -1,15 +1,15 @@
 import { Alert, Card, Space, Statistic, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
-import EmployerLayout from '../../layouts/EmployerLayout'
-import { listEmployees, listTests } from '../../services/employer'
+import ManagerLayout from '../../layouts/ManagerLayout'
+import { listEmployees, listTests } from '../../services/manager'
 import { useSession } from '../../hooks/useSession'
 
-const EmployerDashboard = () => {
+const ManagerDashboard = () => {
   const { userProfile, profileError } = useSession()
   const companyId = userProfile?.companyId
 
   const { data: employees } = useQuery({
-    queryKey: ['employer', 'employees', companyId],
+    queryKey: ['manager', 'employees', companyId],
     queryFn: async () => {
       if (!companyId) return []
       const response = await listEmployees(companyId)
@@ -22,7 +22,7 @@ const EmployerDashboard = () => {
   })
 
   const { data: tests } = useQuery({
-    queryKey: ['employer', 'tests', companyId],
+    queryKey: ['manager', 'tests', companyId],
     queryFn: async () => {
       if (!companyId) return []
       const response = await listTests(companyId)
@@ -37,23 +37,23 @@ const EmployerDashboard = () => {
   // Show error if user profile failed to load
   if (profileError) {
     return (
-      <EmployerLayout>
+      <ManagerLayout>
         <Alert
           type="error"
           message="Account not found"
           description={profileError}
           showIcon
         />
-      </EmployerLayout>
+      </ManagerLayout>
     )
   }
 
   return (
-    <EmployerLayout>
-      <Space direction="vertical" size="large" className="w-full">
+    <ManagerLayout>
+      <Space orientation="vertical" size="large" className="w-full">
         <div>
           <Typography.Title level={3}>
-            Welcome, {userProfile?.firstName || 'Employer'}
+            Welcome, {userProfile?.firstName || 'Manager'}
           </Typography.Title>
           {userProfile?.companyName && (
             <Typography.Text type="secondary">{userProfile.companyName}</Typography.Text>
@@ -69,8 +69,8 @@ const EmployerDashboard = () => {
           </Card>
         </div>
       </Space>
-    </EmployerLayout>
+    </ManagerLayout>
   )
 }
 
-export default EmployerDashboard
+export default ManagerDashboard

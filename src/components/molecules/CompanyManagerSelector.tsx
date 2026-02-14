@@ -1,18 +1,18 @@
 import { Card, Select, Space } from 'antd'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listCompaniesShared, listEmployeesShared } from '../../services/shared'
-import type { Company, Employee } from '../../types'
+import { listCompaniesShared, listManagersShared } from '../../services/shared'
+import type { Company, Manager } from '../../types'
 import { useSession } from '../../hooks/useSession'
 
-interface CompanyEmployeeSelectorProps {
-  onSelectionChange?: (companyId: string | null, employeeId: string | null) => void
+interface CompanyManagerSelectorProps {
+  onSelectionChange?: (companyId: string | null, managerId: string | null) => void
 }
 
-const CompanyEmployeeSelector = ({ onSelectionChange }: CompanyEmployeeSelectorProps) => {
+const CompanyManagerSelector = ({ onSelectionChange }: CompanyManagerSelectorProps) => {
   const { userProfile } = useSession()
   const [companyId, setCompanyId] = useState(userProfile?.companyId || '')
-  const [employeeId, setEmployeeId] = useState('')
+  const [managerId, setManagerId] = useState('')
 
   const { data: companies } = useQuery({
     queryKey: ['shared', 'companies'],
@@ -25,13 +25,13 @@ const CompanyEmployeeSelector = ({ onSelectionChange }: CompanyEmployeeSelectorP
     },
   })
 
-  const { data: employees } = useQuery({
-    queryKey: ['shared', 'employees', companyId],
+  const { data: managers } = useQuery({
+    queryKey: ['shared', 'managers', companyId],
     queryFn: async () => {
-      if (!companyId) return [] as Employee[]
-      const response = await listEmployeesShared(companyId)
+      if (!companyId) return [] as Manager[]
+      const response = await listManagersShared(companyId)
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load employees')
+        throw new Error(response.error || 'Unable to load managers')
       }
       return response.data
     },
@@ -39,12 +39,12 @@ const CompanyEmployeeSelector = ({ onSelectionChange }: CompanyEmployeeSelectorP
 
   const handleCompanyChange = (value: string) => {
     setCompanyId(value)
-    setEmployeeId('')
+    setManagerId('')
     onSelectionChange?.(value || null, null)
   }
 
-  const handleEmployeeChange = (value: string) => {
-    setEmployeeId(value)
+  const handleManagerChange = (value: string) => {
+    setManagerId(value)
     onSelectionChange?.(companyId || null, value || null)
   }
 
@@ -64,16 +64,16 @@ const CompanyEmployeeSelector = ({ onSelectionChange }: CompanyEmployeeSelectorP
           className="w-full"
         />
         <Select
-          placeholder="Select employee"
-          value={employeeId || undefined}
-          onChange={handleEmployeeChange}
+          placeholder="Select manager"
+          value={managerId || undefined}
+          onChange={handleManagerChange}
           allowClear
           disabled={!companyId}
-          options={(employees || []).map((employee: Employee) => ({
-            label: `${employee.firstName} ${employee.lastName}`,
-            value: employee.id,
+          options={(managers || []).map((manager: Manager) => ({
+            label: `${manager.firstName} ${manager.lastName}`,
+            value: manager.id,
           }))}
-          aria-label="Select employee"
+          aria-label="Select manager"
           className="w-full"
         />
       </Space>
@@ -81,4 +81,4 @@ const CompanyEmployeeSelector = ({ onSelectionChange }: CompanyEmployeeSelectorP
   )
 }
 
-export default CompanyEmployeeSelector
+export default CompanyManagerSelector

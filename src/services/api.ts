@@ -1,6 +1,40 @@
 import type { ApiResponse } from '../types'
 
 const API_BASE = '/api'
+const SESSION_TOKEN_KEY = 'eyeq_session_token'
+
+/**
+ * Get the session token from localStorage.
+ */
+export const getSessionToken = (): string | null => {
+  try {
+    return localStorage.getItem(SESSION_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Set the session token in localStorage.
+ */
+export const setSessionToken = (token: string): void => {
+  try {
+    localStorage.setItem(SESSION_TOKEN_KEY, token)
+  } catch {
+    console.error('Failed to save session token')
+  }
+}
+
+/**
+ * Remove the session token from localStorage.
+ */
+export const clearSessionToken = (): void => {
+  try {
+    localStorage.removeItem(SESSION_TOKEN_KEY)
+  } catch {
+    console.error('Failed to clear session token')
+  }
+}
 
 const parseJsonSafely = <T>(text: string): ApiResponse<T> | null => {
   try {
@@ -27,8 +61,7 @@ const handleResponse = async <T>(response: Response): Promise<ApiResponse<T>> =>
   }
 
   if (!response.ok || !data.success) {
-    const errorMessage =
-      data.error || `Request failed with status ${response.status}.`
+    const errorMessage = data.error || `Request failed with status ${response.status}.`
     return { success: false, error: errorMessage }
   }
   return data
@@ -39,12 +72,25 @@ export const apiRequest = async <T>(
   options: RequestInit = {},
 ): Promise<ApiResponse<T>> => {
   try {
+    const token = getSessionToken()
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    // Merge any existing headers from options
+    if (options.headers) {
+      const optHeaders = options.headers as Record<string, string>
+      Object.assign(headers, optHeaders)
+    }
+
+    // Add Authorization header if we have a session token
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
     const response = await fetch(`${API_BASE}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
       ...options,
+      headers,
     })
 
     return handleResponse<T>(response)

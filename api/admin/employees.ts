@@ -4,7 +4,7 @@ import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
 
-type UserRole = 'employee' | 'employer' | 'admin'
+type UserRole = 'employee' | 'manager' | 'admin'
 
 interface EmployeeBody {
   companyId?: string
@@ -55,12 +55,12 @@ export const createEmployeeHandler = async (
     })
   }
 
-  // Validate role - only 'employee' or 'employer' allowed (not 'admin')
-  const allowedRoles = ['employee', 'employer'] as const
+  // Validate role - only 'employee' or 'manager' allowed (not 'admin')
+  const allowedRoles = ['employee', 'manager'] as const
   if (body.role && !allowedRoles.includes(body.role as (typeof allowedRoles)[number])) {
     return jsonResponse(400, {
       success: false,
-      error: 'role must be either employee or employer.',
+      error: 'role must be either employee or manager.',
     })
   }
 
@@ -120,12 +120,12 @@ export const updateEmployeeHandler = async (
     return jsonResponse(400, { success: false, error: 'Request body is required.' })
   }
 
-  // Validate role - only 'employee' or 'employer' allowed (not 'admin')
-  const allowedRoles = ['employee', 'employer'] as const
+  // Validate role - only 'employee' or 'manager' allowed (not 'admin')
+  const allowedRoles = ['employee', 'manager'] as const
   if (body.role && !allowedRoles.includes(body.role as (typeof allowedRoles)[number])) {
     return jsonResponse(400, {
       success: false,
-      error: 'role must be either employee or employer.',
+      error: 'role must be either employee or manager.',
     })
   }
 

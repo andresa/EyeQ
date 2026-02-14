@@ -2,8 +2,8 @@ import { Button, Card, Input, Radio, Space, Tag, Typography, message } from 'ant
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import EmployerLayout from '../../layouts/EmployerLayout'
-import { fetchTestInstanceResults, markTestInstance } from '../../services/employer'
+import ManagerLayout from '../../layouts/ManagerLayout'
+import { fetchTestInstanceResults, markTestInstance } from '../../services/manager'
 import type { ResponseRecord, TestComponent } from '../../types'
 import { useSession } from '../../hooks/useSession'
 
@@ -94,7 +94,7 @@ const MarkingPage = () => {
   const [marksOverrides, setMarksOverrides] = useState<Record<string, MarkState>>({})
 
   const { data, isLoading } = useQuery({
-    queryKey: ['employer', 'testInstanceResults', instanceId],
+    queryKey: ['manager', 'testInstanceResults', instanceId],
     queryFn: async () => {
       if (!instanceId) return null
       const response = await fetchTestInstanceResults(instanceId)
@@ -180,28 +180,27 @@ const MarkingPage = () => {
     })
     const response = await markTestInstance(instanceId, {
       marks: marksPayload,
-      markedByEmployerId:
-        userProfile?.userType === 'employer' ? userProfile.id : undefined,
+      markedByManagerId: userProfile?.userType === 'manager' ? userProfile.id : undefined,
     })
     if (!response.success) {
       message.error(response.error || 'Unable to submit marks')
       return
     }
     message.success('Marks saved')
-    navigate(`/employer/test-submissions/${data?.test.id}`)
+    navigate(`/manager/test-submissions/${data?.test.id}`)
   }
 
   if (isLoading || !data) {
     return (
-      <EmployerLayout>
+      <ManagerLayout>
         <Typography.Text>Loading submission...</Typography.Text>
-      </EmployerLayout>
+      </ManagerLayout>
     )
   }
 
   return (
-    <EmployerLayout>
-      <Space direction="vertical" size="large" className="w-full">
+    <ManagerLayout>
+      <Space orientation="vertical" size="large" className="w-full">
         <Typography.Title level={3}>Mark submission</Typography.Title>
         <Card>
           <Space orientation="vertical">
@@ -281,7 +280,7 @@ const MarkingPage = () => {
           </Card>
         ))}
         <Space>
-          <Button onClick={() => navigate(`/employer/test-submissions/${data.test.id}`)}>
+          <Button onClick={() => navigate(`/manager/test-submissions/${data.test.id}`)}>
             Cancel
           </Button>
           <Button type="primary" onClick={handleSubmit}>
@@ -289,7 +288,7 @@ const MarkingPage = () => {
           </Button>
         </Space>
       </Space>
-    </EmployerLayout>
+    </ManagerLayout>
   )
 }
 

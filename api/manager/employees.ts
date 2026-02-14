@@ -2,17 +2,21 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
-import { getAuthenticatedUser, requireEmployer } from '../shared/auth.js'
+import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
+import { createInvitationRecord } from '../shared/invitations.js'
 
-type UserRole = 'employee' | 'employer' | 'admin'
+type UserRole = 'employee' | 'manager' | 'admin'
+
+type InvitationStatus = 'none' | 'pending' | 'accepted'
 
 interface EmployeeInput {
   firstName?: string
   lastName?: string
-  email?: string
+  email: string // Required - email is now mandatory
   phone?: string
   dob?: string
   role?: UserRole
+  sendInvitation?: boolean // Whether to send invitation email (default true)
 }
 
 interface EmployeesBody {
@@ -50,9 +54,9 @@ export const listEmployeesHandler = async (
 export const createEmployeesHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const body = await parseJsonBody<EmployeesBody>(request)
@@ -63,7 +67,7 @@ export const createEmployeesHandler = async (
     })
   }
 
-  // Employers can only create employees in their own company
+  // Managers can only create employees in their own company
   if (user!.role !== 'admin' && user!.companyId !== body.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -83,9 +87,8 @@ export const createEmployeesHandler = async (
     })
   }
 
-  const normalizedEmails = employees
-    .map((employee) => employee.email?.toLowerCase())
-    .filter(Boolean) as string[]
+  // Check for duplicate emails in the request
+  const normalizedEmails = employees.map((employee) => employee.email.toLowerCase())
 
   const duplicates = normalizedEmails.filter(
     (email, index) => normalizedEmails.indexOf(email) !== index,
@@ -98,6 +101,8 @@ export const createEmployeesHandler = async (
   }
 
   const container = await getContainer('employees', '/companyId')
+
+  // Check for existing emails in the database
   const { resources: existing } = await container.items
     .query({
       query:
@@ -118,21 +123,65 @@ export const createEmployeesHandler = async (
     })
   }
 
+  // Get company name for invitations
+  const companiesContainer = await getContainer('companies', '/id')
+  const { resource: company } = await companiesContainer
+    .item(body.companyId, body.companyId)
+    .read()
+
+  if (!company) {
+    return jsonResponse(404, { success: false, error: 'Company not found.' })
+  }
+
   const created = []
   for (const employee of employees) {
+    const shouldSendInvitation = employee.sendInvitation !== false // Default to true
+    const normalizedEmail = employee.email.toLowerCase()
+
     const record = {
       id: createId('employee'),
       companyId: body.companyId,
       firstName: employee.firstName,
       lastName: employee.lastName,
-      email: employee.email,
+      email: normalizedEmail,
       phone: employee.phone,
       dob: employee.dob,
-      role: 'employee' as UserRole, // Always default to 'employee' role
+      role: 'employee' as UserRole,
       createdAt: nowIso(),
       isActive: true,
+      // If sendInvitation is true, status is pending until they accept
+      // If sendInvitation is false, treat as auto-accepted (direct add)
+      invitationStatus: (shouldSendInvitation
+        ? 'pending'
+        : 'accepted') as InvitationStatus,
+      invitedEmail: shouldSendInvitation ? normalizedEmail : undefined,
     }
     await container.items.create(record)
+
+    // Send invitation if requested
+    if (shouldSendInvitation) {
+      try {
+        await createInvitationRecord({
+          userId: record.id,
+          userType: 'employee',
+          companyId: body.companyId,
+          companyName: company.name,
+          userName: `${employee.firstName} ${employee.lastName}`,
+          invitedEmail: normalizedEmail,
+          sentByUserId: user!.id,
+        })
+      } catch (error) {
+        console.error('Failed to send invitation:', error)
+        // Continue creating employee even if invitation fails
+        // Update status to reflect invitation wasn't sent
+        await container.item(record.id, body.companyId).replace({
+          ...record,
+          invitationStatus: 'none' as InvitationStatus,
+          invitedEmail: undefined,
+        })
+      }
+    }
+
     created.push(record)
   }
 
@@ -142,9 +191,9 @@ export const createEmployeesHandler = async (
 export const updateEmployeeHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const employeeId = request.params.employeeId
@@ -157,7 +206,7 @@ export const updateEmployeeHandler = async (
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  // Employers can only update employees in their own company
+  // Managers can only update employees in their own company
   if (user!.role !== 'admin' && user!.companyId !== companyId) {
     return jsonResponse(403, {
       success: false,
@@ -170,7 +219,7 @@ export const updateEmployeeHandler = async (
     return jsonResponse(400, { success: false, error: 'Request body is required.' })
   }
 
-  // Employers cannot change roles - only admins can
+  // Managers cannot change roles - only admins can
   if (body.role && user!.role !== 'admin') {
     return jsonResponse(403, {
       success: false,
@@ -179,11 +228,11 @@ export const updateEmployeeHandler = async (
   }
 
   // Validate role if provided
-  const validRoles: UserRole[] = ['employee', 'employer', 'admin']
+  const validRoles: UserRole[] = ['employee', 'manager', 'admin']
   if (body.role && !validRoles.includes(body.role)) {
     return jsonResponse(400, {
       success: false,
-      error: 'role must be one of: employee, employer, admin.',
+      error: 'role must be one of: employee, manager, admin.',
     })
   }
 
@@ -212,14 +261,14 @@ export const updateEmployeeHandler = async (
   return jsonResponse(200, { success: true, data: updated })
 }
 
-app.http('employerEmployees', {
+app.http('managerEmployees', {
   methods: ['GET', 'POST'],
   authLevel: 'anonymous',
-  route: 'employer/employees',
+  route: 'manager/employees',
   handler: async (request) => {
-    // Verify employer role
+    // Verify manager role
     const user = await getAuthenticatedUser(request)
-    const authError = requireEmployer(user)
+    const authError = requireManager(user)
     if (authError) return authError
 
     // For GET, verify the user can only access their own company's employees
@@ -238,11 +287,55 @@ app.http('employerEmployees', {
   },
 })
 
-app.http('employerEmployeeUpdate', {
-  methods: ['PUT'],
+export const deleteEmployeeHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
+  // Managers and admins can delete employees
+  const user = await getAuthenticatedUser(request)
+  const authError = requireManager(user)
+  if (authError) return authError
+
+  const employeeId = request.params.employeeId
+  const companyId = request.query.get('companyId')
+
+  if (!employeeId) {
+    return jsonResponse(400, { success: false, error: 'employeeId is required.' })
+  }
+  if (!companyId) {
+    return jsonResponse(400, { success: false, error: 'companyId is required.' })
+  }
+
+  // Managers can only delete employees in their own company
+  if (user!.role !== 'admin' && user!.companyId !== companyId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only delete employees in your own company.',
+    })
+  }
+
+  const container = await getContainer('employees', '/companyId')
+
+  // Fetch existing employee to verify it exists
+  const { resource: existing } = await container.item(employeeId, companyId).read()
+  if (!existing) {
+    return jsonResponse(404, { success: false, error: 'Employee not found.' })
+  }
+
+  // Delete the employee
+  await container.item(employeeId, companyId).delete()
+  return jsonResponse(200, { success: true, data: { id: employeeId } })
+}
+
+app.http('managerEmployeeUpdate', {
+  methods: ['PUT', 'DELETE'],
   authLevel: 'anonymous',
-  route: 'employer/employees/{employeeId}',
-  handler: updateEmployeeHandler,
+  route: 'manager/employees/{employeeId}',
+  handler: async (request) => {
+    if (request.method === 'DELETE') {
+      return deleteEmployeeHandler(request)
+    }
+    return updateEmployeeHandler(request)
+  },
 })
 
 // Shared read-only endpoint for all authenticated users

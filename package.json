@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "osascript scripts/dev.scpt",
+    "dev:ui": "vite",
+    "dev:api": "cd api && func start",
     "dev:swa": "npm run build && swa start dist --api-location ./api",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

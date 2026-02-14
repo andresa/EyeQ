@@ -10,12 +10,12 @@ interface RouteGuardProps {
 }
 
 /**
- * Route guard that restricts access based on user role from the database.
+ * Route guard that restricts access based on user role.
  * Admin can access all routes.
  * Other roles can only access their designated routes.
  */
 const RouteGuard = ({ children, allowedRoles }: RouteGuardProps) => {
-  const { swaUser, userProfile, isLoading, profileError } = useSession()
+  const { userProfile, isLoading, isAuthenticated } = useSession()
 
   if (isLoading) {
     return (
@@ -25,13 +25,8 @@ const RouteGuard = ({ children, allowedRoles }: RouteGuardProps) => {
     )
   }
 
-  // If not authenticated via SWA, redirect to login
-  if (!swaUser) {
-    return <Navigate to="/login" replace />
-  }
-
-  // If profile failed to load (user not in database), redirect to login
-  if (profileError || !userProfile) {
+  // If not authenticated, redirect to login
+  if (!isAuthenticated || !userProfile) {
     return <Navigate to="/login" replace />
   }
 

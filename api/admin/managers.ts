@@ -4,9 +4,9 @@ import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
 
-type UserRole = 'employee' | 'employer' | 'admin'
+type UserRole = 'employee' | 'manager' | 'admin'
 
-interface EmployerBody {
+interface ManagerBody {
   companyId?: string
   firstName?: string
   lastName?: string
@@ -16,14 +16,14 @@ interface EmployerBody {
   isActive?: boolean
 }
 
-export const listEmployersHandler = async (
+export const listManagersHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
-  const container = await getContainer('employers', '/companyId')
+  const container = await getContainer('managers', '/companyId')
   const { resources } = await container.items
     .query({
       query: 'SELECT * FROM c WHERE c.companyId = @companyId',
@@ -33,7 +33,7 @@ export const listEmployersHandler = async (
   return jsonResponse(200, { success: true, data: resources })
 }
 
-export const createEmployerHandler = async (
+export const createManagerHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   // Verify admin role
@@ -41,7 +41,7 @@ export const createEmployerHandler = async (
   const authError = requireAdmin(user)
   if (authError) return authError
 
-  const body = await parseJsonBody<EmployerBody>(request)
+  const body = await parseJsonBody<ManagerBody>(request)
   if (!body?.companyId || !body.firstName || !body.lastName || !body.email) {
     return jsonResponse(400, {
       success: false,
@@ -49,33 +49,33 @@ export const createEmployerHandler = async (
     })
   }
 
-  // Validate role - only 'employee' or 'employer' allowed (not 'admin')
-  const allowedRoles = ['employee', 'employer'] as const
+  // Validate role - only 'employee' or 'manager' allowed (not 'admin')
+  const allowedRoles = ['employee', 'manager'] as const
   if (body.role && !allowedRoles.includes(body.role as (typeof allowedRoles)[number])) {
     return jsonResponse(400, {
       success: false,
-      error: 'role must be either employee or employer.',
+      error: 'role must be either employee or manager.',
     })
   }
 
-  const employer = {
-    id: createId('employer'),
+  const manager = {
+    id: createId('manager'),
     companyId: body.companyId,
     firstName: body.firstName,
     lastName: body.lastName,
     email: body.email,
     phone: body.phone,
-    role: (body.role || 'employer') as 'employee' | 'employer',
+    role: (body.role || 'manager') as 'employee' | 'manager',
     createdAt: nowIso(),
     isActive: true,
   }
 
-  const container = await getContainer('employers', '/companyId')
-  await container.items.create(employer)
-  return jsonResponse(201, { success: true, data: employer })
+  const container = await getContainer('managers', '/companyId')
+  await container.items.create(manager)
+  return jsonResponse(201, { success: true, data: manager })
 }
 
-export const updateEmployerHandler = async (
+export const updateManagerHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   // Verify admin role
@@ -83,36 +83,36 @@ export const updateEmployerHandler = async (
   const authError = requireAdmin(user)
   if (authError) return authError
 
-  const employerId = request.params.employerId
+  const managerId = request.params.managerId
   const companyId = request.query.get('companyId')
 
-  if (!employerId) {
-    return jsonResponse(400, { success: false, error: 'employerId is required.' })
+  if (!managerId) {
+    return jsonResponse(400, { success: false, error: 'managerId is required.' })
   }
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  const body = await parseJsonBody<EmployerBody>(request)
+  const body = await parseJsonBody<ManagerBody>(request)
   if (!body) {
     return jsonResponse(400, { success: false, error: 'Request body is required.' })
   }
 
-  // Validate role - only 'employee' or 'employer' allowed (not 'admin')
-  const allowedRoles = ['employee', 'employer'] as const
+  // Validate role - only 'employee' or 'manager' allowed (not 'admin')
+  const allowedRoles = ['employee', 'manager'] as const
   if (body.role && !allowedRoles.includes(body.role as (typeof allowedRoles)[number])) {
     return jsonResponse(400, {
       success: false,
-      error: 'role must be either employee or employer.',
+      error: 'role must be either employee or manager.',
     })
   }
 
-  const container = await getContainer('employers', '/companyId')
+  const container = await getContainer('managers', '/companyId')
 
-  // Fetch existing employer
-  const { resource: existing } = await container.item(employerId, companyId).read()
+  // Fetch existing manager
+  const { resource: existing } = await container.item(managerId, companyId).read()
   if (!existing) {
-    return jsonResponse(404, { success: false, error: 'Employer not found.' })
+    return jsonResponse(404, { success: false, error: 'Manager not found.' })
   }
 
   // Update only provided fields
@@ -122,19 +122,19 @@ export const updateEmployerHandler = async (
     lastName: body.lastName ?? existing.lastName,
     email: body.email ?? existing.email,
     phone: body.phone ?? existing.phone,
-    role: body.role ?? existing.role ?? 'employer',
+    role: body.role ?? existing.role ?? 'manager',
     isActive: body.isActive ?? existing.isActive,
     updatedAt: nowIso(),
   }
 
-  await container.item(employerId, companyId).replace(updated)
+  await container.item(managerId, companyId).replace(updated)
   return jsonResponse(200, { success: true, data: updated })
 }
 
-app.http('adminEmployers', {
+app.http('adminManagers', {
   methods: ['GET', 'POST'],
   authLevel: 'anonymous',
-  route: 'management/employers',
+  route: 'management/managers',
   handler: async (request) => {
     // Verify admin role for all management operations
     const user = await getAuthenticatedUser(request)
@@ -142,22 +142,58 @@ app.http('adminEmployers', {
     if (authError) return authError
 
     return request.method === 'GET'
-      ? listEmployersHandler(request)
-      : createEmployerHandler(request)
+      ? listManagersHandler(request)
+      : createManagerHandler(request)
   },
 })
 
-app.http('adminEmployerUpdate', {
-  methods: ['PUT'],
+export const deleteManagerHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
+  // Verify admin role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireAdmin(user)
+  if (authError) return authError
+
+  const managerId = request.params.managerId
+  const companyId = request.query.get('companyId')
+
+  if (!managerId) {
+    return jsonResponse(400, { success: false, error: 'managerId is required.' })
+  }
+  if (!companyId) {
+    return jsonResponse(400, { success: false, error: 'companyId is required.' })
+  }
+
+  const container = await getContainer('managers', '/companyId')
+
+  // Fetch existing manager to verify it exists
+  const { resource: existing } = await container.item(managerId, companyId).read()
+  if (!existing) {
+    return jsonResponse(404, { success: false, error: 'Manager not found.' })
+  }
+
+  // Delete the manager
+  await container.item(managerId, companyId).delete()
+  return jsonResponse(200, { success: true, data: { id: managerId } })
+}
+
+app.http('adminManagerUpdate', {
+  methods: ['PUT', 'DELETE'],
   authLevel: 'anonymous',
-  route: 'management/employers/{employerId}',
-  handler: updateEmployerHandler,
+  route: 'management/managers/{managerId}',
+  handler: async (request) => {
+    if (request.method === 'DELETE') {
+      return deleteManagerHandler(request)
+    }
+    return updateManagerHandler(request)
+  },
 })
 
 // Shared read-only endpoint for all authenticated users
-app.http('sharedEmployers', {
+app.http('sharedManagers', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'shared/employers',
-  handler: listEmployersHandler,
+  route: 'shared/managers',
+  handler: listManagersHandler,
 })

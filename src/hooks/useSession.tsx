@@ -7,131 +7,103 @@ import {
   useState,
 } from 'react'
 import type { PropsWithChildren } from 'react'
-import type { Session, SwaAuthResponse, SwaClientPrincipal, UserProfile } from '../types'
-import { readStorage, writeStorage } from '../utils/storage'
-import { getCurrentUser } from '../services/shared'
-
-const SESSION_KEY = 'eyeq_session'
+import type { UserProfile } from '../types'
+import { getSession, logout as logoutApi } from '../services/shared'
+import { getSessionToken, setSessionToken, clearSessionToken } from '../services/api'
 
 interface SessionContextValue {
-  session: Session | null
-  swaUser: SwaClientPrincipal | null
   userProfile: UserProfile | null
   isLoading: boolean
+  isAuthenticated: boolean
   profileError: string | null
-  setSession: (next: Session) => void
-  clearSession: () => void
+  login: (token: string) => void
+  logout: () => Promise<void>
   refetchProfile: () => Promise<void>
 }
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined)
 
-async function fetchSwaUser(): Promise<SwaClientPrincipal | null> {
-  try {
-    const response = await fetch('/.auth/me')
-    if (!response.ok) return null
-    const data: SwaAuthResponse = await response.json()
-    return data.clientPrincipal
-  } catch {
-    return null
-  }
-}
-
 export const SessionProvider = ({ children }: PropsWithChildren) => {
-  const [session, setSessionState] = useState<Session | null>(() =>
-    readStorage<Session | null>(SESSION_KEY, null),
-  )
-  const [swaUser, setSwaUser] = useState<SwaClientPrincipal | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await getCurrentUser()
-      if (response.success && response.data) {
-        setUserProfile(response.data)
-        setProfileError(null)
+  const fetchUserProfile = useCallback(async () => {
+    const token = getSessionToken()
+    if (!token) {
+      setUserProfile(null)
+      setProfileError(null)
+      setIsLoading(false)
+      return
+    }
 
-        // Update session with profile data
-        const newSession: Session = {
-          email: response.data.email,
-          role: response.data.role,
-          companyId: response.data.companyId,
-          employeeId:
-            response.data.userType === 'employee' ? response.data.id : undefined,
-          employerId:
-            response.data.userType === 'employer' ? response.data.id : undefined,
-        }
-        setSessionState(newSession)
-        writeStorage(SESSION_KEY, newSession)
+    try {
+      const response = await getSession()
+      if (response.success && response.data) {
+        setUserProfile(response.data.user)
+        setProfileError(null)
       } else {
-        setProfileError(response.error || 'Failed to load user profile')
+        // Session is invalid or expired
+        clearSessionToken()
         setUserProfile(null)
+        setProfileError(response.error || 'Session expired')
       }
     } catch {
-      setProfileError('Failed to load user profile')
+      clearSessionToken()
       setUserProfile(null)
-    }
-  }
-
-  // Fetch SWA user and profile on mount
-  useEffect(() => {
-    const init = async () => {
-      const user = await fetchSwaUser()
-      setSwaUser(user)
-
-      if (user) {
-        // User is authenticated, fetch their profile from our database
-        await fetchUserProfile()
-      } else {
-        // Not authenticated, clear any stored session
-        setSessionState(null)
-        writeStorage(SESSION_KEY, null)
-      }
-
+      setProfileError('Failed to load session')
+    } finally {
       setIsLoading(false)
     }
-
-    init()
   }, [])
 
-  const setSession = useCallback((next: Session) => {
-    setSessionState(next)
-    writeStorage(SESSION_KEY, next)
-  }, [])
+  // Check session on mount
+  useEffect(() => {
+    fetchUserProfile()
+  }, [fetchUserProfile])
 
-  const clearSession = useCallback(() => {
-    setSessionState(null)
+  const login = useCallback(
+    (token: string) => {
+      setSessionToken(token)
+      fetchUserProfile()
+    },
+    [fetchUserProfile],
+  )
+
+  const logout = useCallback(async () => {
+    try {
+      await logoutApi()
+    } catch {
+      // Ignore errors, we'll clear local state anyway
+    }
+    clearSessionToken()
     setUserProfile(null)
-    writeStorage(SESSION_KEY, null)
+    setProfileError(null)
   }, [])
 
   const refetchProfile = useCallback(async () => {
-    if (swaUser) {
-      await fetchUserProfile()
-    }
-  }, [swaUser])
+    await fetchUserProfile()
+  }, [fetchUserProfile])
+
+  const isAuthenticated = !!userProfile && !!getSessionToken()
 
   const value = useMemo(
     () => ({
-      session,
-      swaUser,
       userProfile,
       isLoading,
+      isAuthenticated,
       profileError,
-      setSession,
-      clearSession,
+      login,
+      logout,
       refetchProfile,
     }),
     [
-      session,
-      swaUser,
       userProfile,
       isLoading,
+      isAuthenticated,
       profileError,
-      setSession,
-      clearSession,
+      login,
+      logout,
       refetchProfile,
     ],
   )

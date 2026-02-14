@@ -1,12 +1,14 @@
 import {
   Button,
-  Card,
+  Form,
+  Input,
+  Modal,
   Popconfirm,
-  Select,
   Space,
   Table,
   Tag,
   Tooltip,
+  Typography,
   message,
 } from 'antd'
 import {
@@ -19,13 +21,14 @@ import {
 } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import AdminLayout from '../../layouts/AdminLayout'
-import { listCompanies, listEmployees } from '../../services/admin'
-import { deleteEmployee, sendInvitation } from '../../services/manager'
-import type { Company, Employee, InvitationStatus, UserRole } from '../../types'
+import ManagerLayout from '../../layouts/ManagerLayout'
+import { deleteEmployee, listEmployees, sendInvitation } from '../../services/manager'
+import type { Employee, InvitationStatus, UserRole } from '../../types'
+import { useSession } from '../../hooks/useSession'
 import UserModal from '../../components/molecules/UserModal'
 
-const roleColors: Record<string, string> = {
+const roleColors: Record<UserRole, string> = {
+  admin: 'red',
   manager: 'blue',
   employee: 'green',
 }
@@ -39,33 +42,20 @@ const invitationStatusConfig: Record<
   accepted: { color: 'success', icon: <CheckCircleOutlined />, label: 'Accepted' },
 }
 
-const AdminEmployeesPage = () => {
+const ManagerEmployeesPage = () => {
+  const { userProfile } = useSession()
+  const companyId = userProfile?.companyId || ''
+
   const [open, setOpen] = useState(false)
+  const [inviteModalOpen, setInviteModalOpen] = useState(false)
+  const [invitingEmployee, setInvitingEmployee] = useState<Employee | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [inviteLoading, setInviteLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
-  const [inviteLoading, setInviteLoading] = useState<string | null>(null)
-  const [companyId, setCompanyId] = useState<string>('')
+  const [inviteForm] = Form.useForm()
 
-  const { data: companies } = useQuery({
-    queryKey: ['admin', 'companies'],
-    queryFn: async () => {
-      const response = await listCompanies()
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load companies')
-      }
-      if (response.data.length === 1) {
-        setCompanyId(response.data[0].id)
-      }
-      return response.data
-    },
-  })
-
-  const {
-    data: employees,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ['admin', 'employees', companyId],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['manager', 'employees', companyId],
     queryFn: async () => {
       if (!companyId) return [] as Employee[]
       const response = await listEmployees(companyId)
@@ -74,6 +64,7 @@ const AdminEmployeesPage = () => {
       }
       return response.data
     },
+    enabled: !!companyId,
   })
 
   const openCreate = () => {
@@ -89,6 +80,47 @@ const AdminEmployeesPage = () => {
   const closeModal = () => {
     setOpen(false)
     setEditingEmployee(null)
+  }
+
+  const openInviteModal = (employee: Employee) => {
+    setInvitingEmployee(employee)
+    inviteForm.setFieldsValue({
+      invitedEmail: employee.email || employee.invitedEmail || '',
+    })
+    setInviteModalOpen(true)
+  }
+
+  const closeInviteModal = () => {
+    setInviteModalOpen(false)
+    setInvitingEmployee(null)
+    inviteForm.resetFields()
+  }
+
+  const onSendInvitation = async () => {
+    if (!invitingEmployee || !companyId) return
+
+    const values = await inviteForm.validateFields()
+    setInviteLoading(true)
+
+    try {
+      const response = await sendInvitation(invitingEmployee.id, {
+        companyId,
+        invitedEmail: values.invitedEmail,
+      })
+
+      if (!response.success) {
+        message.error(response.error || 'Failed to send invitation')
+        return
+      }
+
+      message.success(`Invitation sent to ${values.invitedEmail}`)
+      closeInviteModal()
+      refetch()
+    } catch {
+      message.error('Failed to send invitation')
+    } finally {
+      setInviteLoading(false)
+    }
   }
 
   const onDeleteEmployee = async (employee: Employee) => {
@@ -110,52 +142,20 @@ const AdminEmployeesPage = () => {
     }
   }
 
-  const onSendInvitation = async (employee: Employee) => {
-    if (!companyId || !employee.email) return
-
-    setInviteLoading(employee.id)
-    try {
-      const response = await sendInvitation(employee.id, {
-        companyId,
-        invitedEmail: employee.email,
-      })
-      if (!response.success) {
-        message.error(response.error || 'Failed to send invitation')
-        return
-      }
-      message.success(`Invitation sent to ${employee.email}`)
-      refetch()
-    } catch {
-      message.error('Failed to send invitation')
-    } finally {
-      setInviteLoading(null)
-    }
-  }
-
   return (
-    <AdminLayout>
+    <ManagerLayout>
       <Space orientation="vertical" size="large" className="w-full">
-        <Card>
-          <Space orientation="vertical" className="w-full">
-            <Select
-              placeholder="Select company"
-              value={companyId || undefined}
-              onChange={(value) => setCompanyId(value)}
-              options={(companies || []).map((company: Company) => ({
-                label: company.name,
-                value: company.id,
-              }))}
-              aria-label="Select company"
-              className="w-full"
-            />
-            <Button type="primary" onClick={openCreate} disabled={!companyId}>
-              Add employee
-            </Button>
-          </Space>
-        </Card>
+        <div className="flex items-center justify-between">
+          <Typography.Title level={3} className="m-0">
+            Employees
+          </Typography.Title>
+          <Button type="primary" onClick={openCreate}>
+            Add employee
+          </Button>
+        </div>
         <Table
           loading={isLoading}
-          dataSource={employees || []}
+          dataSource={data || []}
           rowKey="id"
           columns={[
             {
@@ -217,7 +217,7 @@ const AdminEmployeesPage = () => {
                   >
                     Edit
                   </Button>
-                  {record.invitationStatus !== 'accepted' && record.email && (
+                  {record.invitationStatus !== 'accepted' && (
                     <Tooltip
                       title={
                         record.invitationStatus === 'pending'
@@ -228,8 +228,7 @@ const AdminEmployeesPage = () => {
                       <Button
                         type="link"
                         icon={<MailOutlined />}
-                        onClick={() => onSendInvitation(record)}
-                        loading={inviteLoading === record.id}
+                        onClick={() => openInviteModal(record)}
                       >
                         {record.invitationStatus === 'pending' ? 'Resend' : 'Invite'}
                       </Button>
@@ -266,14 +265,43 @@ const AdminEmployeesPage = () => {
         userType="employee"
         editingUser={editingEmployee}
         companyId={companyId}
-        companies={companies}
-        canEditRole={true}
+        canEditRole={false}
         canSendInvitation={true}
         showDateOfBirth={true}
-        isAdmin={true}
+        isAdmin={false}
       />
-    </AdminLayout>
+
+      {/* Send Invitation Modal */}
+      <Modal
+        title={`Send invitation to ${invitingEmployee?.firstName} ${invitingEmployee?.lastName}`}
+        open={inviteModalOpen}
+        onOk={onSendInvitation}
+        onCancel={closeInviteModal}
+        okText="Send Invitation"
+        confirmLoading={inviteLoading}
+      >
+        <Form form={inviteForm} layout="vertical">
+          <Form.Item
+            name="invitedEmail"
+            label="Email address to send invitation"
+            rules={[
+              { required: true, message: 'Enter email address.' },
+              { type: 'email', message: 'Enter a valid email.' },
+            ]}
+            extra="The employee will receive an email with a link to accept the invitation and set up their account."
+          >
+            <Input aria-label="Invitation email" placeholder="employee@example.com" />
+          </Form.Item>
+        </Form>
+        {invitingEmployee?.invitationStatus === 'pending' && (
+          <Typography.Text type="warning" className="block mt-2">
+            Note: A previous invitation was sent to {invitingEmployee.invitedEmail}.
+            Sending a new invitation will invalidate the previous one.
+          </Typography.Text>
+        )}
+      </Modal>
+    </ManagerLayout>
   )
 }
 
-export default AdminEmployeesPage
+export default ManagerEmployeesPage

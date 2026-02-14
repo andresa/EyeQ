@@ -1,4 +1,4 @@
-import type { ApiResponse, Company, Employee, Employer } from '../types'
+import type { ApiResponse, Company, Employee, Manager } from '../types'
 import { apiRequest } from './api'
 
 export const createCompany = (payload: {
@@ -22,34 +22,52 @@ export const updateCompany = (
 export const listCompanies = (): Promise<ApiResponse<Company[]>> =>
   apiRequest('/management/companies')
 
-export const createEmployer = (payload: {
+export const createManager = (payload: {
   companyId: string
   firstName: string
   lastName: string
   email: string
   phone?: string
-  role?: 'employee' | 'employer' | 'admin'
-}): Promise<ApiResponse<Employer>> =>
-  apiRequest('/management/employers', {
+  role?: 'employee' | 'manager' | 'admin'
+}): Promise<ApiResponse<Manager>> =>
+  apiRequest('/management/managers', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 
-export const updateEmployer = (
-  employerId: string,
+export const updateManager = (
+  managerId: string,
   companyId: string,
-  payload: Partial<Employer>,
-): Promise<ApiResponse<Employer>> =>
+  payload: Partial<Manager>,
+): Promise<ApiResponse<Manager>> =>
   apiRequest(
-    `/management/employers/${employerId}?companyId=${encodeURIComponent(companyId)}`,
+    `/management/managers/${managerId}?companyId=${encodeURIComponent(companyId)}`,
     {
       method: 'PUT',
       body: JSON.stringify(payload),
     },
   )
 
-export const listEmployers = (companyId: string): Promise<ApiResponse<Employer[]>> =>
-  apiRequest(`/management/employers?companyId=${encodeURIComponent(companyId)}`)
+export const listManagers = (companyId: string): Promise<ApiResponse<Manager[]>> =>
+  apiRequest(`/management/managers?companyId=${encodeURIComponent(companyId)}`)
+
+export const deleteManager = (
+  managerId: string,
+  companyId: string,
+): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(
+    `/management/managers/${managerId}?companyId=${encodeURIComponent(companyId)}`,
+    { method: 'DELETE' },
+  )
+
+export const sendManagerInvitation = (
+  managerId: string,
+  payload: { companyId: string; invitedEmail: string },
+): Promise<ApiResponse<{ invitationId: string; expiresAt: string }>> =>
+  apiRequest(`/management/managers/${managerId}/invite`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 
 // Employee management (Admin)
 export const createEmployee = (payload: {
@@ -59,7 +77,7 @@ export const createEmployee = (payload: {
   email: string
   phone?: string
   dob?: string
-  role?: 'employee' | 'employer' | 'admin'
+  role?: 'employee' | 'manager' | 'admin'
 }): Promise<ApiResponse<Employee>> =>
   apiRequest('/management/employees', {
     method: 'POST',

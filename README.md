@@ -1,6 +1,6 @@
 # EyeQ
 
-Employee testing platform built with React, TypeScript, Ant Design, and Azure Static Web Apps. Employers create tests, assign them to employees, and track completion. Admins manage companies and employers. APIs are Azure Functions under `api/` with Cosmos DB (EyeQDB).
+Employee testing platform built with React, TypeScript, Ant Design, and Azure Static Web Apps. Managers create tests, assign them to employees, and track completion. Admins manage companies and managers. APIs are Azure Functions under `api/` with Cosmos DB (EyeQDB).
 
 ## Tech Stack
 
@@ -39,4 +39,4 @@ For local development, update `api/local.settings.json` with your connection str
 
 - Authentication is email-only (no passwords). Login creates/fetches user records in Cosmos DB.
 - Admin endpoints are exposed under `/api/management/*` to avoid Azure Functions built-in `/admin` routes.
-- Containers: companies, employers, employees, tests, testInstances, responses, admins, users, scores.
+- Containers: companies, managers, employees, tests, testInstances, responses, admins, users, scores.

@@ -1,10 +1,10 @@
 import { Card, Select, Space, Table, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import EmployerLayout from '../../layouts/EmployerLayout'
-import { listEmployersShared } from '../../services/shared'
-import { listEmployees, listTestInstances, listTests } from '../../services/employer'
-import type { Employee, Employer, TestInstance, TestTemplate } from '../../types'
+import ManagerLayout from '../../layouts/ManagerLayout'
+import { listManagersShared } from '../../services/shared'
+import { listEmployees, listTestInstances, listTests } from '../../services/manager'
+import type { Employee, Manager, TestInstance, TestTemplate } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { formatDateTime } from '../../utils/date'
 import {
@@ -28,7 +28,7 @@ const AssignedTestsPage = () => {
   const [assignedFilter, setAssignedFilter] = useState<string>('all')
 
   const { data: tests } = useQuery({
-    queryKey: ['employer', 'tests', companyId],
+    queryKey: ['manager', 'tests', companyId],
     queryFn: async () => {
       if (!companyId) return [] as TestTemplate[]
       const response = await listTests(companyId)
@@ -40,7 +40,7 @@ const AssignedTestsPage = () => {
   })
 
   const { data: employees } = useQuery({
-    queryKey: ['employer', 'employees', companyId],
+    queryKey: ['manager', 'employees', companyId],
     queryFn: async () => {
       if (!companyId) return [] as Employee[]
       const response = await listEmployees(companyId)
@@ -51,13 +51,13 @@ const AssignedTestsPage = () => {
     },
   })
 
-  const { data: employers } = useQuery({
-    queryKey: ['admin', 'employers', companyId],
+  const { data: managers } = useQuery({
+    queryKey: ['admin', 'managers', companyId],
     queryFn: async () => {
-      if (!companyId) return [] as Employer[]
-      const response = await listEmployersShared(companyId)
+      if (!companyId) return [] as Manager[]
+      const response = await listManagersShared(companyId)
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load employers')
+        throw new Error(response.error || 'Unable to load managers')
       }
       return response.data
     },
@@ -65,7 +65,7 @@ const AssignedTestsPage = () => {
   })
 
   const { data: instances, isLoading } = useQuery({
-    queryKey: ['employer', 'testInstances', 'all', companyId],
+    queryKey: ['manager', 'testInstances', 'all', companyId],
     queryFn: async () => {
       if (!companyId) return [] as TestInstance[]
       const response = await listTestInstances({ companyId })
@@ -95,13 +95,13 @@ const AssignedTestsPage = () => {
     [employees],
   )
 
-  const employerMap = useMemo(
+  const managerMap = useMemo(
     () =>
-      (employers || []).reduce<Record<string, string>>((map, employer) => {
-        map[employer.id] = `${employer.firstName} ${employer.lastName}`
+      (managers || []).reduce<Record<string, string>>((map, manager) => {
+        map[manager.id] = `${manager.firstName} ${manager.lastName}`
         return map
       }, {}),
-    [employers],
+    [managers],
   )
 
   const filteredInstances = useMemo(() => {
@@ -156,8 +156,8 @@ const AssignedTestsPage = () => {
   }, [assignedFilter, employeeFilter, instances, statusFilter])
 
   return (
-    <EmployerLayout>
-      <Space direction="vertical" size="large" className="w-full">
+    <ManagerLayout>
+      <Space orientation="vertical" size="large" className="w-full">
         <Typography.Title level={3}>Assigned tests</Typography.Title>
         <Card>
           <Typography.Text type="secondary">
@@ -236,8 +236,8 @@ const AssignedTestsPage = () => {
             },
             {
               title: 'Assigned by',
-              dataIndex: 'assignedByEmployerId',
-              render: (value: string) => employerMap[value] || value,
+              dataIndex: 'assignedByManagerId',
+              render: (value: string) => managerMap[value] || value,
             },
             { title: 'Status', dataIndex: 'status' },
             {
@@ -258,7 +258,7 @@ const AssignedTestsPage = () => {
           ]}
         />
       </Space>
-    </EmployerLayout>
+    </ManagerLayout>
   )
 }
 

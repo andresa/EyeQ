@@ -4,13 +4,13 @@ import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import EmployerLayout from '../../layouts/EmployerLayout'
+import ManagerLayout from '../../layouts/ManagerLayout'
 import {
   fetchTestInstanceResults,
   listEmployees,
   listTestInstances,
   listTests,
-} from '../../services/employer'
+} from '../../services/manager'
 import type { Employee, ResponseRecord, TestComponent, TestTemplate } from '../../types'
 import { formatDateTime } from '../../utils/date'
 import { useSession } from '../../hooks/useSession'
@@ -52,7 +52,7 @@ const TestSubmissionsPage = () => {
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null)
 
   const { data: tests } = useQuery({
-    queryKey: ['employer', 'tests', companyId],
+    queryKey: ['manager', 'tests', companyId],
     queryFn: async () => {
       if (!companyId) return [] as TestTemplate[]
       const response = await listTests(companyId)
@@ -64,7 +64,7 @@ const TestSubmissionsPage = () => {
   })
 
   const { data: employees } = useQuery({
-    queryKey: ['employer', 'employees', companyId],
+    queryKey: ['manager', 'employees', companyId],
     queryFn: async () => {
       if (!companyId) return [] as Employee[]
       const response = await listEmployees(companyId)
@@ -76,7 +76,7 @@ const TestSubmissionsPage = () => {
   })
 
   const { data: instances, isLoading } = useQuery({
-    queryKey: ['employer', 'testInstances', testId, companyId],
+    queryKey: ['manager', 'testInstances', testId, companyId],
     queryFn: async () => {
       const response = await listTestInstances({
         testId: testId || undefined,
@@ -91,7 +91,7 @@ const TestSubmissionsPage = () => {
   })
 
   const { data: results, isFetching: isLoadingResults } = useQuery({
-    queryKey: ['employer', 'testInstanceResults', selectedInstanceId],
+    queryKey: ['manager', 'testInstanceResults', selectedInstanceId],
     enabled: Boolean(selectedInstanceId),
     queryFn: async () => {
       if (!selectedInstanceId) return null
@@ -147,14 +147,14 @@ const TestSubmissionsPage = () => {
       label: 'Mark answers',
       onClick: (event) => {
         event?.domEvent?.stopPropagation()
-        navigate(`/employer/marking/${instanceId}`)
+        navigate(`/manager/marking/${instanceId}`)
       },
     },
   ]
 
   return (
-    <EmployerLayout>
-      <Space direction="vertical" size="large" className="w-full">
+    <ManagerLayout>
+      <Space orientation="vertical" size="large" className="w-full">
         <Typography.Title level={3}>{testName}</Typography.Title>
         <Card>
           <Space orientation="vertical" className="w-full">
@@ -163,8 +163,8 @@ const TestSubmissionsPage = () => {
               value={testId || 'all'}
               onChange={(value) =>
                 value === 'all'
-                  ? navigate('/employer/test-submissions')
-                  : navigate(`/employer/test-submissions/${value}`)
+                  ? navigate('/manager/test-submissions')
+                  : navigate(`/manager/test-submissions/${value}`)
               }
               options={[
                 { label: 'All tests', value: 'all' },
@@ -175,7 +175,7 @@ const TestSubmissionsPage = () => {
               ]}
               aria-label="Select test"
             />
-            <Button onClick={() => navigate('/employer/tests')}>Back to tests</Button>
+            <Button onClick={() => navigate('/manager/tests')}>Back to tests</Button>
           </Space>
         </Card>
         <Table
@@ -183,7 +183,7 @@ const TestSubmissionsPage = () => {
           dataSource={sortedInstances}
           rowKey="id"
           onRow={(record) => ({
-            onClick: () => navigate(`/employer/marking/${record.id}`),
+            onClick: () => navigate(`/manager/marking/${record.id}`),
             style: { cursor: 'pointer' },
           })}
           locale={{
@@ -247,7 +247,7 @@ const TestSubmissionsPage = () => {
                 </Typography.Text>
                 <Button
                   type="primary"
-                  onClick={() => navigate(`/employer/marking/${results.instance.id}`)}
+                  onClick={() => navigate(`/manager/marking/${results.instance.id}`)}
                 >
                   Mark submission
                 </Button>
@@ -288,7 +288,7 @@ const TestSubmissionsPage = () => {
           <Typography.Text>No answers available.</Typography.Text>
         )}
       </Drawer>
-    </EmployerLayout>
+    </ManagerLayout>
   )
 }
 

@@ -4,11 +4,19 @@
   },
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/api/*", "/assets/*", "/*.png", "/*.svg", "/.auth/*"]
+    "exclude": ["/api/*", "/assets/*", "/*.png", "/*.svg"]
   },
   "routes": [
     {
       "route": "/login",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
+      "route": "/auth/*",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
+      "route": "/accept-invitation",
       "allowedRoles": ["anonymous", "authenticated"]
     },
     {
@@ -20,26 +28,20 @@
       "allowedRoles": ["anonymous", "authenticated"]
     },
     {
-      "route": "/.auth/login/*",
-      "allowedRoles": ["anonymous"]
+      "route": "/api/auth/*",
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
-      "route": "/.auth/logout",
-      "allowedRoles": ["authenticated"]
+      "route": "/api/invitation/*",
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/api/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"]
     }
-  ],
-  "responseOverrides": {
-    "401": {
-      "redirect": "/login",
-      "statusCode": 302
-    }
-  }
+  ]
 }

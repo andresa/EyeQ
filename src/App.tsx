@@ -1,26 +1,28 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Spin } from 'antd'
 import LoginPage from './pages/shared/login'
+import VerifyPage from './pages/shared/verify'
+import AcceptInvitationPage from './pages/shared/accept-invitation'
 import EmployeeDashboard from './pages/employee'
 import EmployeeTestPage from './pages/employee/test'
 import EmployeeTestResultsPage from './pages/employee/test-results'
-import EmployerDashboard from './pages/employer'
-import EmployerEmployeesPage from './pages/employer/employees'
-import EmployerTestsPage from './pages/employer/tests'
-import EmployerTestBuilderPage from './pages/employer/test-builder'
-import EmployerTestSubmissionsPage from './pages/employer/test-submissions'
-import EmployerMarkingPage from './pages/employer/marking'
-import EmployerAssignedTestsPage from './pages/employer/assigned-tests'
+import ManagerDashboard from './pages/manager'
+import ManagerEmployeesPage from './pages/manager/employees'
+import ManagerTestsPage from './pages/manager/tests'
+import ManagerTestBuilderPage from './pages/manager/test-builder'
+import ManagerTestSubmissionsPage from './pages/manager/test-submissions'
+import ManagerMarkingPage from './pages/manager/marking'
+import ManagerAssignedTestsPage from './pages/manager/assigned-tests'
 import AdminDashboard from './pages/admin'
 import AdminCompaniesPage from './pages/admin/companies'
-import AdminEmployersPage from './pages/admin/employers'
+import AdminManagersPage from './pages/admin/managers'
 import AdminEmployeesPage from './pages/admin/employees'
 import RouteGuard from './components/RouteGuard'
 import { useSession } from './hooks/useSession'
 import { getDashboardRoute } from './utils/auth'
 
 const App = () => {
-  const { swaUser, userProfile, isLoading, profileError } = useSession()
+  const { userProfile, isLoading, isAuthenticated } = useSession()
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -31,10 +33,9 @@ const App = () => {
     )
   }
 
-  // Determine default route based on authentication and database role
+  // Determine default route based on authentication
   const getDefaultRoute = () => {
-    if (!swaUser) return '/login'
-    if (profileError || !userProfile) return '/login'
+    if (!isAuthenticated || !userProfile) return '/login'
     return getDashboardRoute(userProfile.role)
   }
 
@@ -44,6 +45,8 @@ const App = () => {
     <Routes>
       <Route path="/" element={<Navigate to={defaultRoute} replace />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/verify" element={<VerifyPage />} />
+      <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
 
       {/* Employee routes - accessible by employee and admin */}
       <Route
@@ -71,68 +74,68 @@ const App = () => {
         }
       />
 
-      {/* Employer routes - accessible by employer and admin */}
+      {/* Manager routes - accessible by manager and admin */}
       <Route
-        path="/employer"
+        path="/manager"
         element={
-          <RouteGuard allowedRoles={['employer']}>
-            <EmployerDashboard />
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerDashboard />
           </RouteGuard>
         }
       />
       <Route
-        path="/employer/employees"
+        path="/manager/employees"
         element={
-          <RouteGuard allowedRoles={['employer']}>
-            <EmployerEmployeesPage />
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerEmployeesPage />
           </RouteGuard>
         }
       />
       <Route
-        path="/employer/tests"
+        path="/manager/tests"
         element={
-          <RouteGuard allowedRoles={['employer']}>
-            <EmployerTestsPage />
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerTestsPage />
           </RouteGuard>
         }
       />
       <Route
-        path="/employer/test-submissions"
+        path="/manager/test-submissions"
         element={
-          <RouteGuard allowedRoles={['employer']}>
-            <EmployerTestSubmissionsPage />
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerTestSubmissionsPage />
           </RouteGuard>
         }
       />
       <Route
-        path="/employer/test-builder/:testId?"
+        path="/manager/test-builder/:testId?"
         element={
-          <RouteGuard allowedRoles={['employer']}>
-            <EmployerTestBuilderPage />
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerTestBuilderPage />
           </RouteGuard>
         }
       />
       <Route
-        path="/employer/test-submissions/:testId"
+        path="/manager/test-submissions/:testId"
         element={
-          <RouteGuard allowedRoles={['employer']}>
-            <EmployerTestSubmissionsPage />
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerTestSubmissionsPage />
           </RouteGuard>
         }
       />
       <Route
-        path="/employer/assigned-tests"
+        path="/manager/assigned-tests"
         element={
-          <RouteGuard allowedRoles={['employer']}>
-            <EmployerAssignedTestsPage />
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerAssignedTestsPage />
           </RouteGuard>
         }
       />
       <Route
-        path="/employer/marking/:instanceId"
+        path="/manager/marking/:instanceId"
         element={
-          <RouteGuard allowedRoles={['employer']}>
-            <EmployerMarkingPage />
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerMarkingPage />
           </RouteGuard>
         }
       />
@@ -155,10 +158,10 @@ const App = () => {
         }
       />
       <Route
-        path="/admin/employers"
+        path="/admin/managers"
         element={
           <RouteGuard allowedRoles={['admin']}>
-            <AdminEmployersPage />
+            <AdminManagersPage />
           </RouteGuard>
         }
       />

@@ -13,10 +13,7 @@ const buildResponseMap = (responses: ResponseRecord[]) =>
     return map
   }, new Map<string, ResponseRecord>())
 
-const resolveAnswer = (
-  component: TestComponent,
-  response?: ResponseRecord,
-) => {
+const resolveAnswer = (component: TestComponent, response?: ResponseRecord) => {
   if (!response) return 'No response'
   if (component.type === 'text') {
     return response.textAnswer || 'No response'
@@ -25,7 +22,9 @@ const resolveAnswer = (
   if (Array.isArray(rawAnswer)) {
     if (!component.options) return rawAnswer.join(', ')
     return rawAnswer
-      .map((optionId) => component.options?.find((option) => option.id === optionId)?.label)
+      .map(
+        (optionId) => component.options?.find((option) => option.id === optionId)?.label,
+      )
       .filter(Boolean)
       .join(', ')
   }
@@ -52,10 +51,7 @@ const EmployeeTestResultsPage = () => {
     },
   })
 
-  const responseMap = useMemo(
-    () => buildResponseMap(data?.responses || []),
-    [data],
-  )
+  const responseMap = useMemo(() => buildResponseMap(data?.responses || []), [data])
 
   if (isLoading || !data) {
     return (
@@ -78,7 +74,7 @@ const EmployeeTestResultsPage = () => {
             </Typography.Text>
             {!isMarked ? (
               <Typography.Text type="secondary">
-                Awaiting employer marking.
+                Awaiting manager marking.
               </Typography.Text>
             ) : null}
             {data.instance.completedAt ? (
@@ -96,9 +92,7 @@ const EmployeeTestResultsPage = () => {
                   return (
                     <Card key={component.id} type="inner">
                       <Typography.Text strong>{component.title}</Typography.Text>
-                      <Typography.Paragraph>
-                        {component.description}
-                      </Typography.Paragraph>
+                      <Typography.Paragraph>{component.description}</Typography.Paragraph>
                     </Card>
                   )
                 }
@@ -109,7 +103,9 @@ const EmployeeTestResultsPage = () => {
                     <Typography.Paragraph type="secondary">
                       {component.description}
                     </Typography.Paragraph>
-                    <Typography.Text>{resolveAnswer(component, response)}</Typography.Text>
+                    <Typography.Text>
+                      {resolveAnswer(component, response)}
+                    </Typography.Text>
                     {isMarked ? (
                       <Space className="mt-2">
                         {response?.isCorrect ? (

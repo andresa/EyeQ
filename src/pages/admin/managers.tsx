@@ -20,9 +20,13 @@ import {
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import AdminLayout from '../../layouts/AdminLayout'
-import { listCompanies, listEmployees } from '../../services/admin'
-import { deleteEmployee, sendInvitation } from '../../services/manager'
-import type { Company, Employee, InvitationStatus, UserRole } from '../../types'
+import {
+  deleteManager,
+  listCompanies,
+  listManagers,
+  sendManagerInvitation,
+} from '../../services/admin'
+import type { Company, Manager, InvitationStatus, UserRole } from '../../types'
 import UserModal from '../../components/molecules/UserModal'
 
 const roleColors: Record<string, string> = {
@@ -39,9 +43,9 @@ const invitationStatusConfig: Record<
   accepted: { color: 'success', icon: <CheckCircleOutlined />, label: 'Accepted' },
 }
 
-const AdminEmployeesPage = () => {
+const AdminManagersPage = () => {
   const [open, setOpen] = useState(false)
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [editingManager, setEditingManager] = useState<Manager | null>(null)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
   const [inviteLoading, setInviteLoading] = useState<string | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
@@ -61,69 +65,69 @@ const AdminEmployeesPage = () => {
   })
 
   const {
-    data: employees,
+    data: managers,
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['admin', 'employees', companyId],
+    queryKey: ['admin', 'managers', companyId],
     queryFn: async () => {
-      if (!companyId) return [] as Employee[]
-      const response = await listEmployees(companyId)
+      if (!companyId) return [] as Manager[]
+      const response = await listManagers(companyId)
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load employees')
+        throw new Error(response.error || 'Unable to load managers')
       }
       return response.data
     },
   })
 
   const openCreate = () => {
-    setEditingEmployee(null)
+    setEditingManager(null)
     setOpen(true)
   }
 
-  const openEdit = (employee: Employee) => {
-    setEditingEmployee(employee)
+  const openEdit = (manager: Manager) => {
+    setEditingManager(manager)
     setOpen(true)
   }
 
   const closeModal = () => {
     setOpen(false)
-    setEditingEmployee(null)
+    setEditingManager(null)
   }
 
-  const onDeleteEmployee = async (employee: Employee) => {
+  const onDeleteManager = async (manager: Manager) => {
     if (!companyId) return
 
-    setDeleteLoading(employee.id)
+    setDeleteLoading(manager.id)
     try {
-      const response = await deleteEmployee(employee.id, companyId)
+      const response = await deleteManager(manager.id, companyId)
       if (!response.success) {
-        message.error(response.error || 'Failed to delete employee')
+        message.error(response.error || 'Failed to delete manager')
         return
       }
-      message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
+      message.success(`${manager.firstName} ${manager.lastName} has been deleted`)
       refetch()
     } catch {
-      message.error('Failed to delete employee')
+      message.error('Failed to delete manager')
     } finally {
       setDeleteLoading(null)
     }
   }
 
-  const onSendInvitation = async (employee: Employee) => {
-    if (!companyId || !employee.email) return
+  const onSendInvitation = async (manager: Manager) => {
+    if (!companyId || !manager.email) return
 
-    setInviteLoading(employee.id)
+    setInviteLoading(manager.id)
     try {
-      const response = await sendInvitation(employee.id, {
+      const response = await sendManagerInvitation(manager.id, {
         companyId,
-        invitedEmail: employee.email,
+        invitedEmail: manager.email,
       })
       if (!response.success) {
         message.error(response.error || 'Failed to send invitation')
         return
       }
-      message.success(`Invitation sent to ${employee.email}`)
+      message.success(`Invitation sent to ${manager.email}`)
       refetch()
     } catch {
       message.error('Failed to send invitation')
@@ -149,13 +153,13 @@ const AdminEmployeesPage = () => {
               className="w-full"
             />
             <Button type="primary" onClick={openCreate} disabled={!companyId}>
-              Add employee
+              Add manager
             </Button>
           </Space>
         </Card>
         <Table
           loading={isLoading}
-          dataSource={employees || []}
+          dataSource={managers || []}
           rowKey="id"
           columns={[
             {
@@ -165,7 +169,7 @@ const AdminEmployeesPage = () => {
             {
               title: 'Email',
               dataIndex: 'email',
-              render: (email: string | undefined, record: Employee) => {
+              render: (email: string | undefined, record: Manager) => {
                 if (record.invitationStatus === 'pending') {
                   return (
                     <Tooltip title="Invitation sent - awaiting acceptance">
@@ -180,12 +184,11 @@ const AdminEmployeesPage = () => {
               },
             },
             { title: 'Phone', dataIndex: 'phone' },
-            { title: 'DOB', dataIndex: 'dob' },
             {
               title: 'Role',
               dataIndex: 'role',
               render: (role: UserRole) => (
-                <Tag color={roleColors[role] || 'green'}>{role || 'employee'}</Tag>
+                <Tag color={roleColors[role] || 'blue'}>{role || 'manager'}</Tag>
               ),
             },
             {
@@ -236,9 +239,9 @@ const AdminEmployeesPage = () => {
                     </Tooltip>
                   )}
                   <Popconfirm
-                    title="Delete employee"
+                    title="Delete manager"
                     description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
-                    onConfirm={() => onDeleteEmployee(record)}
+                    onConfirm={() => onDeleteManager(record)}
                     okText="Delete"
                     okType="danger"
                     cancelText="Cancel"
@@ -263,17 +266,17 @@ const AdminEmployeesPage = () => {
         open={open}
         onClose={closeModal}
         onSuccess={() => refetch()}
-        userType="employee"
-        editingUser={editingEmployee}
+        userType="manager"
+        editingUser={editingManager}
         companyId={companyId}
         companies={companies}
         canEditRole={true}
         canSendInvitation={true}
-        showDateOfBirth={true}
+        showDateOfBirth={false}
         isAdmin={true}
       />
     </AdminLayout>
   )
 }
 
-export default AdminEmployeesPage
+export default AdminManagersPage
