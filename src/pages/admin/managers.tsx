@@ -21,16 +21,16 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import AdminLayout from '../../layouts/AdminLayout'
 import {
-  deleteEmployer,
+  deleteManager,
   listCompanies,
-  listEmployers,
-  sendEmployerInvitation,
+  listManagers,
+  sendManagerInvitation,
 } from '../../services/admin'
-import type { Company, Employer, InvitationStatus, UserRole } from '../../types'
+import type { Company, Manager, InvitationStatus, UserRole } from '../../types'
 import UserModal from '../../components/molecules/UserModal'
 
 const roleColors: Record<string, string> = {
-  employer: 'blue',
+  manager: 'blue',
   employee: 'green',
 }
 
@@ -43,9 +43,9 @@ const invitationStatusConfig: Record<
   accepted: { color: 'success', icon: <CheckCircleOutlined />, label: 'Accepted' },
 }
 
-const AdminEmployersPage = () => {
+const AdminManagersPage = () => {
   const [open, setOpen] = useState(false)
-  const [editingEmployer, setEditingEmployer] = useState<Employer | null>(null)
+  const [editingManager, setEditingManager] = useState<Manager | null>(null)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
   const [inviteLoading, setInviteLoading] = useState<string | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
@@ -62,69 +62,69 @@ const AdminEmployersPage = () => {
   })
 
   const {
-    data: employers,
+    data: managers,
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['admin', 'employers', companyId],
+    queryKey: ['admin', 'managers', companyId],
     queryFn: async () => {
-      if (!companyId) return [] as Employer[]
-      const response = await listEmployers(companyId)
+      if (!companyId) return [] as Manager[]
+      const response = await listManagers(companyId)
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load employers')
+        throw new Error(response.error || 'Unable to load managers')
       }
       return response.data
     },
   })
 
   const openCreate = () => {
-    setEditingEmployer(null)
+    setEditingManager(null)
     setOpen(true)
   }
 
-  const openEdit = (employer: Employer) => {
-    setEditingEmployer(employer)
+  const openEdit = (manager: Manager) => {
+    setEditingManager(manager)
     setOpen(true)
   }
 
   const closeModal = () => {
     setOpen(false)
-    setEditingEmployer(null)
+    setEditingManager(null)
   }
 
-  const onDeleteEmployer = async (employer: Employer) => {
+  const onDeleteManager = async (manager: Manager) => {
     if (!companyId) return
 
-    setDeleteLoading(employer.id)
+    setDeleteLoading(manager.id)
     try {
-      const response = await deleteEmployer(employer.id, companyId)
+      const response = await deleteManager(manager.id, companyId)
       if (!response.success) {
-        message.error(response.error || 'Failed to delete employer')
+        message.error(response.error || 'Failed to delete manager')
         return
       }
-      message.success(`${employer.firstName} ${employer.lastName} has been deleted`)
+      message.success(`${manager.firstName} ${manager.lastName} has been deleted`)
       refetch()
     } catch {
-      message.error('Failed to delete employer')
+      message.error('Failed to delete manager')
     } finally {
       setDeleteLoading(null)
     }
   }
 
-  const onSendInvitation = async (employer: Employer) => {
-    if (!companyId || !employer.email) return
+  const onSendInvitation = async (manager: Manager) => {
+    if (!companyId || !manager.email) return
 
-    setInviteLoading(employer.id)
+    setInviteLoading(manager.id)
     try {
-      const response = await sendEmployerInvitation(employer.id, {
+      const response = await sendManagerInvitation(manager.id, {
         companyId,
-        invitedEmail: employer.email,
+        invitedEmail: manager.email,
       })
       if (!response.success) {
         message.error(response.error || 'Failed to send invitation')
         return
       }
-      message.success(`Invitation sent to ${employer.email}`)
+      message.success(`Invitation sent to ${manager.email}`)
       refetch()
     } catch {
       message.error('Failed to send invitation')
@@ -150,13 +150,13 @@ const AdminEmployersPage = () => {
               className="w-full"
             />
             <Button type="primary" onClick={openCreate} disabled={!companyId}>
-              Add employer
+              Add manager
             </Button>
           </Space>
         </Card>
         <Table
           loading={isLoading}
-          dataSource={employers || []}
+          dataSource={managers || []}
           rowKey="id"
           columns={[
             {
@@ -166,7 +166,7 @@ const AdminEmployersPage = () => {
             {
               title: 'Email',
               dataIndex: 'email',
-              render: (email: string | undefined, record: Employer) => {
+              render: (email: string | undefined, record: Manager) => {
                 if (record.invitationStatus === 'pending') {
                   return (
                     <Tooltip title="Invitation sent - awaiting acceptance">
@@ -185,7 +185,7 @@ const AdminEmployersPage = () => {
               title: 'Role',
               dataIndex: 'role',
               render: (role: UserRole) => (
-                <Tag color={roleColors[role] || 'blue'}>{role || 'employer'}</Tag>
+                <Tag color={roleColors[role] || 'blue'}>{role || 'manager'}</Tag>
               ),
             },
             {
@@ -236,9 +236,9 @@ const AdminEmployersPage = () => {
                     </Tooltip>
                   )}
                   <Popconfirm
-                    title="Delete employer"
+                    title="Delete manager"
                     description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
-                    onConfirm={() => onDeleteEmployer(record)}
+                    onConfirm={() => onDeleteManager(record)}
                     okText="Delete"
                     okType="danger"
                     cancelText="Cancel"
@@ -263,8 +263,8 @@ const AdminEmployersPage = () => {
         open={open}
         onClose={closeModal}
         onSuccess={() => refetch()}
-        userType="employer"
-        editingUser={editingEmployer}
+        userType="manager"
+        editingUser={editingManager}
         companyId={companyId}
         companies={companies}
         canEditRole={true}
@@ -276,4 +276,4 @@ const AdminEmployersPage = () => {
   )
 }
 
-export default AdminEmployersPage
+export default AdminManagersPage

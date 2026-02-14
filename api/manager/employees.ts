@@ -2,10 +2,10 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
-import { getAuthenticatedUser, requireEmployer } from '../shared/auth.js'
+import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 import { createInvitationRecord } from '../shared/invitations.js'
 
-type UserRole = 'employee' | 'employer' | 'admin'
+type UserRole = 'employee' | 'manager' | 'admin'
 
 type InvitationStatus = 'none' | 'pending' | 'accepted'
 
@@ -54,9 +54,9 @@ export const listEmployeesHandler = async (
 export const createEmployeesHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const body = await parseJsonBody<EmployeesBody>(request)
@@ -67,7 +67,7 @@ export const createEmployeesHandler = async (
     })
   }
 
-  // Employers can only create employees in their own company
+  // Managers can only create employees in their own company
   if (user!.role !== 'admin' && user!.companyId !== body.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -191,9 +191,9 @@ export const createEmployeesHandler = async (
 export const updateEmployeeHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const employeeId = request.params.employeeId
@@ -206,7 +206,7 @@ export const updateEmployeeHandler = async (
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  // Employers can only update employees in their own company
+  // Managers can only update employees in their own company
   if (user!.role !== 'admin' && user!.companyId !== companyId) {
     return jsonResponse(403, {
       success: false,
@@ -219,7 +219,7 @@ export const updateEmployeeHandler = async (
     return jsonResponse(400, { success: false, error: 'Request body is required.' })
   }
 
-  // Employers cannot change roles - only admins can
+  // Managers cannot change roles - only admins can
   if (body.role && user!.role !== 'admin') {
     return jsonResponse(403, {
       success: false,
@@ -228,11 +228,11 @@ export const updateEmployeeHandler = async (
   }
 
   // Validate role if provided
-  const validRoles: UserRole[] = ['employee', 'employer', 'admin']
+  const validRoles: UserRole[] = ['employee', 'manager', 'admin']
   if (body.role && !validRoles.includes(body.role)) {
     return jsonResponse(400, {
       success: false,
-      error: 'role must be one of: employee, employer, admin.',
+      error: 'role must be one of: employee, manager, admin.',
     })
   }
 
@@ -261,14 +261,14 @@ export const updateEmployeeHandler = async (
   return jsonResponse(200, { success: true, data: updated })
 }
 
-app.http('employerEmployees', {
+app.http('managerEmployees', {
   methods: ['GET', 'POST'],
   authLevel: 'anonymous',
-  route: 'employer/employees',
+  route: 'manager/employees',
   handler: async (request) => {
-    // Verify employer role
+    // Verify manager role
     const user = await getAuthenticatedUser(request)
-    const authError = requireEmployer(user)
+    const authError = requireManager(user)
     if (authError) return authError
 
     // For GET, verify the user can only access their own company's employees
@@ -290,9 +290,9 @@ app.http('employerEmployees', {
 export const deleteEmployeeHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Employers and admins can delete employees
+  // Managers and admins can delete employees
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const employeeId = request.params.employeeId
@@ -305,7 +305,7 @@ export const deleteEmployeeHandler = async (
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  // Employers can only delete employees in their own company
+  // Managers can only delete employees in their own company
   if (user!.role !== 'admin' && user!.companyId !== companyId) {
     return jsonResponse(403, {
       success: false,
@@ -326,10 +326,10 @@ export const deleteEmployeeHandler = async (
   return jsonResponse(200, { success: true, data: { id: employeeId } })
 }
 
-app.http('employerEmployeeUpdate', {
+app.http('managerEmployeeUpdate', {
   methods: ['PUT', 'DELETE'],
   authLevel: 'anonymous',
-  route: 'employer/employees/{employeeId}',
+  route: 'manager/employees/{employeeId}',
   handler: async (request) => {
     if (request.method === 'DELETE') {
       return deleteEmployeeHandler(request)

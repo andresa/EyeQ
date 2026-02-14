@@ -2,11 +2,11 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
-import { getAuthenticatedUser, requireEmployer } from '../shared/auth.js'
+import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 
 interface TestBody {
   companyId?: string
-  employerId?: string
+  managerId?: string
   name?: string
   sections?: unknown[]
   isActive?: boolean
@@ -49,20 +49,20 @@ export const listTestsHandler = async (
 export const createTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const body = await parseJsonBody<TestBody>(request)
-  if (!body?.companyId || !body.employerId || !body.name || !body.sections) {
+  if (!body?.companyId || !body.managerId || !body.name || !body.sections) {
     return jsonResponse(400, {
       success: false,
-      error: 'companyId, employerId, name, and sections are required.',
+      error: 'companyId, managerId, name, and sections are required.',
     })
   }
 
-  // Employers can only create tests in their own company
+  // Managers can only create tests in their own company
   if (user!.role !== 'admin' && user!.companyId !== body.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -73,7 +73,7 @@ export const createTestHandler = async (
   const test = {
     id: createId('test'),
     companyId: body.companyId,
-    employerId: body.employerId,
+    managerId: body.managerId,
     name: body.name,
     sections: body.sections,
     createdAt: nowIso(),
@@ -89,9 +89,9 @@ export const createTestHandler = async (
 export const updateTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const testId = request.params.testId
@@ -104,7 +104,7 @@ export const updateTestHandler = async (
     return jsonResponse(404, { success: false, error: 'Test not found.' })
   }
 
-  // Employers can only update tests in their own company
+  // Managers can only update tests in their own company
   if (user!.role !== 'admin' && user!.companyId !== existing.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -128,9 +128,9 @@ export const updateTestHandler = async (
 export const assignTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const testId = request.params.testId
@@ -147,7 +147,7 @@ export const assignTestHandler = async (
     return jsonResponse(404, { success: false, error: 'Test not found.' })
   }
 
-  // Employers can only assign tests from their own company
+  // Managers can only assign tests from their own company
   if (user!.role !== 'admin' && user!.companyId !== test.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -162,7 +162,7 @@ export const assignTestHandler = async (
       id: createId('instance'),
       testId,
       employeeId,
-      assignedByEmployerId: test.employerId,
+      assignedByManagerId: test.managerId,
       status: 'pending',
       assignedAt: nowIso(),
       expiresAt: body.expiresAt,
@@ -211,9 +211,9 @@ const cloneSections = (sections: TestSection[]) =>
 export const duplicateTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const testId = request.params.testId
@@ -226,7 +226,7 @@ export const duplicateTestHandler = async (
     return jsonResponse(404, { success: false, error: 'Test not found.' })
   }
 
-  // Employers can only duplicate tests from their own company
+  // Managers can only duplicate tests from their own company
   if (user!.role !== 'admin' && user!.companyId !== existing.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -252,9 +252,9 @@ export const duplicateTestHandler = async (
 export const deleteTestHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const testId = request.params.testId
@@ -267,7 +267,7 @@ export const deleteTestHandler = async (
     return jsonResponse(404, { success: false, error: 'Test not found.' })
   }
 
-  // Employers can only delete tests from their own company
+  // Managers can only delete tests from their own company
   if (user!.role !== 'admin' && user!.companyId !== existing.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -286,14 +286,14 @@ export const deleteTestHandler = async (
   return jsonResponse(200, { success: true, data: updated })
 }
 
-app.http('employerTests', {
+app.http('managerTests', {
   methods: ['GET', 'POST'],
   authLevel: 'anonymous',
-  route: 'employer/tests',
+  route: 'manager/tests',
   handler: async (request) => {
-    // Verify employer role
+    // Verify manager role
     const user = await getAuthenticatedUser(request)
-    const authError = requireEmployer(user)
+    const authError = requireManager(user)
     if (authError) return authError
 
     if (request.method === 'GET') {
@@ -311,30 +311,30 @@ app.http('employerTests', {
   },
 })
 
-app.http('employerTestUpdate', {
+app.http('managerTestUpdate', {
   methods: ['PUT'],
   authLevel: 'anonymous',
-  route: 'employer/tests/{testId}',
+  route: 'manager/tests/{testId}',
   handler: updateTestHandler,
 })
 
-app.http('employerAssignTest', {
+app.http('managerAssignTest', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'employer/tests/{testId}/assign',
+  route: 'manager/tests/{testId}/assign',
   handler: assignTestHandler,
 })
 
-app.http('employerDuplicateTest', {
+app.http('managerDuplicateTest', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'employer/tests/{testId}/duplicate',
+  route: 'manager/tests/{testId}/duplicate',
   handler: duplicateTestHandler,
 })
 
-app.http('employerDeleteTest', {
+app.http('managerDeleteTest', {
   methods: ['DELETE'],
   authLevel: 'anonymous',
-  route: 'employer/tests/{testId}',
+  route: 'manager/tests/{testId}',
   handler: deleteTestHandler,
 })

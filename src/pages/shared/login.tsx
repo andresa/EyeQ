@@ -111,7 +111,7 @@ const LoginPage = () => {
 
   const handleDevLogin = async (
     userId: string,
-    userType: 'admin' | 'employer' | 'employee',
+    userType: 'admin' | 'manager' | 'employee',
   ) => {
     setDevLoginLoading(true)
     setError(null)
@@ -205,15 +205,15 @@ const LoginPage = () => {
                       />
                     )}
 
-                    {devUsers.employers.length > 0 && (
+                    {devUsers.managers.length > 0 && (
                       <Select
                         placeholder={
                           <span>
-                            <TeamOutlined /> Select Employer
+                            <TeamOutlined /> Select Manager
                           </span>
                         }
-                        options={devUsers.employers.map(formatUserOption)}
-                        onChange={(userId) => handleDevLogin(userId, 'employer')}
+                        options={devUsers.managers.map(formatUserOption)}
+                        onChange={(userId) => handleDevLogin(userId, 'manager')}
                         style={{ width: '100%' }}
                         allowClear
                       />

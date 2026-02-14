@@ -41,38 +41,38 @@ export const meHandler = async (request: HttpRequest): Promise<HttpResponseInit>
     })
   }
 
-  if (user.userType === 'employer') {
-    const employersContainer = await getContainer('employers', '/companyId')
-    const { resources: employers } = await employersContainer.items
+  if (user.userType === 'manager') {
+    const managersContainer = await getContainer('managers', '/companyId')
+    const { resources: managers } = await managersContainer.items
       .query({
         query: 'SELECT * FROM c WHERE c.id = @id',
         parameters: [{ name: '@id', value: user.id }],
       })
       .fetchAll()
 
-    if (employers.length > 0) {
-      const employer = employers[0]
-      const updated = { ...employer, lastLogin: now }
-      await employersContainer.item(employer.id, employer.companyId).replace(updated)
+    if (managers.length > 0) {
+      const manager = managers[0]
+      const updated = { ...manager, lastLogin: now }
+      await managersContainer.item(manager.id, manager.companyId).replace(updated)
 
       // Get company name
       const companiesContainer = await getContainer('companies', '/id')
       const { resource: company } = await companiesContainer
-        .item(employer.companyId, employer.companyId)
+        .item(manager.companyId, manager.companyId)
         .read()
 
       return jsonResponse(200, {
         success: true,
         data: {
-          id: employer.id,
-          email: employer.email,
-          firstName: employer.firstName,
-          lastName: employer.lastName,
-          role: employer.role || 'employer',
-          companyId: employer.companyId,
+          id: manager.id,
+          email: manager.email,
+          firstName: manager.firstName,
+          lastName: manager.lastName,
+          role: manager.role || 'manager',
+          companyId: manager.companyId,
           companyName: company?.name,
           lastLogin: now,
-          userType: 'employer',
+          userType: 'manager',
         },
       })
     }

@@ -15,7 +15,7 @@ export const sendInvitation = (
   employeeId: string,
   payload: { companyId: string; invitedEmail: string },
 ): Promise<ApiResponse<{ invitationId: string; expiresAt: string }>> =>
-  apiRequest(`/employer/employees/${employeeId}/invite`, {
+  apiRequest(`/manager/employees/${employeeId}/invite`, {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -37,7 +37,7 @@ export const createEmployees = (payload: {
   companyId: string
   employees: CreateEmployeeInput[]
 }): Promise<ApiResponse<Employee[]>> =>
-  apiRequest('/employer/employees', {
+  apiRequest('/manager/employees', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -48,7 +48,7 @@ export const updateEmployee = (
   payload: Partial<Employee>,
 ): Promise<ApiResponse<Employee>> =>
   apiRequest(
-    `/employer/employees/${employeeId}?companyId=${encodeURIComponent(companyId)}`,
+    `/manager/employees/${employeeId}?companyId=${encodeURIComponent(companyId)}`,
     {
       method: 'PUT',
       body: JSON.stringify(payload),
@@ -56,24 +56,24 @@ export const updateEmployee = (
   )
 
 export const listEmployees = (companyId: string): Promise<ApiResponse<Employee[]>> =>
-  apiRequest(`/employer/employees?companyId=${encodeURIComponent(companyId)}`)
+  apiRequest(`/manager/employees?companyId=${encodeURIComponent(companyId)}`)
 
 export const deleteEmployee = (
   employeeId: string,
   companyId: string,
 ): Promise<ApiResponse<{ id: string }>> =>
   apiRequest(
-    `/employer/employees/${employeeId}?companyId=${encodeURIComponent(companyId)}`,
+    `/manager/employees/${employeeId}?companyId=${encodeURIComponent(companyId)}`,
     { method: 'DELETE' },
   )
 
 export const createTestTemplate = (payload: {
   companyId: string
-  employerId: string
+  managerId: string
   name: string
   sections: TestTemplate['sections']
 }): Promise<ApiResponse<TestTemplate>> =>
-  apiRequest('/employer/tests', {
+  apiRequest('/manager/tests', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -82,7 +82,7 @@ export const updateTestTemplate = (
   testId: string,
   payload: Partial<TestTemplate>,
 ): Promise<ApiResponse<TestTemplate>> =>
-  apiRequest(`/employer/tests/${testId}`, {
+  apiRequest(`/manager/tests/${testId}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   })
@@ -90,23 +90,23 @@ export const updateTestTemplate = (
 export const duplicateTestTemplate = (
   testId: string,
 ): Promise<ApiResponse<TestTemplate>> =>
-  apiRequest(`/employer/tests/${testId}/duplicate`, {
+  apiRequest(`/manager/tests/${testId}/duplicate`, {
     method: 'POST',
   })
 
 export const deleteTestTemplate = (testId: string): Promise<ApiResponse<TestTemplate>> =>
-  apiRequest(`/employer/tests/${testId}`, {
+  apiRequest(`/manager/tests/${testId}`, {
     method: 'DELETE',
   })
 
 export const listTests = (companyId: string): Promise<ApiResponse<TestTemplate[]>> =>
-  apiRequest(`/employer/tests?companyId=${encodeURIComponent(companyId)}`)
+  apiRequest(`/manager/tests?companyId=${encodeURIComponent(companyId)}`)
 
 export const assignTest = (
   testId: string,
   payload: { employeeIds: string[]; expiresAt?: string },
 ): Promise<ApiResponse<TestInstance[]>> =>
-  apiRequest(`/employer/tests/${testId}/assign`, {
+  apiRequest(`/manager/tests/${testId}/assign`, {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -118,13 +118,13 @@ export const listTestInstances = (params: {
   const query = new URLSearchParams()
   if (params.testId) query.set('testId', params.testId)
   if (params.companyId) query.set('companyId', params.companyId)
-  return apiRequest(`/employer/testInstances?${query.toString()}`)
+  return apiRequest(`/manager/testInstances?${query.toString()}`)
 }
 
 export const fetchTestInstanceResults = (
   instanceId: string,
 ): Promise<ApiResponse<TestInstanceResults>> =>
-  apiRequest(`/employer/testInstances/${instanceId}`)
+  apiRequest(`/manager/testInstances/${instanceId}`)
 
 export const markTestInstance = (
   instanceId: string,
@@ -135,10 +135,10 @@ export const markTestInstance = (
       note?: string | null
       correctAnswer?: string | string[] | null
     }[]
-    markedByEmployerId?: string
+    markedByManagerId?: string
   },
 ): Promise<ApiResponse<TestInstance>> =>
-  apiRequest(`/employer/testInstances/${instanceId}/mark`, {
+  apiRequest(`/manager/testInstances/${instanceId}/mark`, {
     method: 'POST',
     body: JSON.stringify(payload),
   })

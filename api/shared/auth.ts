@@ -4,8 +4,8 @@ import { jsonResponse, parseJsonBody } from './http.js'
 import { createId, nowIso } from './utils.js'
 import { sendMagicLinkEmail } from './email.js'
 
-type UserRole = 'employee' | 'employer' | 'admin'
-type UserType = 'employee' | 'employer' | 'admin'
+type UserRole = 'employee' | 'manager' | 'admin'
+type UserType = 'employee' | 'manager' | 'admin'
 
 export interface AuthenticatedUser {
   id: string
@@ -54,7 +54,7 @@ function generateToken(): string {
 }
 
 /**
- * Find a user by email across all user tables (admins, employers, employees).
+ * Find a user by email across all user tables (admins, managers, employees).
  * Returns the user record and their type.
  */
 async function findUserByEmail(
@@ -75,17 +75,17 @@ async function findUserByEmail(
     return { user: admins[0], userType: 'admin' }
   }
 
-  // Check employers
-  const employersContainer = await getContainer('employers', '/companyId')
-  const { resources: employers } = await employersContainer.items
+  // Check managers
+  const managersContainer = await getContainer('managers', '/companyId')
+  const { resources: managers } = await managersContainer.items
     .query({
       query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
       parameters: [{ name: '@email', value: normalizedEmail }],
     })
     .fetchAll()
 
-  if (employers.length > 0) {
-    return { user: employers[0], userType: 'employer' }
+  if (managers.length > 0) {
+    return { user: managers[0], userType: 'manager' }
   }
 
   // Check employees
@@ -249,10 +249,10 @@ export function requireAdmin(user: AuthenticatedUser | null): HttpResponseInit |
 }
 
 /**
- * Requires the user to be an employer (or admin).
+ * Requires the user to be a manager (or admin).
  */
-export function requireEmployer(user: AuthenticatedUser | null): HttpResponseInit | null {
-  return requireRole(user, ['employer'])
+export function requireManager(user: AuthenticatedUser | null): HttpResponseInit | null {
+  return requireRole(user, ['manager'])
 }
 
 /**

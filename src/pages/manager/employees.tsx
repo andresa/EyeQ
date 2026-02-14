@@ -21,15 +21,15 @@ import {
 } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import EmployerLayout from '../../layouts/EmployerLayout'
-import { deleteEmployee, listEmployees, sendInvitation } from '../../services/employer'
+import ManagerLayout from '../../layouts/ManagerLayout'
+import { deleteEmployee, listEmployees, sendInvitation } from '../../services/manager'
 import type { Employee, InvitationStatus, UserRole } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import UserModal from '../../components/molecules/UserModal'
 
 const roleColors: Record<UserRole, string> = {
   admin: 'red',
-  employer: 'blue',
+  manager: 'blue',
   employee: 'green',
 }
 
@@ -42,7 +42,7 @@ const invitationStatusConfig: Record<
   accepted: { color: 'success', icon: <CheckCircleOutlined />, label: 'Accepted' },
 }
 
-const EmployerEmployeesPage = () => {
+const ManagerEmployeesPage = () => {
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId || ''
 
@@ -55,7 +55,7 @@ const EmployerEmployeesPage = () => {
   const [inviteForm] = Form.useForm()
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['employer', 'employees', companyId],
+    queryKey: ['manager', 'employees', companyId],
     queryFn: async () => {
       if (!companyId) return [] as Employee[]
       const response = await listEmployees(companyId)
@@ -143,7 +143,7 @@ const EmployerEmployeesPage = () => {
   }
 
   return (
-    <EmployerLayout>
+    <ManagerLayout>
       <Space direction="vertical" size="large" className="w-full">
         <div className="flex items-center justify-between">
           <Typography.Title level={3} className="m-0">
@@ -300,8 +300,8 @@ const EmployerEmployeesPage = () => {
           </Typography.Text>
         )}
       </Modal>
-    </EmployerLayout>
+    </ManagerLayout>
   )
 }
 
-export default EmployerEmployeesPage
+export default ManagerEmployeesPage

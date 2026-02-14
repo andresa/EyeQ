@@ -14,15 +14,13 @@ const AdminDashboard = () => {
         <Card>
           <Typography.Title level={4}>Manage core data</Typography.Title>
           <Typography.Paragraph>
-            Create companies, onboard employers, and keep company profiles updated.
+            Create companies, onboard managers, and keep company profiles updated.
           </Typography.Paragraph>
           <Space>
             <Button type="primary" onClick={() => navigate('/admin/companies')}>
               Manage companies
             </Button>
-            <Button onClick={() => navigate('/admin/employers')}>
-              Manage employers
-            </Button>
+            <Button onClick={() => navigate('/admin/managers')}>Manage managers</Button>
           </Space>
         </Card>
       </Space>

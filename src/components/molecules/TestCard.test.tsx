@@ -7,7 +7,7 @@ const instance: TestInstance = {
   id: 'instance_1',
   testId: 'test_1',
   employeeId: 'employee_1',
-  assignedByEmployerId: 'employer_1',
+  assignedByManagerId: 'manager_1',
   status: 'pending',
   assignedAt: '2026-01-01T00:00:00Z',
 }
@@ -15,7 +15,7 @@ const instance: TestInstance = {
 const testTemplate: TestTemplate = {
   id: 'test_1',
   companyId: 'company_1',
-  employerId: 'employer_1',
+  managerId: 'manager_1',
   name: 'Safety Induction',
   sections: [],
   createdAt: '2026-01-01T00:00:00Z',

@@ -1,28 +1,28 @@
 import { DatePicker, Form, Input, Modal, Select, Switch, message } from 'antd'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
-import type { Company, Employee, Employer, UserRole } from '../../types'
+import type { Company, Employee, Manager, UserRole } from '../../types'
 import PhoneInput from '../atoms/PhoneInput'
 
 // Services - we'll call the appropriate ones based on context
 import {
   createEmployee as adminCreateEmployee,
   updateEmployee as adminUpdateEmployee,
-  createEmployer,
-  updateEmployer,
-  sendEmployerInvitation,
+  createManager,
+  updateManager,
+  sendManagerInvitation,
 } from '../../services/admin'
 import {
-  createEmployees as employerCreateEmployees,
-  updateEmployee as employerUpdateEmployee,
+  createEmployees as managerCreateEmployees,
+  updateEmployee as managerUpdateEmployee,
   sendInvitation as sendEmployeeInvitation,
-} from '../../services/employer'
+} from '../../services/manager'
 
-type UserType = 'employee' | 'employer'
+type UserType = 'employee' | 'manager'
 
 const roleOptions: { label: string; value: UserRole }[] = [
   { label: 'Employee', value: 'employee' },
-  { label: 'Employer', value: 'employer' },
+  { label: 'Manager', value: 'manager' },
 ]
 
 interface UserModalProps {
@@ -32,7 +32,7 @@ interface UserModalProps {
 
   // Mode
   userType: UserType
-  editingUser: Employee | Employer | null // null = create mode
+  editingUser: Employee | Manager | null // null = create mode
 
   // Context
   companyId: string
@@ -41,7 +41,7 @@ interface UserModalProps {
   // Permissions
   canEditRole: boolean // Admin only - can change roles
   canSendInvitation: boolean // Show "Send invitation" toggle
-  showDateOfBirth: boolean // Employees have DOB, employers don't
+  showDateOfBirth: boolean // Employees have DOB, managers don't
 
   // Caller context - determines which API to use
   isAdmin: boolean
@@ -77,8 +77,8 @@ const UserModal = ({
 
   const isEditing = !!editingUser
   const title = isEditing
-    ? `Edit ${userType === 'employer' ? 'employer' : 'employee'}`
-    : `Add ${userType === 'employer' ? 'employer' : 'employee'}`
+    ? `Edit ${userType === 'manager' ? 'manager' : 'employee'}`
+    : `Add ${userType === 'manager' ? 'manager' : 'employee'}`
 
   // Reset form when modal opens/closes or when editingUser changes
   useEffect(() => {
@@ -94,7 +94,7 @@ const UserModal = ({
           email: editingUser.email,
           phone: editingUser.phone,
           dob,
-          role: editingUser.role || (userType === 'employer' ? 'employer' : 'employee'),
+          role: editingUser.role || (userType === 'manager' ? 'manager' : 'employee'),
           isActive: editingUser.isActive,
         })
       } else {
@@ -102,7 +102,7 @@ const UserModal = ({
         form.resetFields()
         form.setFieldsValue({
           companyId,
-          role: userType === 'employer' ? 'employer' : 'employee',
+          role: userType === 'manager' ? 'manager' : 'employee',
           isActive: true,
           sendInvitation: true,
         })
@@ -121,13 +121,13 @@ const UserModal = ({
       setLoading(true)
 
       // Use the companyId from the form if available (admin with selector),
-      // otherwise use the prop (employer without selector)
+      // otherwise use the prop (manager without selector)
       const effectiveCompanyId = values.companyId || companyId
 
       if (isEditing && editingUser) {
         // Update existing user
-        if (userType === 'employer') {
-          const response = await updateEmployer(editingUser.id, editingUser.companyId, {
+        if (userType === 'manager') {
+          const response = await updateManager(editingUser.id, editingUser.companyId, {
             firstName: values.firstName,
             lastName: values.lastName,
             email: values.email,
@@ -136,13 +136,13 @@ const UserModal = ({
             isActive: values.isActive,
           })
           if (!response.success) {
-            message.error(response.error || 'Unable to update employer')
+            message.error(response.error || 'Unable to update manager')
             return
           }
-          message.success('Employer updated')
+          message.success('Manager updated')
         } else {
-          // Employee - use admin or employer API based on context
-          const updateFn = isAdmin ? adminUpdateEmployee : employerUpdateEmployee
+          // Employee - use admin or manager API based on context
+          const updateFn = isAdmin ? adminUpdateEmployee : managerUpdateEmployee
           const response = await updateFn(editingUser.id, editingUser.companyId, {
             firstName: values.firstName,
             lastName: values.lastName,
@@ -160,9 +160,9 @@ const UserModal = ({
         }
       } else {
         // Create new user
-        if (userType === 'employer') {
-          // Create employer (admin only)
-          const response = await createEmployer({
+        if (userType === 'manager') {
+          // Create manager (admin only)
+          const response = await createManager({
             companyId: effectiveCompanyId,
             firstName: values.firstName,
             lastName: values.lastName,
@@ -171,23 +171,23 @@ const UserModal = ({
             role: values.role,
           })
           if (!response.success) {
-            message.error(response.error || 'Unable to create employer')
+            message.error(response.error || 'Unable to create manager')
             return
           }
 
           // Send invitation if requested
           if (values.sendInvitation && response.data) {
             try {
-              await sendEmployerInvitation(response.data.id, {
+              await sendManagerInvitation(response.data.id, {
                 companyId: effectiveCompanyId,
                 invitedEmail: values.email,
               })
-              message.success('Employer created and invitation sent')
+              message.success('Manager created and invitation sent')
             } catch {
-              message.success('Employer created (invitation failed to send)')
+              message.success('Manager created (invitation failed to send)')
             }
           } else {
-            message.success('Employer created')
+            message.success('Manager created')
           }
         } else {
           // Employee
@@ -222,8 +222,8 @@ const UserModal = ({
               message.success('Employee created')
             }
           } else {
-            // Employer creates employee via employer API (with built-in invitation)
-            const response = await employerCreateEmployees({
+            // Manager creates employee via manager API (with built-in invitation)
+            const response = await managerCreateEmployees({
               companyId: effectiveCompanyId,
               employees: [
                 {
@@ -271,7 +271,7 @@ const UserModal = ({
         form={form}
         layout="vertical"
         initialValues={{
-          role: userType === 'employer' ? 'employer' : 'employee',
+          role: userType === 'manager' ? 'manager' : 'employee',
           isActive: true,
           sendInvitation: true,
         }}

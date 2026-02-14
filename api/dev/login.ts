@@ -4,7 +4,7 @@ import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createSession } from '../shared/auth.js'
 import { isDevMode } from './utils.js'
 
-type UserType = 'admin' | 'employer' | 'employee'
+type UserType = 'admin' | 'manager' | 'employee'
 
 interface DevLoginRequest {
   userId: string
@@ -46,8 +46,8 @@ export const devLoginHandler = async (
       const container = await getContainer('admins', '/id')
       const { resource } = await container.item(userId, userId).read()
       user = resource
-    } else if (userType === 'employer') {
-      const container = await getContainer('employers', '/companyId')
+    } else if (userType === 'manager') {
+      const container = await getContainer('managers', '/companyId')
       const { resources } = await container.items
         .query({
           query: 'SELECT * FROM c WHERE c.id = @id',

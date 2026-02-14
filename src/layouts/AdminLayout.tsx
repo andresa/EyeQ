@@ -10,7 +10,7 @@ const AdminLayout = ({ children }: PropsWithChildren) => {
   const items: MenuProps['items'] = [
     { key: '/admin', label: 'Dashboard' },
     { key: '/admin/companies', label: 'Companies' },
-    { key: '/admin/employers', label: 'Employers' },
+    { key: '/admin/managers', label: 'Managers' },
     { key: '/admin/employees', label: 'Employees' },
   ]
 

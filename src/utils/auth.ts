@@ -7,8 +7,8 @@ export function getDashboardRoute(role: UserRole): string {
   switch (role) {
     case 'admin':
       return '/admin'
-    case 'employer':
-      return '/employer'
+    case 'manager':
+      return '/manager'
     case 'employee':
     default:
       return '/employee'

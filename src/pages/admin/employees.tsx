@@ -21,12 +21,12 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import AdminLayout from '../../layouts/AdminLayout'
 import { listCompanies, listEmployees } from '../../services/admin'
-import { deleteEmployee, sendInvitation } from '../../services/employer'
+import { deleteEmployee, sendInvitation } from '../../services/manager'
 import type { Company, Employee, InvitationStatus, UserRole } from '../../types'
 import UserModal from '../../components/molecules/UserModal'
 
 const roleColors: Record<string, string> = {
-  employer: 'blue',
+  manager: 'blue',
   employee: 'green',
 }
 

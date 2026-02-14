@@ -14,7 +14,7 @@ import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import EmployerLayout from '../../layouts/EmployerLayout'
+import ManagerLayout from '../../layouts/ManagerLayout'
 import {
   assignTest,
   deleteTestTemplate,
@@ -22,12 +22,12 @@ import {
   listEmployees,
   listTestInstances,
   listTests,
-} from '../../services/employer'
+} from '../../services/manager'
 import type { Employee, TestInstance, TestTemplate } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { formatDateTime } from '../../utils/date'
 
-const EmployerTestsPage = () => {
+const ManagerTestsPage = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { userProfile } = useSession()
@@ -39,7 +39,7 @@ const EmployerTestsPage = () => {
   const [expiry, setExpiry] = useState<string | undefined>()
 
   const { data: tests } = useQuery({
-    queryKey: ['employer', 'tests', companyId],
+    queryKey: ['manager', 'tests', companyId],
     queryFn: async () => {
       if (!companyId) return [] as TestTemplate[]
       const response = await listTests(companyId)
@@ -51,7 +51,7 @@ const EmployerTestsPage = () => {
   })
 
   const { data: employees } = useQuery({
-    queryKey: ['employer', 'employees', companyId],
+    queryKey: ['manager', 'employees', companyId],
     queryFn: async () => {
       if (!companyId) return [] as Employee[]
       const response = await listEmployees(companyId)
@@ -63,7 +63,7 @@ const EmployerTestsPage = () => {
   })
 
   const { data: testInstances } = useQuery({
-    queryKey: ['employer', 'testInstances', companyId],
+    queryKey: ['manager', 'testInstances', companyId],
     queryFn: async () => {
       if (!companyId) return [] as TestInstance[]
       const response = await listTestInstances({ companyId })
@@ -122,7 +122,7 @@ const EmployerTestsPage = () => {
       return
     }
     message.success('Test duplicated')
-    queryClient.invalidateQueries({ queryKey: ['employer', 'tests'] })
+    queryClient.invalidateQueries({ queryKey: ['manager', 'tests'] })
   }
 
   const handleDelete = (record: TestTemplate) => {
@@ -138,8 +138,8 @@ const EmployerTestsPage = () => {
           return
         }
         message.success('Test deleted')
-        queryClient.invalidateQueries({ queryKey: ['employer', 'tests'] })
-        queryClient.invalidateQueries({ queryKey: ['employer', 'testInstances'] })
+        queryClient.invalidateQueries({ queryKey: ['manager', 'tests'] })
+        queryClient.invalidateQueries({ queryKey: ['manager', 'testInstances'] })
       },
     })
   }
@@ -150,7 +150,7 @@ const EmployerTestsPage = () => {
       label: 'Edit',
       onClick: (event) => {
         event?.domEvent?.stopPropagation()
-        navigate(`/employer/test-builder/${record.id}`)
+        navigate(`/manager/test-builder/${record.id}`)
       },
     },
     {
@@ -158,7 +158,7 @@ const EmployerTestsPage = () => {
       label: 'Submissions',
       onClick: (event) => {
         event?.domEvent?.stopPropagation()
-        navigate(`/employer/test-submissions/${record.id}`)
+        navigate(`/manager/test-submissions/${record.id}`)
       },
     },
     {
@@ -189,13 +189,13 @@ const EmployerTestsPage = () => {
   ]
 
   return (
-    <EmployerLayout>
+    <ManagerLayout>
       <Space direction="vertical" size="large" className="w-full">
         <div className="flex items-center justify-between">
           <Typography.Title level={3} className="m-0">
             Tests
           </Typography.Title>
-          <Button type="primary" onClick={() => navigate('/employer/test-builder')}>
+          <Button type="primary" onClick={() => navigate('/manager/test-builder')}>
             Create Test
           </Button>
         </div>
@@ -203,7 +203,7 @@ const EmployerTestsPage = () => {
           dataSource={sortedTests}
           rowKey="id"
           onRow={(record) => ({
-            onClick: () => navigate(`/employer/test-builder/${record.id}`),
+            onClick: () => navigate(`/manager/test-builder/${record.id}`),
             style: { cursor: 'pointer' },
           })}
           columns={[
@@ -261,8 +261,8 @@ const EmployerTestsPage = () => {
           />
         </Space>
       </Modal>
-    </EmployerLayout>
+    </ManagerLayout>
   )
 }
 
-export default EmployerTestsPage
+export default ManagerTestsPage

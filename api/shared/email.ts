@@ -78,7 +78,7 @@ function stripHtml(subject: string, html: string): string {
 }
 
 /**
- * Send an invitation email to a user (employee or employer).
+ * Send an invitation email to a user (employee or manager).
  */
 export async function sendInvitationEmail(params: {
   toEmail: string

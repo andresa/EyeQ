@@ -2,7 +2,7 @@ import type {
   ApiResponse,
   Company,
   Employee,
-  Employer,
+  Manager,
   InvitationValidation,
   UserProfile,
   SessionResponse,
@@ -72,7 +72,7 @@ export const logout = (): Promise<ApiResponse<null>> =>
 
 /**
  * Get the current user's profile based on session token.
- * Returns employee/employer record matched by email.
+ * Returns employee/manager record matched by email.
  */
 export const getCurrentUser = (): Promise<ApiResponse<UserProfile>> =>
   apiRequest('/shared/me')
@@ -84,12 +84,10 @@ export const listCompaniesShared = (): Promise<ApiResponse<Company[]>> =>
   apiRequest('/shared/companies')
 
 /**
- * List employers for a company - accessible by all authenticated users
+ * List managers for a company - accessible by all authenticated users
  */
-export const listEmployersShared = (
-  companyId: string,
-): Promise<ApiResponse<Employer[]>> =>
-  apiRequest(`/shared/employers?companyId=${encodeURIComponent(companyId)}`)
+export const listManagersShared = (companyId: string): Promise<ApiResponse<Manager[]>> =>
+  apiRequest(`/shared/managers?companyId=${encodeURIComponent(companyId)}`)
 
 /**
  * List employees for a company - accessible by all authenticated users
@@ -117,7 +115,7 @@ export interface DevUser {
 
 export interface DevUsersResponse {
   admins: DevUser[]
-  employers: DevUser[]
+  managers: DevUser[]
   employees: DevUser[]
 }
 
@@ -140,7 +138,7 @@ export const getDevUsers = (): Promise<ApiResponse<DevUsersResponse>> =>
  */
 export const devLogin = (
   userId: string,
-  userType: 'admin' | 'employer' | 'employee',
+  userType: 'admin' | 'manager' | 'employee',
 ): Promise<ApiResponse<VerifyResponse>> =>
   apiRequest('/dev/login', {
     method: 'POST',

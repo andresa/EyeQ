@@ -34,9 +34,9 @@ export const getDevUsersHandler = async (): Promise<HttpResponseInit> => {
       })
       .fetchAll()
 
-    // Fetch employers
-    const employersContainer = await getContainer('employers', '/companyId')
-    const { resources: employers } = await employersContainer.items
+    // Fetch managers
+    const managersContainer = await getContainer('managers', '/companyId')
+    const { resources: managers } = await managersContainer.items
       .query({
         query:
           'SELECT c.id, c.email, c.firstName, c.lastName, c.companyId FROM c WHERE c.isActive = true',
@@ -56,7 +56,7 @@ export const getDevUsersHandler = async (): Promise<HttpResponseInit> => {
       success: true,
       data: {
         admins: admins as DevUser[],
-        employers: employers as DevUser[],
+        managers: managers as DevUser[],
         employees: employees as DevUser[],
       },
     })

@@ -4,20 +4,20 @@ import { jsonResponse, parseJsonBody } from './http.js'
 import { createId, nowIso } from './utils.js'
 import {
   getAuthenticatedUser,
-  requireEmployer,
+  requireManager,
   requireAdmin,
   createSession,
 } from './auth.js'
 import { sendInvitationEmail } from './email.js'
 
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked'
-export type InvitationUserType = 'employee' | 'employer'
+export type InvitationUserType = 'employee' | 'manager'
 
 export interface Invitation {
   id: string
   token: string
-  userId: string // The user being invited (employee or employer)
-  userType: InvitationUserType // 'employee' or 'employer'
+  userId: string // The user being invited (employee or manager)
+  userType: InvitationUserType // 'employee' or 'manager'
   companyId: string
   companyName: string
   userName: string // The name of the user being invited
@@ -27,7 +27,7 @@ export interface Invitation {
   expiresAt: string
   acceptedAt?: string
   acceptedEmail?: string // The email the user used to accept
-  sentByUserId: string // The admin/employer who sent the invitation
+  sentByUserId: string // The admin/manager who sent the invitation
 }
 
 const INVITATION_EXPIRY_DAYS = 7
@@ -46,11 +46,11 @@ function generateToken(): string {
 }
 
 /**
- * Create an invitation for an employee or employer and send the email.
+ * Create an invitation for an employee or manager and send the email.
  */
 export async function createInvitationRecord(params: {
   userId: string // The user being invited
-  userType: InvitationUserType // 'employee' or 'employer'
+  userType: InvitationUserType // 'employee' or 'manager'
   companyId: string
   companyName: string
   userName: string // The name of the user being invited
@@ -131,7 +131,7 @@ export async function getInvitationByToken(token: string): Promise<Invitation | 
 /**
  * Accept an invitation - sets the user email and creates a session.
  * Returns the session token for the client.
- * Supports both employees and employers.
+ * Supports both employees and managers.
  */
 export async function acceptInvitationAndCreateSession(token: string): Promise<{
   success: boolean
@@ -166,7 +166,7 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
   const { userType, userId } = invitation
 
   // Determine which container to use based on user type
-  const containerName = userType === 'employer' ? 'employers' : 'employees'
+  const containerName = userType === 'manager' ? 'managers' : 'employees'
   const userContainer = await getContainer(containerName, '/companyId')
 
   // Check if email is already used by another user in the same container
@@ -190,7 +190,7 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
   if (!user) {
     return {
       success: false,
-      error: `${userType === 'employer' ? 'Employer' : 'Employee'} record not found.`,
+      error: `${userType === 'manager' ? 'Manager' : 'Employee'} record not found.`,
     }
   }
 
@@ -211,8 +211,8 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
   })
 
   // Create a session for the user
-  // For employers, use 'employer' role; for employees, use their role (default 'employee')
-  const sessionRole = userType === 'employer' ? 'employer' : user.role || 'employee'
+  // For managers, use 'manager' role; for employees, use their role (default 'employee')
+  const sessionRole = userType === 'manager' ? 'manager' : user.role || 'employee'
   const session = await createSession(userId, sessionRole, acceptedEmail)
 
   return {
@@ -232,14 +232,14 @@ interface SendInvitationBody {
 }
 
 /**
- * POST /employer/employees/{employeeId}/invite
+ * POST /manager/employees/{employeeId}/invite
  * Send an invitation email to an employee.
  */
 export const sendInvitationHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const body = await parseJsonBody<SendInvitationBody>(request)
@@ -257,7 +257,7 @@ export const sendInvitationHandler = async (
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  // Verify employer can only invite employees in their own company
+  // Verify manager can only invite employees in their own company
   if (user!.role !== 'admin' && user!.companyId !== body.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -402,7 +402,7 @@ export const acceptInvitationHandler = async (
 app.http('sendInvitation', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'employer/employees/{employeeId}/invite',
+  route: 'manager/employees/{employeeId}/invite',
   handler: sendInvitationHandler,
 })
 
@@ -421,30 +421,30 @@ app.http('acceptInvitation', {
 })
 
 // ============================================================================
-// Employer Invitation (Admin only)
+// Manager Invitation (Admin only)
 // ============================================================================
 
-interface SendEmployerInvitationBody {
+interface SendManagerInvitationBody {
   companyId: string
   invitedEmail: string
 }
 
 /**
- * POST /management/employers/{employerId}/invite
- * Send an invitation email to an employer (Admin only).
+ * POST /management/managers/{managerId}/invite
+ * Send an invitation email to a manager (Admin only).
  */
-export const sendEmployerInvitationHandler = async (
+export const sendManagerInvitationHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireAdmin(user)
   if (authError) return authError
 
-  const body = await parseJsonBody<SendEmployerInvitationBody>(request)
-  const employerId = request.params.employerId
+  const body = await parseJsonBody<SendManagerInvitationBody>(request)
+  const managerId = request.params.managerId
 
-  if (!employerId) {
-    return jsonResponse(400, { success: false, error: 'employerId is required.' })
+  if (!managerId) {
+    return jsonResponse(400, { success: false, error: 'managerId is required.' })
   }
 
   if (!body?.invitedEmail) {
@@ -455,14 +455,14 @@ export const sendEmployerInvitationHandler = async (
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  // Get employer details
-  const employersContainer = await getContainer('employers', '/companyId')
-  const { resource: employer } = await employersContainer
-    .item(employerId, body.companyId)
+  // Get manager details
+  const managersContainer = await getContainer('managers', '/companyId')
+  const { resource: manager } = await managersContainer
+    .item(managerId, body.companyId)
     .read()
 
-  if (!employer) {
-    return jsonResponse(404, { success: false, error: 'Employer not found.' })
+  if (!manager) {
+    return jsonResponse(404, { success: false, error: 'Manager not found.' })
   }
 
   // Get company details
@@ -477,18 +477,18 @@ export const sendEmployerInvitationHandler = async (
 
   try {
     const invitation = await createInvitationRecord({
-      userId: employerId,
-      userType: 'employer',
+      userId: managerId,
+      userType: 'manager',
       companyId: body.companyId,
       companyName: company.name,
-      userName: `${employer.firstName} ${employer.lastName}`,
+      userName: `${manager.firstName} ${manager.lastName}`,
       invitedEmail: body.invitedEmail,
       sentByUserId: user!.id,
     })
 
-    // Update employer invitation status
-    await employersContainer.item(employerId, body.companyId).replace({
-      ...employer,
+    // Update manager invitation status
+    await managersContainer.item(managerId, body.companyId).replace({
+      ...manager,
       invitationStatus: 'pending',
       invitedEmail: body.invitedEmail,
       updatedAt: nowIso(),
@@ -503,7 +503,7 @@ export const sendEmployerInvitationHandler = async (
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error('Failed to send employer invitation:', errorMessage, error)
+    console.error('Failed to send manager invitation:', errorMessage, error)
     return jsonResponse(500, {
       success: false,
       error: `Failed to send invitation: ${errorMessage}`,
@@ -511,9 +511,9 @@ export const sendEmployerInvitationHandler = async (
   }
 }
 
-app.http('sendEmployerInvitation', {
+app.http('sendManagerInvitation', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'management/employers/{employerId}/invite',
-  handler: sendEmployerInvitationHandler,
+  route: 'management/managers/{managerId}/invite',
+  handler: sendManagerInvitationHandler,
 })

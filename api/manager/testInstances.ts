@@ -2,7 +2,7 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
-import { getAuthenticatedUser, requireEmployer } from '../shared/auth.js'
+import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 
 export const listTestInstancesHandler = async (
   request: HttpRequest,
@@ -56,7 +56,7 @@ interface MarkBody {
     note?: string | null
     correctAnswer?: string | string[] | null
   }[]
-  markedByEmployerId?: string
+  markedByManagerId?: string
   markedAt?: string
 }
 
@@ -106,9 +106,9 @@ export const getTestInstanceResultsHandler = async (
 export const markTestInstanceHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Verify employer role
+  // Verify manager role
   const user = await getAuthenticatedUser(request)
-  const authError = requireEmployer(user)
+  const authError = requireManager(user)
   if (authError) return authError
 
   const instanceId = request.params.instanceId
@@ -132,7 +132,7 @@ export const markTestInstanceHandler = async (
     return jsonResponse(404, { success: false, error: 'Test instance not found.' })
   }
 
-  // Verify the test belongs to the employer's company
+  // Verify the test belongs to the manager's company
   const testContainer = await getContainer('tests', '/companyId')
   const { resources: tests } = await testContainer.items
     .query({
@@ -145,7 +145,7 @@ export const markTestInstanceHandler = async (
     return jsonResponse(404, { success: false, error: 'Test template not found.' })
   }
 
-  // Employers can only mark tests from their own company
+  // Managers can only mark tests from their own company
   if (user!.role !== 'admin' && user!.companyId !== test.companyId) {
     return jsonResponse(403, {
       success: false,
@@ -175,7 +175,7 @@ export const markTestInstanceHandler = async (
         note: mark.note ?? existing.note ?? null,
         correctAnswer: mark.correctAnswer ?? existing.correctAnswer ?? null,
         markedAt,
-        markedByEmployerId: body.markedByEmployerId ?? existing.markedByEmployerId,
+        markedByManagerId: body.markedByManagerId ?? existing.markedByManagerId,
       }
       await responsesContainer.item(existing.id, instanceId).replace(updated)
     } else {
@@ -189,7 +189,7 @@ export const markTestInstanceHandler = async (
         isCorrect: mark.isCorrect ?? null,
         note: mark.note ?? null,
         markedAt,
-        markedByEmployerId: body.markedByEmployerId,
+        markedByManagerId: body.markedByManagerId,
         createdAt: nowIso(),
       }
       await responsesContainer.items.create(record)
@@ -213,14 +213,14 @@ export const markTestInstanceHandler = async (
   return jsonResponse(200, { success: true, data: updatedInstance })
 }
 
-app.http('employerTestInstances', {
+app.http('managerTestInstances', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'employer/testInstances',
+  route: 'manager/testInstances',
   handler: async (request) => {
-    // Verify employer role
+    // Verify manager role
     const user = await getAuthenticatedUser(request)
-    const authError = requireEmployer(user)
+    const authError = requireManager(user)
     if (authError) return authError
 
     // Verify user can only list test instances from their own company
@@ -254,25 +254,25 @@ app.http('employerTestInstances', {
   },
 })
 
-app.http('employerTestInstanceResults', {
+app.http('managerTestInstanceResults', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'employer/testInstances/{instanceId}',
+  route: 'manager/testInstances/{instanceId}',
   handler: async (request) => {
-    // Verify employer role
+    // Verify manager role
     const user = await getAuthenticatedUser(request)
-    const authError = requireEmployer(user)
+    const authError = requireManager(user)
     if (authError) return authError
 
     // Note: Additional company ownership check could be added here
-    // For now, we rely on the employer role check
+    // For now, we rely on the manager role check
     return getTestInstanceResultsHandler(request)
   },
 })
 
-app.http('employerTestInstanceMark', {
+app.http('managerTestInstanceMark', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'employer/testInstances/{instanceId}/mark',
+  route: 'manager/testInstances/{instanceId}/mark',
   handler: markTestInstanceHandler,
 })

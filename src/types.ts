@@ -6,8 +6,8 @@ export interface ApiResponse<T> {
   error?: string
 }
 
-export type UserRole = 'employee' | 'employer' | 'admin'
-export type UserType = 'employee' | 'employer' | 'admin'
+export type UserRole = 'employee' | 'manager' | 'admin'
+export type UserType = 'employee' | 'manager' | 'admin'
 
 export interface User {
   id: UUID
@@ -52,7 +52,7 @@ export interface Company {
   isActive: boolean
 }
 
-export interface Employer {
+export interface Manager {
   id: UUID
   companyId: UUID
   firstName: string
@@ -89,7 +89,7 @@ export interface Invitation {
   id: UUID
   token: string
   userId: UUID
-  userType: 'employee' | 'employer'
+  userType: 'employee' | 'manager'
   companyId: UUID
   companyName: string
   userName: string
@@ -112,7 +112,7 @@ export type ComponentType = 'single_choice' | 'multiple_choice' | 'text' | 'info
 export interface TestTemplate {
   id: UUID
   companyId: UUID
-  employerId: UUID
+  managerId: UUID
   name: string
   sections: TestSection[]
   createdAt: string
@@ -148,7 +148,7 @@ export interface TestInstance {
   testId: UUID
   testName?: string
   employeeId: UUID
-  assignedByEmployerId: UUID
+  assignedByManagerId: UUID
   status: TestInstanceStatus
   assignedAt: string
   expiresAt?: string
@@ -172,7 +172,7 @@ export interface ResponseRecord {
   isCorrect?: boolean | null
   note?: string | null
   markedAt?: string
-  markedByEmployerId?: UUID
+  markedByManagerId?: UUID
   createdAt: string
 }
 
