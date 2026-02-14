@@ -8,6 +8,7 @@
     "start": "npm run build && func start"
   },
   "dependencies": {
+    "@azure/communication-email": "^1.0.0",
     "@azure/cosmos": "^4.9.0",
     "@azure/functions": "^4.11.0"
   },

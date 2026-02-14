@@ -8,19 +8,17 @@ interface EyeQHeaderProps {
 
 const EyeQHeader = ({ title }: EyeQHeaderProps) => {
   const navigate = useNavigate()
-  const { swaUser, userProfile, clearSession } = useSession()
+  const { userProfile, logout } = useSession()
 
-  const handleSignOut = () => {
-    // Clear local session state
-    clearSession()
-    // Redirect to SWA logout endpoint which will redirect to login page after
-    window.location.href = '/.auth/logout?post_logout_redirect_uri=/login'
+  const handleSignOut = async () => {
+    await logout()
+    navigate('/login', { replace: true })
   }
 
-  // Display user's name if available, fallback to email
+  // Display user's name if available
   const displayName = userProfile
     ? `${userProfile.firstName} ${userProfile.lastName}`
-    : swaUser?.userDetails
+    : ''
 
   return (
     <Layout.Header className="flex items-center justify-between bg-[#0b1f3a] px-6">
@@ -34,7 +32,7 @@ const EyeQHeader = ({ title }: EyeQHeaderProps) => {
         </Typography.Title>
         <Typography.Text className="text-[#d6e4ff]">{title}</Typography.Text>
       </Space>
-      {(swaUser || userProfile) && (
+      {userProfile && (
         <Space size="middle">
           <Typography.Text className="text-[#d6e4ff]">{displayName}</Typography.Text>
           <Typography.Link className="text-white" onClick={handleSignOut}>

@@ -5,6 +5,7 @@ import {
   Form,
   Input,
   Modal,
+  Popconfirm,
   Select,
   Space,
   Switch,
@@ -12,7 +13,7 @@ import {
   Tag,
   message,
 } from 'antd'
-import { EditOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
@@ -25,6 +26,7 @@ import {
 } from '../../services/admin'
 import type { Company, Employee } from '../../types'
 import PhoneInput from '../../components/atoms/PhoneInput'
+import { deleteEmployee } from '../../services/employer'
 
 // Only employee and employer roles are allowed (not admin)
 const roleOptions = [
@@ -41,6 +43,7 @@ const AdminEmployeesPage = () => {
   const [form] = Form.useForm()
   const [open, setOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
 
   const { data: companies } = useQuery({
@@ -143,6 +146,25 @@ const AdminEmployeesPage = () => {
     refetch()
   }
 
+  const onDeleteEmployee = async (employee: Employee) => {
+    if (!companyId) return
+
+    setDeleteLoading(employee.id)
+    try {
+      const response = await deleteEmployee(employee.id, companyId)
+      if (!response.success) {
+        message.error(response.error || 'Failed to delete employee')
+        return
+      }
+      message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
+      refetch()
+    } catch {
+      message.error('Failed to delete employee')
+    } finally {
+      setDeleteLoading(null)
+    }
+  }
+
   return (
     <AdminLayout>
       <Space direction="vertical" size="large" className="w-full">
@@ -191,13 +213,32 @@ const AdminEmployeesPage = () => {
             {
               title: 'Actions',
               render: (_, record) => (
-                <Button
-                  type="link"
-                  icon={<EditOutlined />}
-                  onClick={() => openEdit(record)}
-                >
-                  Edit
-                </Button>
+                <Space>
+                  <Button
+                    type="link"
+                    icon={<EditOutlined />}
+                    onClick={() => openEdit(record)}
+                  >
+                    Edit
+                  </Button>
+                  <Popconfirm
+                    title="Delete employee"
+                    description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
+                    onConfirm={() => onDeleteEmployee(record)}
+                    okText="Delete"
+                    okType="danger"
+                    cancelText="Cancel"
+                  >
+                    <Button
+                      type="link"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={deleteLoading === record.id}
+                    >
+                      Delete
+                    </Button>
+                  </Popconfirm>
+                </Space>
               ),
             },
           ]}

@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Spin } from 'antd'
 import LoginPage from './pages/shared/login'
+import VerifyPage from './pages/shared/verify'
+import AcceptInvitationPage from './pages/shared/accept-invitation'
 import EmployeeDashboard from './pages/employee'
 import EmployeeTestPage from './pages/employee/test'
 import EmployeeTestResultsPage from './pages/employee/test-results'
@@ -20,7 +22,7 @@ import { useSession } from './hooks/useSession'
 import { getDashboardRoute } from './utils/auth'
 
 const App = () => {
-  const { swaUser, userProfile, isLoading, profileError } = useSession()
+  const { userProfile, isLoading, isAuthenticated } = useSession()
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -31,10 +33,9 @@ const App = () => {
     )
   }
 
-  // Determine default route based on authentication and database role
+  // Determine default route based on authentication
   const getDefaultRoute = () => {
-    if (!swaUser) return '/login'
-    if (profileError || !userProfile) return '/login'
+    if (!isAuthenticated || !userProfile) return '/login'
     return getDashboardRoute(userProfile.role)
   }
 
@@ -44,6 +45,8 @@ const App = () => {
     <Routes>
       <Route path="/" element={<Navigate to={defaultRoute} replace />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/verify" element={<VerifyPage />} />
+      <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
 
       {/* Employee routes - accessible by employee and admin */}
       <Route

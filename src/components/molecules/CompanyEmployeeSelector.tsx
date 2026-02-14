@@ -1,14 +1,18 @@
 import { Card, Select, Space } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listCompaniesShared, listEmployeesShared } from '../../services/shared'
 import type { Company, Employee } from '../../types'
 import { useSession } from '../../hooks/useSession'
 
-const CompanyEmployeeSelector = () => {
-  const { session, setSession } = useSession()
-  const [companyId, setCompanyId] = useState(session?.companyId || '')
-  const [employeeId, setEmployeeId] = useState(session?.employeeId || '')
+interface CompanyEmployeeSelectorProps {
+  onSelectionChange?: (companyId: string | null, employeeId: string | null) => void
+}
+
+const CompanyEmployeeSelector = ({ onSelectionChange }: CompanyEmployeeSelectorProps) => {
+  const { userProfile } = useSession()
+  const [companyId, setCompanyId] = useState(userProfile?.companyId || '')
+  const [employeeId, setEmployeeId] = useState('')
 
   const { data: companies } = useQuery({
     queryKey: ['shared', 'companies'],
@@ -33,30 +37,20 @@ const CompanyEmployeeSelector = () => {
     },
   })
 
-  useEffect(() => {
-    if (!session) return
-    const nextCompanyId = companyId || undefined
-    const nextEmployeeId = employeeId || undefined
-    if (session.companyId === nextCompanyId && session.employeeId === nextEmployeeId) {
-      return
-    }
-    setSession({
-      ...session,
-      companyId: nextCompanyId,
-      employeeId: nextEmployeeId,
-    })
-  }, [companyId, employeeId, session, setSession])
-
   const handleCompanyChange = (value: string) => {
     setCompanyId(value)
-    if (!value) {
-      setEmployeeId('')
-    }
+    setEmployeeId('')
+    onSelectionChange?.(value || null, null)
+  }
+
+  const handleEmployeeChange = (value: string) => {
+    setEmployeeId(value)
+    onSelectionChange?.(companyId || null, value || null)
   }
 
   return (
     <Card>
-      <Space orientation="vertical" className="w-full">
+      <Space direction="vertical" className="w-full">
         <Select
           placeholder="Select company"
           value={companyId || undefined}
@@ -67,11 +61,12 @@ const CompanyEmployeeSelector = () => {
             value: company.id,
           }))}
           aria-label="Select company"
+          className="w-full"
         />
         <Select
           placeholder="Select employee"
           value={employeeId || undefined}
-          onChange={(value) => setEmployeeId(value)}
+          onChange={handleEmployeeChange}
           allowClear
           disabled={!companyId}
           options={(employees || []).map((employee: Employee) => ({
@@ -79,6 +74,7 @@ const CompanyEmployeeSelector = () => {
             value: employee.id,
           }))}
           aria-label="Select employee"
+          className="w-full"
         />
       </Space>
     </Card>

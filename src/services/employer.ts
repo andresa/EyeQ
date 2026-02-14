@@ -7,9 +7,35 @@ import type {
 } from '../types'
 import { apiRequest } from './api'
 
+// ============================================================================
+// Invitation Management
+// ============================================================================
+
+export const sendInvitation = (
+  employeeId: string,
+  payload: { companyId: string; invitedEmail: string },
+): Promise<ApiResponse<{ invitationId: string; expiresAt: string }>> =>
+  apiRequest(`/employer/employees/${employeeId}/invite`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+// ============================================================================
+// Employee Management
+// ============================================================================
+
+interface CreateEmployeeInput {
+  firstName: string
+  lastName: string
+  email: string
+  phone?: string
+  dob?: string
+  sendInvitation?: boolean // Default true - whether to send invitation email
+}
+
 export const createEmployees = (payload: {
   companyId: string
-  employees: Omit<Employee, 'id' | 'companyId' | 'createdAt' | 'isActive' | 'role'>[]
+  employees: CreateEmployeeInput[]
 }): Promise<ApiResponse<Employee[]>> =>
   apiRequest('/employer/employees', {
     method: 'POST',
@@ -31,6 +57,15 @@ export const updateEmployee = (
 
 export const listEmployees = (companyId: string): Promise<ApiResponse<Employee[]>> =>
   apiRequest(`/employer/employees?companyId=${encodeURIComponent(companyId)}`)
+
+export const deleteEmployee = (
+  employeeId: string,
+  companyId: string,
+): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(
+    `/employer/employees/${employeeId}?companyId=${encodeURIComponent(companyId)}`,
+    { method: 'DELETE' },
+  )
 
 export const createTestTemplate = (payload: {
   companyId: string

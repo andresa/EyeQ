@@ -1,6 +1,7 @@
 import './shared/health.js'
-import './shared/login.js'
+import './shared/auth.js'
 import './shared/me.js'
+import './shared/invitations.js'
 import './admin/companies.js'
 import './admin/employers.js'
 import './admin/employees.js'

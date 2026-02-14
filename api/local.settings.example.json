@@ -4,6 +4,9 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "COSMOS_CONNECTION_STRING": "TODO: ADD_COSMOS_CONNECTION_STRING_HERE",
-    "COSMOS_DB_NAME": "EyeQDB"
+    "COSMOS_DB_NAME": "EyeQDB",
+    "ACS_CONNECTION_STRING": "TODO: Azure Communication Services connection string",
+    "ACS_SENDER_ADDRESS": "TODO: ACS sender email (e.g., DoNotReply@xxx.azurecomm.net)",
+    "APP_BASE_URL": "http://localhost:4280"
   }
 }

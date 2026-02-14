@@ -7,6 +7,7 @@ export interface ApiResponse<T> {
 }
 
 export type UserRole = 'employee' | 'employer' | 'admin'
+export type UserType = 'employee' | 'employer' | 'admin'
 
 export interface User {
   id: UUID
@@ -15,33 +16,7 @@ export interface User {
   createdAt: string
 }
 
-export interface Session {
-  email: string
-  role?: UserRole
-  companyId?: UUID
-  employerId?: UUID
-  employeeId?: UUID
-}
-
-// Azure SWA authentication types
-export interface SwaUserClaim {
-  typ: string
-  val: string
-}
-
-export interface SwaClientPrincipal {
-  identityProvider: string
-  userId: string
-  userDetails: string
-  userRoles: string[]
-  claims: SwaUserClaim[]
-}
-
-export interface SwaAuthResponse {
-  clientPrincipal: SwaClientPrincipal | null
-}
-
-// User profile returned by /api/shared/me
+// User profile returned by /api/shared/me and /api/auth/session
 export interface UserProfile {
   id: UUID
   email: string
@@ -51,7 +26,22 @@ export interface UserProfile {
   companyId: UUID
   companyName?: string
   lastLogin?: string
-  userType: 'employee' | 'employer'
+  userType: UserType
+}
+
+// Response from /api/auth/session
+export interface SessionResponse {
+  session: {
+    expiresAt: string
+  }
+  user: UserProfile
+}
+
+// Response from /api/auth/verify
+export interface VerifyResponse {
+  token: string
+  expiresAt: string
+  user: UserProfile
 }
 
 export interface Company {
@@ -75,18 +65,43 @@ export interface Employer {
   isActive: boolean
 }
 
+export type InvitationStatus = 'none' | 'pending' | 'accepted'
+
 export interface Employee {
   id: UUID
   companyId: UUID
   firstName: string
   lastName: string
-  email: string
+  email?: string // Now optional - set via invitation acceptance
   phone?: string
   dob?: string
   role?: UserRole
   createdAt: string
   lastLogin?: string
   isActive: boolean
+  invitationStatus?: InvitationStatus
+  invitedEmail?: string // Email where invitation was sent
+}
+
+export interface Invitation {
+  id: UUID
+  token: string
+  employeeId: UUID
+  companyId: UUID
+  companyName: string
+  employeeName: string
+  invitedEmail: string
+  status: 'pending' | 'accepted' | 'expired' | 'revoked'
+  createdAt: string
+  expiresAt: string
+  acceptedAt?: string
+  acceptedEmail?: string
+}
+
+export interface InvitationValidation {
+  employeeName: string
+  companyName: string
+  expiresAt: string
 }
 
 export type ComponentType = 'single_choice' | 'multiple_choice' | 'text' | 'info'
