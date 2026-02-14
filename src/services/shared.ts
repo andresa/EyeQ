@@ -98,3 +98,51 @@ export const listEmployeesShared = (
   companyId: string,
 ): Promise<ApiResponse<Employee[]>> =>
   apiRequest(`/shared/employees?companyId=${encodeURIComponent(companyId)}`)
+
+// ============================================================================
+// Dev Login (only works in development)
+// ============================================================================
+
+export interface DevStatusResponse {
+  devMode: boolean
+}
+
+export interface DevUser {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  companyId?: string
+}
+
+export interface DevUsersResponse {
+  admins: DevUser[]
+  employers: DevUser[]
+  employees: DevUser[]
+}
+
+/**
+ * Check if dev mode is enabled on the backend.
+ */
+export const getDevStatus = (): Promise<ApiResponse<DevStatusResponse>> =>
+  apiRequest('/dev/status')
+
+/**
+ * Get all users for dev login dropdowns.
+ * Only works when DEV_MODE is enabled on the backend.
+ */
+export const getDevUsers = (): Promise<ApiResponse<DevUsersResponse>> =>
+  apiRequest('/dev/users')
+
+/**
+ * Log in as a specific user (dev only).
+ * Creates a real session for the selected user.
+ */
+export const devLogin = (
+  userId: string,
+  userType: 'admin' | 'employer' | 'employee',
+): Promise<ApiResponse<VerifyResponse>> =>
+  apiRequest('/dev/login', {
+    method: 'POST',
+    body: JSON.stringify({ userId, userType }),
+  })
