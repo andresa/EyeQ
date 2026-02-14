@@ -101,10 +101,6 @@ export const listEmployeesShared = (
 // Dev Login (only works in development)
 // ============================================================================
 
-export interface DevStatusResponse {
-  devMode: boolean
-}
-
 export interface DevUser {
   id: string
   email: string
@@ -118,12 +114,6 @@ export interface DevUsersResponse {
   managers: DevUser[]
   employees: DevUser[]
 }
-
-/**
- * Check if dev mode is enabled on the backend.
- */
-export const getDevStatus = (): Promise<ApiResponse<DevStatusResponse>> =>
-  apiRequest('/dev/status')
 
 /**
  * Get all users for dev login dropdowns.

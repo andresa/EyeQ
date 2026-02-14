@@ -14,3 +14,12 @@ export function getDashboardRoute(role: UserRole): string {
       return '/employee'
   }
 }
+
+/**
+ * Check if dev mode is enabled.
+ * Uses Vite's built-in DEV flag which is true during development
+ * and false in production builds.
+ */
+export function isDevMode(): boolean {
+  return import.meta.env.DEV
+}

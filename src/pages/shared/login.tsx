@@ -20,10 +20,9 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../hooks/useSession'
-import { getDashboardRoute } from '../../utils/auth'
+import { getDashboardRoute, isDevMode } from '../../utils/auth'
 import {
   requestMagicLink,
-  getDevStatus,
   getDevUsers,
   devLogin,
   type DevUser,
@@ -55,17 +54,11 @@ const LoginPage = () => {
 
   // Check if dev mode is enabled and fetch dev users
   useEffect(() => {
-    if (!devModeEnabled && !devUsersLoading) {
+    if (!devModeEnabled && !devUsersLoading && isDevMode()) {
+      setDevModeEnabled(true)
       setDevUsersLoading(true)
-      getDevStatus()
-        .then((response) => {
-          if (response.success && response.data?.devMode) {
-            setDevModeEnabled(true)
-            // Fetch dev users since dev mode is enabled
-            return getDevUsers()
-          }
-          return null
-        })
+      // Fetch dev users since dev mode is enabled
+      getDevUsers()
         .then((usersResponse) => {
           if (usersResponse?.success && usersResponse.data) {
             setDevUsers(usersResponse.data)
