@@ -164,7 +164,7 @@ const AcceptInvitationPage = () => {
             You&apos;re Invited!
           </Title>
           <Paragraph type="secondary">
-            <strong>{invitation?.employeeName}</strong>, you&apos;ve been invited to join{' '}
+            <strong>{invitation?.userName}</strong>, you&apos;ve been invited to join{' '}
             <strong>{invitation?.companyName}</strong> on EyeQ.
           </Paragraph>
         </div>

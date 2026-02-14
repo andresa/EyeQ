@@ -1,43 +1,53 @@
 import {
   Button,
   Card,
-  Form,
-  Input,
-  Modal,
+  Popconfirm,
   Select,
   Space,
   Table,
   Tag,
+  Tooltip,
   message,
 } from 'antd'
-import { EditOutlined } from '@ant-design/icons'
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  MailOutlined,
+  MinusCircleOutlined,
+} from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import AdminLayout from '../../layouts/AdminLayout'
 import {
-  createEmployer,
-  updateEmployer,
+  deleteEmployer,
   listCompanies,
   listEmployers,
+  sendEmployerInvitation,
 } from '../../services/admin'
-import type { Company, Employer } from '../../types'
-import PhoneInput from '../../components/atoms/PhoneInput'
-
-// Only employee and employer roles are allowed (not admin)
-const roleOptions = [
-  { label: 'Employer', value: 'employer' },
-  { label: 'Employee', value: 'employee' },
-]
+import type { Company, Employer, InvitationStatus, UserRole } from '../../types'
+import UserModal from '../../components/molecules/UserModal'
 
 const roleColors: Record<string, string> = {
   employer: 'blue',
   employee: 'green',
 }
 
+const invitationStatusConfig: Record<
+  InvitationStatus,
+  { color: string; icon: React.ReactNode; label: string }
+> = {
+  none: { color: 'default', icon: <MinusCircleOutlined />, label: 'Not invited' },
+  pending: { color: 'processing', icon: <ClockCircleOutlined />, label: 'Pending' },
+  accepted: { color: 'success', icon: <CheckCircleOutlined />, label: 'Accepted' },
+}
+
 const AdminEmployersPage = () => {
-  const [form] = Form.useForm()
   const [open, setOpen] = useState(false)
   const [editingEmployer, setEditingEmployer] = useState<Employer | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+  const [inviteLoading, setInviteLoading] = useState<string | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
 
   const { data: companies } = useQuery({
@@ -69,63 +79,58 @@ const AdminEmployersPage = () => {
 
   const openCreate = () => {
     setEditingEmployer(null)
-    form.resetFields()
-    form.setFieldsValue({ companyId, role: 'employer' })
     setOpen(true)
   }
 
   const openEdit = (employer: Employer) => {
     setEditingEmployer(employer)
-    form.setFieldsValue({
-      companyId: employer.companyId,
-      firstName: employer.firstName,
-      lastName: employer.lastName,
-      email: employer.email,
-      phone: employer.phone,
-      role: employer.role || 'employer',
-    })
     setOpen(true)
   }
 
   const closeModal = () => {
     setOpen(false)
     setEditingEmployer(null)
-    form.resetFields()
   }
 
-  const onSubmit = async () => {
-    const values = await form.validateFields()
+  const onDeleteEmployer = async (employer: Employer) => {
+    if (!companyId) return
 
-    if (editingEmployer) {
-      // Update existing employer
-      const response = await updateEmployer(
-        editingEmployer.id,
-        editingEmployer.companyId,
-        {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          email: values.email,
-          phone: values.phone,
-          role: values.role,
-        },
-      )
+    setDeleteLoading(employer.id)
+    try {
+      const response = await deleteEmployer(employer.id, companyId)
       if (!response.success) {
-        message.error(response.error || 'Unable to update employer')
+        message.error(response.error || 'Failed to delete employer')
         return
       }
-      message.success('Employer updated')
-    } else {
-      // Create new employer
-      const response = await createEmployer(values)
-      if (!response.success) {
-        message.error(response.error || 'Unable to create employer')
-        return
-      }
-      message.success('Employer created')
+      message.success(`${employer.firstName} ${employer.lastName} has been deleted`)
+      refetch()
+    } catch {
+      message.error('Failed to delete employer')
+    } finally {
+      setDeleteLoading(null)
     }
+  }
 
-    closeModal()
-    refetch()
+  const onSendInvitation = async (employer: Employer) => {
+    if (!companyId || !employer.email) return
+
+    setInviteLoading(employer.id)
+    try {
+      const response = await sendEmployerInvitation(employer.id, {
+        companyId,
+        invitedEmail: employer.email,
+      })
+      if (!response.success) {
+        message.error(response.error || 'Failed to send invitation')
+        return
+      }
+      message.success(`Invitation sent to ${employer.email}`)
+      refetch()
+    } catch {
+      message.error('Failed to send invitation')
+    } finally {
+      setInviteLoading(null)
+    }
   }
 
   return (
@@ -158,14 +163,43 @@ const AdminEmployersPage = () => {
               title: 'Name',
               render: (_, record) => `${record.firstName} ${record.lastName}`,
             },
-            { title: 'Email', dataIndex: 'email' },
+            {
+              title: 'Email',
+              dataIndex: 'email',
+              render: (email: string | undefined, record: Employer) => {
+                if (record.invitationStatus === 'pending') {
+                  return (
+                    <Tooltip title="Invitation sent - awaiting acceptance">
+                      <span className="text-gray-500">
+                        {email || record.invitedEmail}{' '}
+                        <span className="text-xs italic">(pending)</span>
+                      </span>
+                    </Tooltip>
+                  )
+                }
+                return email || <span className="text-gray-400 italic">No email</span>
+              },
+            },
             { title: 'Phone', dataIndex: 'phone' },
             {
               title: 'Role',
               dataIndex: 'role',
-              render: (role: string) => (
+              render: (role: UserRole) => (
                 <Tag color={roleColors[role] || 'blue'}>{role || 'employer'}</Tag>
               ),
+            },
+            {
+              title: 'Invitation',
+              dataIndex: 'invitationStatus',
+              render: (status: InvitationStatus | undefined) => {
+                const s = status || 'none'
+                const config = invitationStatusConfig[s]
+                return (
+                  <Tag icon={config.icon} color={config.color}>
+                    {config.label}
+                  </Tag>
+                )
+              },
             },
             {
               title: 'Active',
@@ -175,75 +209,69 @@ const AdminEmployersPage = () => {
             {
               title: 'Actions',
               render: (_, record) => (
-                <Button
-                  type="link"
-                  icon={<EditOutlined />}
-                  onClick={() => openEdit(record)}
-                >
-                  Edit
-                </Button>
+                <Space>
+                  <Button
+                    type="link"
+                    icon={<EditOutlined />}
+                    onClick={() => openEdit(record)}
+                  >
+                    Edit
+                  </Button>
+                  {record.invitationStatus !== 'accepted' && record.email && (
+                    <Tooltip
+                      title={
+                        record.invitationStatus === 'pending'
+                          ? 'Resend invitation'
+                          : 'Send invitation'
+                      }
+                    >
+                      <Button
+                        type="link"
+                        icon={<MailOutlined />}
+                        onClick={() => onSendInvitation(record)}
+                        loading={inviteLoading === record.id}
+                      >
+                        {record.invitationStatus === 'pending' ? 'Resend' : 'Invite'}
+                      </Button>
+                    </Tooltip>
+                  )}
+                  <Popconfirm
+                    title="Delete employer"
+                    description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
+                    onConfirm={() => onDeleteEmployer(record)}
+                    okText="Delete"
+                    okType="danger"
+                    cancelText="Cancel"
+                  >
+                    <Button
+                      type="link"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={deleteLoading === record.id}
+                    >
+                      Delete
+                    </Button>
+                  </Popconfirm>
+                </Space>
               ),
             },
           ]}
         />
       </Space>
-      <Modal
-        title={editingEmployer ? 'Edit employer' : 'Add employer'}
+
+      <UserModal
         open={open}
-        onOk={onSubmit}
-        onCancel={closeModal}
-        okText={editingEmployer ? 'Save changes' : 'Create employer'}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="companyId"
-            label="Company"
-            rules={[{ required: true, message: 'Select a company.' }]}
-          >
-            <Select
-              options={(companies || []).map((company: Company) => ({
-                label: company.name,
-                value: company.id,
-              }))}
-              disabled={!!editingEmployer}
-            />
-          </Form.Item>
-          <Form.Item
-            name="firstName"
-            label="First name"
-            rules={[{ required: true, message: 'Enter first name.' }]}
-          >
-            <Input aria-label="First name" />
-          </Form.Item>
-          <Form.Item
-            name="lastName"
-            label="Last name"
-            rules={[{ required: true, message: 'Enter last name.' }]}
-          >
-            <Input aria-label="Last name" />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { required: true, message: 'Enter email.' },
-              { type: 'email', message: 'Enter a valid email.' },
-            ]}
-          >
-            <Input aria-label="Email" />
-          </Form.Item>
-          <Form.Item name="phone" label="Phone">
-            <PhoneInput />
-          </Form.Item>
-          <Form.Item
-            name="role"
-            label="Role"
-            rules={[{ required: true, message: 'Select a role.' }]}
-          >
-            <Select options={roleOptions} aria-label="Role" />
-          </Form.Item>
-        </Form>
-      </Modal>
+        onClose={closeModal}
+        onSuccess={() => refetch()}
+        userType="employer"
+        editingUser={editingEmployer}
+        companyId={companyId}
+        companies={companies}
+        canEditRole={true}
+        canSendInvitation={true}
+        showDateOfBirth={false}
+        isAdmin={true}
+      />
     </AdminLayout>
   )
 }

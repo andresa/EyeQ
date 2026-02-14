@@ -147,11 +147,47 @@ app.http('adminEmployers', {
   },
 })
 
+export const deleteEmployerHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
+  // Verify admin role
+  const user = await getAuthenticatedUser(request)
+  const authError = requireAdmin(user)
+  if (authError) return authError
+
+  const employerId = request.params.employerId
+  const companyId = request.query.get('companyId')
+
+  if (!employerId) {
+    return jsonResponse(400, { success: false, error: 'employerId is required.' })
+  }
+  if (!companyId) {
+    return jsonResponse(400, { success: false, error: 'companyId is required.' })
+  }
+
+  const container = await getContainer('employers', '/companyId')
+
+  // Fetch existing employer to verify it exists
+  const { resource: existing } = await container.item(employerId, companyId).read()
+  if (!existing) {
+    return jsonResponse(404, { success: false, error: 'Employer not found.' })
+  }
+
+  // Delete the employer
+  await container.item(employerId, companyId).delete()
+  return jsonResponse(200, { success: true, data: { id: employerId } })
+}
+
 app.http('adminEmployerUpdate', {
-  methods: ['PUT'],
+  methods: ['PUT', 'DELETE'],
   authLevel: 'anonymous',
   route: 'management/employers/{employerId}',
-  handler: updateEmployerHandler,
+  handler: async (request) => {
+    if (request.method === 'DELETE') {
+      return deleteEmployerHandler(request)
+    }
+    return updateEmployerHandler(request)
+  },
 })
 
 // Shared read-only endpoint for all authenticated users

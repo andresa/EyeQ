@@ -78,16 +78,16 @@ function stripHtml(subject: string, html: string): string {
 }
 
 /**
- * Send an invitation email to an employee.
+ * Send an invitation email to a user (employee or employer).
  */
 export async function sendInvitationEmail(params: {
   toEmail: string
-  employeeName: string
+  userName: string
   companyName: string
   invitationUrl: string
   expiresInDays: number
 }): Promise<string> {
-  const { toEmail, employeeName, companyName, invitationUrl, expiresInDays } = params
+  const { toEmail, userName, companyName, invitationUrl, expiresInDays } = params
 
   const subject = `You've been invited to join ${companyName} on EyeQ`
 
@@ -104,7 +104,7 @@ export async function sendInvitationEmail(params: {
   </div>
   
   <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-    <p style="font-size: 18px; margin-top: 0;">Hi ${employeeName},</p>
+    <p style="font-size: 18px; margin-top: 0;">Hi ${userName},</p>
     
     <p>You've been invited to join <strong>${companyName}</strong> on EyeQ.</p>
     

@@ -57,12 +57,14 @@ export interface Employer {
   companyId: UUID
   firstName: string
   lastName: string
-  email: string
+  email?: string // Optional - can be set via invitation acceptance
   phone?: string
   role?: UserRole
   createdAt: string
   lastLogin?: string
   isActive: boolean
+  invitationStatus?: InvitationStatus
+  invitedEmail?: string // Email where invitation was sent
 }
 
 export type InvitationStatus = 'none' | 'pending' | 'accepted'
@@ -86,10 +88,11 @@ export interface Employee {
 export interface Invitation {
   id: UUID
   token: string
-  employeeId: UUID
+  userId: UUID
+  userType: 'employee' | 'employer'
   companyId: UUID
   companyName: string
-  employeeName: string
+  userName: string
   invitedEmail: string
   status: 'pending' | 'accepted' | 'expired' | 'revoked'
   createdAt: string
@@ -99,7 +102,7 @@ export interface Invitation {
 }
 
 export interface InvitationValidation {
-  employeeName: string
+  userName: string
   companyName: string
   expiresAt: string
 }

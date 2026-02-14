@@ -51,6 +51,24 @@ export const updateEmployer = (
 export const listEmployers = (companyId: string): Promise<ApiResponse<Employer[]>> =>
   apiRequest(`/management/employers?companyId=${encodeURIComponent(companyId)}`)
 
+export const deleteEmployer = (
+  employerId: string,
+  companyId: string,
+): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(
+    `/management/employers/${employerId}?companyId=${encodeURIComponent(companyId)}`,
+    { method: 'DELETE' },
+  )
+
+export const sendEmployerInvitation = (
+  employerId: string,
+  payload: { companyId: string; invitedEmail: string },
+): Promise<ApiResponse<{ invitationId: string; expiresAt: string }>> =>
+  apiRequest(`/management/employers/${employerId}/invite`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
 // Employee management (Admin)
 export const createEmployee = (payload: {
   companyId: string

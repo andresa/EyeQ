@@ -1,12 +1,10 @@
 import {
   Button,
-  DatePicker,
   Form,
   Input,
   Modal,
-  Select,
+  Popconfirm,
   Space,
-  Switch,
   Table,
   Tag,
   Tooltip,
@@ -14,31 +12,20 @@ import {
   message,
 } from 'antd'
 import {
-  EditOutlined,
-  MailOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  MailOutlined,
   MinusCircleOutlined,
 } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import dayjs from 'dayjs'
 import EmployerLayout from '../../layouts/EmployerLayout'
-import {
-  createEmployees,
-  updateEmployee,
-  listEmployees,
-  sendInvitation,
-} from '../../services/employer'
+import { deleteEmployee, listEmployees, sendInvitation } from '../../services/employer'
 import type { Employee, InvitationStatus, UserRole } from '../../types'
 import { useSession } from '../../hooks/useSession'
-import PhoneInput from '../../components/atoms/PhoneInput'
-
-const roleOptions: { label: string; value: UserRole }[] = [
-  { label: 'Admin', value: 'admin' },
-  { label: 'Employer', value: 'employer' },
-  { label: 'Employee', value: 'employee' },
-]
+import UserModal from '../../components/molecules/UserModal'
 
 const roleColors: Record<UserRole, string> = {
   admin: 'red',
@@ -57,16 +44,14 @@ const invitationStatusConfig: Record<
 
 const EmployerEmployeesPage = () => {
   const { userProfile } = useSession()
-  const companyId = userProfile?.companyId
-  // const isAdmin = userProfile?.role === 'admin'
-  console.log(userProfile)
+  const companyId = userProfile?.companyId || ''
+
   const [open, setOpen] = useState(false)
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
   const [invitingEmployee, setInvitingEmployee] = useState<Employee | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [inviteLoading, setInviteLoading] = useState(false)
-  // const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
-  const [form] = Form.useForm()
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
   const [inviteForm] = Form.useForm()
 
   const { data, isLoading, refetch } = useQuery({
@@ -84,29 +69,17 @@ const EmployerEmployeesPage = () => {
 
   const openCreate = () => {
     setEditingEmployee(null)
-    form.resetFields()
-    form.setFieldsValue({ sendInvitation: true }) // Default to sending invitation
     setOpen(true)
   }
 
   const openEdit = (employee: Employee) => {
     setEditingEmployee(employee)
-    form.setFieldsValue({
-      firstName: employee.firstName,
-      lastName: employee.lastName,
-      email: employee.email,
-      phone: employee.phone,
-      dob: employee.dob ? dayjs(employee.dob) : undefined,
-      role: employee.role || 'employee',
-      isActive: employee.isActive,
-    })
     setOpen(true)
   }
 
   const closeModal = () => {
     setOpen(false)
     setEditingEmployee(null)
-    form.resetFields()
   }
 
   const openInviteModal = (employee: Employee) => {
@@ -150,80 +123,28 @@ const EmployerEmployeesPage = () => {
     }
   }
 
-  // const onDeleteEmployee = async (employee: Employee) => {
-  //   if (!companyId) return
+  const onDeleteEmployee = async (employee: Employee) => {
+    if (!companyId) return
 
-  //   setDeleteLoading(employee.id)
-  //   try {
-  //     const response = await deleteEmployee(employee.id, companyId)
-  //     if (!response.success) {
-  //       message.error(response.error || 'Failed to delete employee')
-  //       return
-  //     }
-  //     message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
-  //     refetch()
-  //   } catch {
-  //     message.error('Failed to delete employee')
-  //   } finally {
-  //     setDeleteLoading(null)
-  //   }
-  // }
-
-  const onSubmit = async () => {
-    const values = await form.validateFields()
-    if (!companyId) {
-      message.error('Company not found.')
-      return
-    }
-
-    if (editingEmployee) {
-      // Update existing employee (role is not editable by employers)
-      const response = await updateEmployee(editingEmployee.id, companyId, {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        phone: values.phone,
-        dob: values.dob?.format('YYYY-MM-DD'),
-        isActive: values.isActive,
-      })
+    setDeleteLoading(employee.id)
+    try {
+      const response = await deleteEmployee(employee.id, companyId)
       if (!response.success) {
-        message.error(response.error || 'Unable to update employee')
+        message.error(response.error || 'Failed to delete employee')
         return
       }
-      message.success('Employee updated')
-    } else {
-      // Create new employee
-      const response = await createEmployees({
-        companyId,
-        employees: [
-          {
-            firstName: values.firstName,
-            lastName: values.lastName,
-            email: values.email,
-            phone: values.phone,
-            dob: values.dob?.format('YYYY-MM-DD'),
-            sendInvitation: values.sendInvitation,
-          },
-        ],
-      })
-      if (!response.success) {
-        message.error(response.error || 'Unable to create employee')
-        return
-      }
-      message.success(
-        values.sendInvitation
-          ? 'Employee created and invitation sent'
-          : 'Employee created',
-      )
+      message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
+      refetch()
+    } catch {
+      message.error('Failed to delete employee')
+    } finally {
+      setDeleteLoading(null)
     }
-
-    closeModal()
-    refetch()
   }
 
   return (
     <EmployerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <Space direction="vertical" size="large" className="w-full">
         <div className="flex items-center justify-between">
           <Typography.Title level={3} className="m-0">
             Employees
@@ -249,7 +170,8 @@ const EmployerEmployeesPage = () => {
                   return (
                     <Tooltip title="Invitation sent - awaiting acceptance">
                       <span className="text-gray-500">
-                        {email} <span className="text-xs italic">(pending)</span>
+                        {email || record.invitedEmail}{' '}
+                        <span className="text-xs italic">(pending)</span>
                       </span>
                     </Tooltip>
                   )
@@ -312,98 +234,42 @@ const EmployerEmployeesPage = () => {
                       </Button>
                     </Tooltip>
                   )}
-                  {/* {isAdmin && (
-                    <Popconfirm
-                      title="Delete employee"
-                      description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
-                      onConfirm={() => onDeleteEmployee(record)}
-                      okText="Delete"
-                      okType="danger"
-                      cancelText="Cancel"
+                  <Popconfirm
+                    title="Delete employee"
+                    description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
+                    onConfirm={() => onDeleteEmployee(record)}
+                    okText="Delete"
+                    okType="danger"
+                    cancelText="Cancel"
+                  >
+                    <Button
+                      type="link"
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={deleteLoading === record.id}
                     >
-                      <Button
-                        type="link"
-                        danger
-                        icon={<DeleteOutlined />}
-                        loading={deleteLoading === record.id}
-                      >
-                        Delete
-                      </Button>
-                    </Popconfirm>
-                  )} */}
+                      Delete
+                    </Button>
+                  </Popconfirm>
                 </Space>
               ),
             },
           ]}
         />
       </Space>
-      <Modal
-        title={editingEmployee ? 'Edit employee' : 'Add employee'}
+
+      <UserModal
         open={open}
-        onOk={onSubmit}
-        onCancel={closeModal}
-        okText={editingEmployee ? 'Save changes' : 'Create employee'}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="firstName"
-            label="First name"
-            rules={[{ required: true, message: 'Enter first name.' }]}
-          >
-            <Input aria-label="First name" />
-          </Form.Item>
-          <Form.Item
-            name="lastName"
-            label="Last name"
-            rules={[{ required: true, message: 'Enter last name.' }]}
-          >
-            <Input aria-label="Last name" />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { required: !editingEmployee, message: 'Enter email address.' },
-              { type: 'email', message: 'Enter a valid email.' },
-            ]}
-          >
-            <Input aria-label="Email" placeholder="employee@example.com" />
-          </Form.Item>
-          <Form.Item name="phone" label="Phone">
-            <PhoneInput />
-          </Form.Item>
-          <Form.Item name="dob" label="Date of birth">
-            <DatePicker className="w-full" />
-          </Form.Item>
-          {!editingEmployee && (
-            <Form.Item
-              name="sendInvitation"
-              valuePropName="checked"
-              extra="When checked, an invitation email will be sent to the employee so they can verify their email and log in."
-            >
-              <Switch
-                checkedChildren="Send invitation"
-                unCheckedChildren="No invitation"
-                defaultChecked
-              />
-            </Form.Item>
-          )}
-          {editingEmployee && (
-            <>
-              <Form.Item name="role" label="Role">
-                <Select options={roleOptions} aria-label="Role" disabled />
-              </Form.Item>
-              <Form.Item name="isActive" valuePropName="checked">
-                <Switch
-                  checkedChildren="Active"
-                  unCheckedChildren="Inactive"
-                  defaultChecked
-                />
-              </Form.Item>
-            </>
-          )}
-        </Form>
-      </Modal>
+        onClose={closeModal}
+        onSuccess={() => refetch()}
+        userType="employee"
+        editingUser={editingEmployee}
+        companyId={companyId}
+        canEditRole={false}
+        canSendInvitation={true}
+        showDateOfBirth={true}
+        isAdmin={false}
+      />
 
       {/* Send Invitation Modal */}
       <Modal

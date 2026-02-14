@@ -162,12 +162,13 @@ export const createEmployeesHandler = async (
     if (shouldSendInvitation) {
       try {
         await createInvitationRecord({
-          employeeId: record.id,
+          userId: record.id,
+          userType: 'employee',
           companyId: body.companyId,
           companyName: company.name,
-          employeeName: `${employee.firstName} ${employee.lastName}`,
+          userName: `${employee.firstName} ${employee.lastName}`,
           invitedEmail: normalizedEmail,
-          sentByEmployerId: user!.id,
+          sentByUserId: user!.id,
         })
       } catch (error) {
         console.error('Failed to send invitation:', error)
@@ -289,17 +290,10 @@ app.http('employerEmployees', {
 export const deleteEmployeeHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  // Only admins can delete employees
+  // Employers and admins can delete employees
   const user = await getAuthenticatedUser(request)
-  if (!user) {
-    return jsonResponse(401, { success: false, error: 'Authentication required.' })
-  }
-  if (user.role !== 'admin') {
-    return jsonResponse(403, {
-      success: false,
-      error: 'Only admins can delete employees.',
-    })
-  }
+  const authError = requireEmployer(user)
+  if (authError) return authError
 
   const employeeId = request.params.employeeId
   const companyId = request.query.get('companyId')
@@ -309,6 +303,14 @@ export const deleteEmployeeHandler = async (
   }
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
+  }
+
+  // Employers can only delete employees in their own company
+  if (user!.role !== 'admin' && user!.companyId !== companyId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only delete employees in your own company.',
+    })
   }
 
   const container = await getContainer('employees', '/companyId')

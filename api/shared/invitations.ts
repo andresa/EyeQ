@@ -2,25 +2,32 @@ import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from './cosmos.js'
 import { jsonResponse, parseJsonBody } from './http.js'
 import { createId, nowIso } from './utils.js'
-import { getAuthenticatedUser, requireEmployer, createSession } from './auth.js'
+import {
+  getAuthenticatedUser,
+  requireEmployer,
+  requireAdmin,
+  createSession,
+} from './auth.js'
 import { sendInvitationEmail } from './email.js'
 
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked'
+export type InvitationUserType = 'employee' | 'employer'
 
 export interface Invitation {
   id: string
   token: string
-  employeeId: string
+  userId: string // The user being invited (employee or employer)
+  userType: InvitationUserType // 'employee' or 'employer'
   companyId: string
   companyName: string
-  employeeName: string
+  userName: string // The name of the user being invited
   invitedEmail: string // Where to send the invitation
   status: InvitationStatus
   createdAt: string
   expiresAt: string
   acceptedAt?: string
-  acceptedEmail?: string // The email the employee used to accept
-  sentByEmployerId: string
+  acceptedEmail?: string // The email the user used to accept
+  sentByUserId: string // The admin/employer who sent the invitation
 }
 
 const INVITATION_EXPIRY_DAYS = 7
@@ -39,24 +46,25 @@ function generateToken(): string {
 }
 
 /**
- * Create an invitation for an employee and send the email.
+ * Create an invitation for an employee or employer and send the email.
  */
 export async function createInvitationRecord(params: {
-  employeeId: string
+  userId: string // The user being invited
+  userType: InvitationUserType // 'employee' or 'employer'
   companyId: string
   companyName: string
-  employeeName: string
+  userName: string // The name of the user being invited
   invitedEmail: string
-  sentByEmployerId: string
+  sentByUserId: string
 }): Promise<Invitation> {
   const container = await getContainer('invitations', '/companyId')
 
-  // Check for existing pending invitation for this employee
+  // Check for existing pending invitation for this user
   const { resources: existing } = await container.items
     .query({
-      query: 'SELECT * FROM c WHERE c.employeeId = @employeeId AND c.status = @status',
+      query: 'SELECT * FROM c WHERE c.userId = @userId AND c.status = @status',
       parameters: [
-        { name: '@employeeId', value: params.employeeId },
+        { name: '@userId', value: params.userId },
         { name: '@status', value: 'pending' },
       ],
     })
@@ -77,15 +85,16 @@ export async function createInvitationRecord(params: {
   const invitation: Invitation = {
     id: createId('inv'),
     token,
-    employeeId: params.employeeId,
+    userId: params.userId,
+    userType: params.userType,
     companyId: params.companyId,
     companyName: params.companyName,
-    employeeName: params.employeeName,
+    userName: params.userName,
     invitedEmail: params.invitedEmail,
     status: 'pending',
     createdAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
-    sentByEmployerId: params.sentByEmployerId,
+    sentByUserId: params.sentByUserId,
   }
 
   await container.items.create(invitation)
@@ -94,7 +103,7 @@ export async function createInvitationRecord(params: {
   const invitationUrl = `${APP_BASE_URL}/accept-invitation?token=${token}`
   await sendInvitationEmail({
     toEmail: params.invitedEmail,
-    employeeName: params.employeeName,
+    userName: params.userName,
     companyName: params.companyName,
     invitationUrl,
     expiresInDays: INVITATION_EXPIRY_DAYS,
@@ -120,12 +129,11 @@ export async function getInvitationByToken(token: string): Promise<Invitation | 
 }
 
 /**
- * Accept an invitation - sets the employee email and creates a session.
+ * Accept an invitation - sets the user email and creates a session.
  * Returns the session token for the client.
+ * Supports both employees and employers.
  */
-export async function acceptInvitationAndCreateSession(
-  token: string,
-): Promise<{
+export async function acceptInvitationAndCreateSession(token: string): Promise<{
   success: boolean
   error?: string
   sessionToken?: string
@@ -155,34 +163,39 @@ export async function acceptInvitationAndCreateSession(
   }
 
   const acceptedEmail = invitation.invitedEmail.toLowerCase()
+  const { userType, userId } = invitation
 
-  // Check if email is already used by another employee
-  const employeesContainer = await getContainer('employees', '/companyId')
-  const { resources: existingEmployees } = await employeesContainer.items
+  // Determine which container to use based on user type
+  const containerName = userType === 'employer' ? 'employers' : 'employees'
+  const userContainer = await getContainer(containerName, '/companyId')
+
+  // Check if email is already used by another user in the same container
+  const { resources: existingUsers } = await userContainer.items
     .query({
       query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
       parameters: [{ name: '@email', value: acceptedEmail }],
     })
     .fetchAll()
 
-  if (existingEmployees.length > 0 && existingEmployees[0].id !== invitation.employeeId) {
+  if (existingUsers.length > 0 && existingUsers[0].id !== userId) {
     return {
       success: false,
       error: 'This email is already associated with another account.',
     }
   }
 
-  // Update employee with the accepted email
-  const { resource: employee } = await employeesContainer
-    .item(invitation.employeeId, invitation.companyId)
-    .read()
+  // Update user with the accepted email
+  const { resource: user } = await userContainer.item(userId, invitation.companyId).read()
 
-  if (!employee) {
-    return { success: false, error: 'Employee record not found.' }
+  if (!user) {
+    return {
+      success: false,
+      error: `${userType === 'employer' ? 'Employer' : 'Employee'} record not found.`,
+    }
   }
 
-  await employeesContainer.item(invitation.employeeId, invitation.companyId).replace({
-    ...employee,
+  await userContainer.item(userId, invitation.companyId).replace({
+    ...user,
     email: acceptedEmail,
     invitationStatus: 'accepted',
     updatedAt: nowIso(),
@@ -197,8 +210,10 @@ export async function acceptInvitationAndCreateSession(
     acceptedEmail,
   })
 
-  // Create a session for the employee
-  const session = await createSession(invitation.employeeId, 'employee', acceptedEmail)
+  // Create a session for the user
+  // For employers, use 'employer' role; for employees, use their role (default 'employee')
+  const sessionRole = userType === 'employer' ? 'employer' : user.role || 'employee'
+  const session = await createSession(userId, sessionRole, acceptedEmail)
 
   return {
     success: true,
@@ -212,7 +227,6 @@ export async function acceptInvitationAndCreateSession(
 // ============================================================================
 
 interface SendInvitationBody {
-  employeeId: string
   companyId: string
   invitedEmail: string
 }
@@ -273,12 +287,13 @@ export const sendInvitationHandler = async (
 
   try {
     const invitation = await createInvitationRecord({
-      employeeId,
+      userId: employeeId,
+      userType: 'employee',
       companyId: body.companyId,
       companyName: company.name,
-      employeeName: `${employee.firstName} ${employee.lastName}`,
+      userName: `${employee.firstName} ${employee.lastName}`,
       invitedEmail: body.invitedEmail,
-      sentByEmployerId: user!.id,
+      sentByUserId: user!.id,
     })
 
     // Update employee invitation status
@@ -343,7 +358,7 @@ export const validateInvitationHandler = async (
   return jsonResponse(200, {
     success: true,
     data: {
-      employeeName: invitation.employeeName,
+      userName: invitation.userName,
       companyName: invitation.companyName,
       expiresAt: invitation.expiresAt,
     },
@@ -403,4 +418,102 @@ app.http('acceptInvitation', {
   authLevel: 'anonymous',
   route: 'invitation/{token}/accept',
   handler: acceptInvitationHandler,
+})
+
+// ============================================================================
+// Employer Invitation (Admin only)
+// ============================================================================
+
+interface SendEmployerInvitationBody {
+  companyId: string
+  invitedEmail: string
+}
+
+/**
+ * POST /management/employers/{employerId}/invite
+ * Send an invitation email to an employer (Admin only).
+ */
+export const sendEmployerInvitationHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
+  const user = await getAuthenticatedUser(request)
+  const authError = requireAdmin(user)
+  if (authError) return authError
+
+  const body = await parseJsonBody<SendEmployerInvitationBody>(request)
+  const employerId = request.params.employerId
+
+  if (!employerId) {
+    return jsonResponse(400, { success: false, error: 'employerId is required.' })
+  }
+
+  if (!body?.invitedEmail) {
+    return jsonResponse(400, { success: false, error: 'invitedEmail is required.' })
+  }
+
+  if (!body.companyId) {
+    return jsonResponse(400, { success: false, error: 'companyId is required.' })
+  }
+
+  // Get employer details
+  const employersContainer = await getContainer('employers', '/companyId')
+  const { resource: employer } = await employersContainer
+    .item(employerId, body.companyId)
+    .read()
+
+  if (!employer) {
+    return jsonResponse(404, { success: false, error: 'Employer not found.' })
+  }
+
+  // Get company details
+  const companiesContainer = await getContainer('companies', '/id')
+  const { resource: company } = await companiesContainer
+    .item(body.companyId, body.companyId)
+    .read()
+
+  if (!company) {
+    return jsonResponse(404, { success: false, error: 'Company not found.' })
+  }
+
+  try {
+    const invitation = await createInvitationRecord({
+      userId: employerId,
+      userType: 'employer',
+      companyId: body.companyId,
+      companyName: company.name,
+      userName: `${employer.firstName} ${employer.lastName}`,
+      invitedEmail: body.invitedEmail,
+      sentByUserId: user!.id,
+    })
+
+    // Update employer invitation status
+    await employersContainer.item(employerId, body.companyId).replace({
+      ...employer,
+      invitationStatus: 'pending',
+      invitedEmail: body.invitedEmail,
+      updatedAt: nowIso(),
+    })
+
+    return jsonResponse(200, {
+      success: true,
+      data: {
+        invitationId: invitation.id,
+        expiresAt: invitation.expiresAt,
+      },
+    })
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Failed to send employer invitation:', errorMessage, error)
+    return jsonResponse(500, {
+      success: false,
+      error: `Failed to send invitation: ${errorMessage}`,
+    })
+  }
+}
+
+app.http('sendEmployerInvitation', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'management/employers/{employerId}/invite',
+  handler: sendEmployerInvitationHandler,
 })
