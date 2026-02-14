@@ -24,12 +24,19 @@ export const healthHandler = async (): Promise<HttpResponseInit> => {
   // Show APP_BASE_URL value since it has a fallback default
   envStatus.APP_BASE_URL = process.env.APP_BASE_URL || '(not set, using default)'
 
+  // List all env var names that contain ACS or COSMOS (for debugging)
+  const allEnvKeys = Object.keys(process.env)
+  const relevantKeys = allEnvKeys.filter(
+    (k) => k.includes('ACS') || k.includes('COSMOS') || k.includes('APP_'),
+  )
+
   return jsonResponse(200, {
     success: true,
     data: {
       status: missing.length === 0 ? 'ok' : 'missing_config',
       missing: missing.length > 0 ? missing : undefined,
       env: envStatus,
+      availableKeys: relevantKeys,
     },
   })
 }
