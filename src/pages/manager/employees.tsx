@@ -144,7 +144,7 @@ const ManagerEmployeesPage = () => {
 
   return (
     <ManagerLayout>
-      <Space direction="vertical" size="large" className="w-full">
+      <Space orientation="vertical" size="large" className="w-full">
         <div className="flex items-center justify-between">
           <Typography.Title level={3} className="m-0">
             Employees

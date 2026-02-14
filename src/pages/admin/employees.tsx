@@ -53,6 +53,9 @@ const AdminEmployeesPage = () => {
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
       }
+      if (response.data.length === 1) {
+        setCompanyId(response.data[0].id)
+      }
       return response.data
     },
   })
@@ -131,9 +134,9 @@ const AdminEmployeesPage = () => {
 
   return (
     <AdminLayout>
-      <Space direction="vertical" size="large" className="w-full">
+      <Space orientation="vertical" size="large" className="w-full">
         <Card>
-          <Space direction="vertical" className="w-full">
+          <Space orientation="vertical" className="w-full">
             <Select
               placeholder="Select company"
               value={companyId || undefined}

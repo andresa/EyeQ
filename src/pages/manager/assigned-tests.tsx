@@ -157,7 +157,7 @@ const AssignedTestsPage = () => {
 
   return (
     <ManagerLayout>
-      <Space direction="vertical" size="large" className="w-full">
+      <Space orientation="vertical" size="large" className="w-full">
         <Typography.Title level={3}>Assigned tests</Typography.Title>
         <Card>
           <Typography.Text type="secondary">

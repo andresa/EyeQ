@@ -157,8 +157,8 @@ const AcceptInvitationPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl text-white font-bold">EQ</span>
+          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl text-white font-bold">EyeQ</span>
           </div>
           <Title level={2} className="mb-2">
             You&apos;re Invited!

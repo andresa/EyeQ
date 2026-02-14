@@ -50,7 +50,7 @@ const ManagerDashboard = () => {
 
   return (
     <ManagerLayout>
-      <Space direction="vertical" size="large" className="w-full">
+      <Space orientation="vertical" size="large" className="w-full">
         <div>
           <Typography.Title level={3}>
             Welcome, {userProfile?.firstName || 'Manager'}

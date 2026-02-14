@@ -210,7 +210,7 @@ const TestBuilderForm = ({
   }
 
   return (
-    <Space direction="vertical" size="large" className="w-full">
+    <Space orientation="vertical" size="large" className="w-full">
       <Typography.Title level={3}>Test builder</Typography.Title>
       <Card>
         <Space orientation="vertical" className="w-full">

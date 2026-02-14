@@ -155,10 +155,10 @@ const LoginPage = () => {
   return (
     <div className="page-center">
       <Card className="w-full max-w-md">
-        <Space direction="vertical" size="large" className="w-full">
+        <Space orientation="vertical" size="large" className="w-full">
           <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl text-white font-bold">EQ</span>
+            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl text-white font-bold">EyeQ</span>
             </div>
             <Typography.Title level={3} className="mb-1">
               Welcome to EyeQ
@@ -190,7 +190,7 @@ const LoginPage = () => {
                     <Spin />
                   </div>
                 ) : (
-                  <Space direction="vertical" className="w-full" size="small">
+                  <Space orientation="vertical" className="w-full" size="small">
                     {devUsers.admins.length > 0 && (
                       <Select
                         placeholder={

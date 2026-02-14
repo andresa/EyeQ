@@ -59,7 +59,7 @@ const EmployeeDashboard = () => {
 
   return (
     <EmployeeLayout>
-      <Space direction="vertical" size="large" className="w-full">
+      <Space orientation="vertical" size="large" className="w-full">
         <div>
           <Typography.Title level={3}>
             Welcome, {userProfile?.firstName || 'Employee'}

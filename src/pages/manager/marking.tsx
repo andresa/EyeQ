@@ -200,7 +200,7 @@ const MarkingPage = () => {
 
   return (
     <ManagerLayout>
-      <Space direction="vertical" size="large" className="w-full">
+      <Space orientation="vertical" size="large" className="w-full">
         <Typography.Title level={3}>Mark submission</Typography.Title>
         <Card>
           <Space orientation="vertical">

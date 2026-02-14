@@ -50,7 +50,7 @@ const CompanyManagerSelector = ({ onSelectionChange }: CompanyManagerSelectorPro
 
   return (
     <Card>
-      <Space direction="vertical" className="w-full">
+      <Space orientation="vertical" className="w-full">
         <Select
           placeholder="Select company"
           value={companyId || undefined}
