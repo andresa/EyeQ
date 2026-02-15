@@ -130,7 +130,7 @@ export async function getInvitationByToken(token: string): Promise<Invitation | 
 
 /**
  * Accept an invitation - sets the user email and creates a session.
- * Returns the session token for the client.
+ * Returns the session token and user data for the client.
  * Supports both employees and managers.
  */
 export async function acceptInvitationAndCreateSession(token: string): Promise<{
@@ -138,6 +138,15 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
   error?: string
   sessionToken?: string
   expiresAt?: string
+  user?: {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    role: string
+    companyId: string
+    userType: string
+  }
 }> {
   const invitation = await getInvitationByToken(token)
 
@@ -194,12 +203,14 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
     }
   }
 
-  await userContainer.item(userId, invitation.companyId).replace({
+  const updatedUser = {
     ...user,
     email: acceptedEmail,
     invitationStatus: 'accepted',
     updatedAt: nowIso(),
-  })
+  }
+
+  await userContainer.item(userId, invitation.companyId).replace(updatedUser)
 
   // Mark invitation as accepted
   const invContainer = await getContainer('invitations', '/companyId')
@@ -219,6 +230,15 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
     success: true,
     sessionToken: session.token,
     expiresAt: session.expiresAt,
+    user: {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      role: sessionRole,
+      companyId: updatedUser.companyId,
+      userType,
+    },
   }
 }
 
@@ -391,6 +411,7 @@ export const acceptInvitationHandler = async (
       message: 'Invitation accepted successfully. You are now logged in.',
       token: result.sessionToken,
       expiresAt: result.expiresAt,
+      user: result.user,
     },
   })
 }

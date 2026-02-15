@@ -16,7 +16,7 @@ interface SessionContextValue {
   isLoading: boolean
   isAuthenticated: boolean
   profileError: string | null
-  login: (token: string) => void
+  login: (token: string, user?: UserProfile) => void
   logout: () => Promise<void>
   refetchProfile: () => Promise<void>
 }
@@ -63,9 +63,18 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
   }, [fetchUserProfile])
 
   const login = useCallback(
-    (token: string) => {
+    (token: string, user?: UserProfile) => {
       setSessionToken(token)
-      fetchUserProfile()
+      if (user) {
+        // If user data is provided, use it directly to avoid race condition
+        // with Cosmos DB eventual consistency
+        setUserProfile(user)
+        setProfileError(null)
+        setIsLoading(false)
+      } else {
+        // Fall back to fetching profile if user data not provided
+        fetchUserProfile()
+      }
     },
     [fetchUserProfile],
   )

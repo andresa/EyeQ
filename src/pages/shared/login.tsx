@@ -28,11 +28,10 @@ import {
   type DevUser,
   type DevUsersResponse,
 } from '../../services/shared'
-import { setSessionToken } from '../../services/api'
 
 const LoginPage = () => {
   const navigate = useNavigate()
-  const { userProfile, isLoading, isAuthenticated, refetchProfile } = useSession()
+  const { userProfile, isLoading, isAuthenticated, login } = useSession()
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -112,8 +111,8 @@ const LoginPage = () => {
     try {
       const response = await devLogin(userId, userType)
       if (response.success && response.data) {
-        setSessionToken(response.data.token)
-        await refetchProfile()
+        // Use login with user data to avoid race condition
+        login(response.data.token, response.data.user)
         const targetRoute = getDashboardRoute(response.data.user.role)
         navigate(targetRoute, { replace: true })
       } else {

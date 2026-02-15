@@ -151,11 +151,32 @@ async function getSessionByToken(token: string): Promise<Session | null> {
  * Validate session and update lastUsedAt.
  */
 async function validateSession(token: string): Promise<Session | null> {
+  console.log(
+    '[validateSession] Looking up session by token:',
+    token.substring(0, 10) + '...',
+  )
   const session = await getSessionByToken(token)
-  if (!session) return null
+  if (!session) {
+    console.log('[validateSession] No session found for token')
+    return null
+  }
+  console.log(
+    '[validateSession] Session found:',
+    session.id,
+    'expires:',
+    session.expiresAt,
+  )
 
   // Check if expired
-  if (new Date(session.expiresAt) < new Date()) {
+  const now = new Date()
+  const expiresAt = new Date(session.expiresAt)
+  if (expiresAt < now) {
+    console.log(
+      '[validateSession] Session expired. expiresAt:',
+      expiresAt.toISOString(),
+      'now:',
+      now.toISOString(),
+    )
     return null
   }
 
@@ -463,12 +484,27 @@ export const getSessionHandler = async (
 ): Promise<HttpResponseInit> => {
   const token = getBearerToken(request)
 
+  // Debug logging for production issue
+  const authHeader = request.headers.get('authorization')
+  console.log('[getSession] Auth header present:', !!authHeader)
+  console.log(
+    '[getSession] Auth header value:',
+    authHeader ? `${authHeader.substring(0, 20)}...` : 'none',
+  )
+  console.log(
+    '[getSession] Token extracted:',
+    token ? `${token.substring(0, 10)}...` : 'none',
+  )
+
   if (!token) {
+    console.log('[getSession] No token - returning 401')
     return jsonResponse(401, { success: false, error: 'Not authenticated.' })
   }
 
   const session = await validateSession(token)
+  console.log('[getSession] Session found:', !!session)
   if (!session) {
+    console.log('[getSession] Session invalid or expired - returning 401')
     return jsonResponse(401, { success: false, error: 'Session expired or invalid.' })
   }
 

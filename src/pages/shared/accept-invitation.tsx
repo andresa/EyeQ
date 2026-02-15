@@ -60,8 +60,9 @@ const AcceptInvitationPage = () => {
     try {
       const response = await acceptInvitation(token)
       if (response.success && response.data) {
-        // Store the session token - this logs the user in
-        login(response.data.token)
+        // Store the session token and user data directly
+        // This avoids a race condition with Cosmos DB eventual consistency
+        login(response.data.token, response.data.user)
         setPageState('success')
       } else {
         setError(response.error || 'Failed to accept invitation.')
