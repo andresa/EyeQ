@@ -4,6 +4,7 @@ import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 import { createInvitationRecord } from '../shared/invitations.js'
+import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
 
@@ -41,11 +42,14 @@ export const listEmployeesHandler = async (
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
-  const container = await getContainer('employees', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
   const { resources } = await container.items
     .query({
-      query: 'SELECT * FROM c WHERE c.companyId = @companyId',
-      parameters: [{ name: '@companyId', value: companyId }],
+      query: 'SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role',
+      parameters: [
+        { name: '@companyId', value: companyId },
+        { name: '@role', value: 'employee' },
+      ],
     })
     .fetchAll()
   return jsonResponse(200, { success: true, data: resources })
@@ -100,9 +104,9 @@ export const createEmployeesHandler = async (
     })
   }
 
-  const container = await getContainer('employees', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
-  // Check for existing emails in the database
+  // Check for existing emails in the database (across all users, not just employees)
   const { resources: existing } = await container.items
     .query({
       query:
@@ -139,7 +143,7 @@ export const createEmployeesHandler = async (
     const normalizedEmail = employee.email.toLowerCase()
 
     const record = {
-      id: createId('employee'),
+      id: createId('user'),
       companyId: body.companyId,
       firstName: employee.firstName,
       lastName: employee.lastName,
@@ -236,7 +240,7 @@ export const updateEmployeeHandler = async (
     })
   }
 
-  const container = await getContainer('employees', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
   // Fetch existing employee
   const { resource: existing } = await container.item(employeeId, companyId).read()
@@ -313,7 +317,7 @@ export const deleteEmployeeHandler = async (
     })
   }
 
-  const container = await getContainer('employees', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
   // Fetch existing employee to verify it exists
   const { resource: existing } = await container.item(employeeId, companyId).read()

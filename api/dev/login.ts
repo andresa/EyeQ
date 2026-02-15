@@ -3,6 +3,12 @@ import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createSession } from '../shared/auth.js'
 import { isDevMode } from './utils.js'
+import {
+  USERS_CONTAINER,
+  USERS_PARTITION_KEY,
+  ADMINS_CONTAINER,
+  ADMINS_PARTITION_KEY,
+} from '../shared/userTypes.js'
 
 type UserType = 'admin' | 'manager' | 'employee'
 
@@ -43,20 +49,13 @@ export const devLoginHandler = async (
     let user: Record<string, unknown> | null = null
 
     if (userType === 'admin') {
-      const container = await getContainer('admins', '/id')
+      // Admins are in a separate container
+      const container = await getContainer(ADMINS_CONTAINER, ADMINS_PARTITION_KEY)
       const { resource } = await container.item(userId, userId).read()
       user = resource
-    } else if (userType === 'manager') {
-      const container = await getContainer('managers', '/companyId')
-      const { resources } = await container.items
-        .query({
-          query: 'SELECT * FROM c WHERE c.id = @id',
-          parameters: [{ name: '@id', value: userId }],
-        })
-        .fetchAll()
-      user = resources[0] || null
-    } else if (userType === 'employee') {
-      const container = await getContainer('employees', '/companyId')
+    } else {
+      // Managers and employees are in the unified users container
+      const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
       const { resources } = await container.items
         .query({
           query: 'SELECT * FROM c WHERE c.id = @id',

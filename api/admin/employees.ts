@@ -3,6 +3,7 @@ import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
+import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
 
@@ -21,21 +22,29 @@ export const listAllEmployeesHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
-  const container = await getContainer('employees', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
   if (companyId) {
-    // Filter by company if provided
+    // Filter by company if provided, only return employees (not managers)
     const { resources } = await container.items
       .query({
-        query: 'SELECT * FROM c WHERE c.companyId = @companyId',
-        parameters: [{ name: '@companyId', value: companyId }],
+        query: 'SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role',
+        parameters: [
+          { name: '@companyId', value: companyId },
+          { name: '@role', value: 'employee' },
+        ],
       })
       .fetchAll()
     return jsonResponse(200, { success: true, data: resources })
   }
 
-  // Return all employees
-  const { resources } = await container.items.query('SELECT * FROM c').fetchAll()
+  // Return all employees (not managers)
+  const { resources } = await container.items
+    .query({
+      query: 'SELECT * FROM c WHERE c.role = @role',
+      parameters: [{ name: '@role', value: 'employee' }],
+    })
+    .fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }
 
@@ -64,8 +73,8 @@ export const createEmployeeHandler = async (
     })
   }
 
-  // Check if email already exists
-  const container = await getContainer('employees', '/companyId')
+  // Check if email already exists in the users container
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
   const { resources: existing } = await container.items
     .query({
       query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
@@ -76,12 +85,12 @@ export const createEmployeeHandler = async (
   if (existing.length > 0) {
     return jsonResponse(409, {
       success: false,
-      error: 'An employee with this email already exists.',
+      error: 'A user with this email already exists.',
     })
   }
 
   const employee = {
-    id: createId('employee'),
+    id: createId('user'),
     companyId: body.companyId,
     firstName: body.firstName,
     lastName: body.lastName,
@@ -129,7 +138,7 @@ export const updateEmployeeHandler = async (
     })
   }
 
-  const container = await getContainer('employees', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
   // Fetch existing employee
   const { resource: existing } = await container.item(employeeId, companyId).read()

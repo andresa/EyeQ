@@ -3,6 +3,12 @@ import { getContainer } from './cosmos.js'
 import { jsonResponse } from './http.js'
 import { nowIso } from './utils.js'
 import { getAuthenticatedUser } from './auth.js'
+import {
+  USERS_CONTAINER,
+  USERS_PARTITION_KEY,
+  ADMINS_CONTAINER,
+  ADMINS_PARTITION_KEY,
+} from './userTypes.js'
 
 /**
  * GET /api/shared/me
@@ -20,7 +26,7 @@ export const meHandler = async (request: HttpRequest): Promise<HttpResponseInit>
 
   // Update lastLogin based on user type
   if (user.userType === 'admin') {
-    const adminsContainer = await getContainer('admins', '/id')
+    const adminsContainer = await getContainer(ADMINS_CONTAINER, ADMINS_PARTITION_KEY)
     const { resource: admin } = await adminsContainer.item(user.id, user.id).read()
     if (admin) {
       const updated = { ...admin, lastLogin: now }
@@ -41,75 +47,39 @@ export const meHandler = async (request: HttpRequest): Promise<HttpResponseInit>
     })
   }
 
-  if (user.userType === 'manager') {
-    const managersContainer = await getContainer('managers', '/companyId')
-    const { resources: managers } = await managersContainer.items
+  // Handle both managers and employees from the unified users container
+  if (user.userType === 'manager' || user.userType === 'employee') {
+    const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
+    const { resources: users } = await usersContainer.items
       .query({
         query: 'SELECT * FROM c WHERE c.id = @id',
         parameters: [{ name: '@id', value: user.id }],
       })
       .fetchAll()
 
-    if (managers.length > 0) {
-      const manager = managers[0]
-      const updated = { ...manager, lastLogin: now }
-      await managersContainer.item(manager.id, manager.companyId).replace(updated)
+    if (users.length > 0) {
+      const companyUser = users[0]
+      const updated = { ...companyUser, lastLogin: now }
+      await usersContainer.item(companyUser.id, companyUser.companyId).replace(updated)
 
       // Get company name
       const companiesContainer = await getContainer('companies', '/id')
       const { resource: company } = await companiesContainer
-        .item(manager.companyId, manager.companyId)
+        .item(companyUser.companyId, companyUser.companyId)
         .read()
 
       return jsonResponse(200, {
         success: true,
         data: {
-          id: manager.id,
-          email: manager.email,
-          firstName: manager.firstName,
-          lastName: manager.lastName,
-          role: manager.role || 'manager',
-          companyId: manager.companyId,
+          id: companyUser.id,
+          email: companyUser.email,
+          firstName: companyUser.firstName,
+          lastName: companyUser.lastName,
+          role: companyUser.role || user.userType,
+          companyId: companyUser.companyId,
           companyName: company?.name,
           lastLogin: now,
-          userType: 'manager',
-        },
-      })
-    }
-  }
-
-  if (user.userType === 'employee') {
-    const employeesContainer = await getContainer('employees', '/companyId')
-    const { resources: employees } = await employeesContainer.items
-      .query({
-        query: 'SELECT * FROM c WHERE c.id = @id',
-        parameters: [{ name: '@id', value: user.id }],
-      })
-      .fetchAll()
-
-    if (employees.length > 0) {
-      const employee = employees[0]
-      const updated = { ...employee, lastLogin: now }
-      await employeesContainer.item(employee.id, employee.companyId).replace(updated)
-
-      // Get company name
-      const companiesContainer = await getContainer('companies', '/id')
-      const { resource: company } = await companiesContainer
-        .item(employee.companyId, employee.companyId)
-        .read()
-
-      return jsonResponse(200, {
-        success: true,
-        data: {
-          id: employee.id,
-          email: employee.email,
-          firstName: employee.firstName,
-          lastName: employee.lastName,
-          role: employee.role || 'employee',
-          companyId: employee.companyId,
-          companyName: company?.name,
-          lastLogin: now,
-          userType: 'employee',
+          userType: user.userType,
         },
       })
     }

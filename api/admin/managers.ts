@@ -3,6 +3,7 @@ import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
+import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
 
@@ -23,11 +24,14 @@ export const listManagersHandler = async (
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
-  const container = await getContainer('managers', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
   const { resources } = await container.items
     .query({
-      query: 'SELECT * FROM c WHERE c.companyId = @companyId',
-      parameters: [{ name: '@companyId', value: companyId }],
+      query: 'SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role',
+      parameters: [
+        { name: '@companyId', value: companyId },
+        { name: '@role', value: 'manager' },
+      ],
     })
     .fetchAll()
   return jsonResponse(200, { success: true, data: resources })
@@ -59,18 +63,18 @@ export const createManagerHandler = async (
   }
 
   const manager = {
-    id: createId('manager'),
+    id: createId('user'),
     companyId: body.companyId,
     firstName: body.firstName,
     lastName: body.lastName,
     email: body.email,
     phone: body.phone,
-    role: (body.role || 'manager') as 'employee' | 'manager',
+    role: 'manager' as const, // Always 'manager' for this endpoint
     createdAt: nowIso(),
     isActive: true,
   }
 
-  const container = await getContainer('managers', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
   await container.items.create(manager)
   return jsonResponse(201, { success: true, data: manager })
 }
@@ -107,11 +111,11 @@ export const updateManagerHandler = async (
     })
   }
 
-  const container = await getContainer('managers', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
   // Fetch existing manager
   const { resource: existing } = await container.item(managerId, companyId).read()
-  if (!existing) {
+  if (!existing || existing.role !== 'manager') {
     return jsonResponse(404, { success: false, error: 'Manager not found.' })
   }
 
@@ -165,11 +169,11 @@ export const deleteManagerHandler = async (
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  const container = await getContainer('managers', '/companyId')
+  const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
-  // Fetch existing manager to verify it exists
+  // Fetch existing manager to verify it exists and is a manager
   const { resource: existing } = await container.item(managerId, companyId).read()
-  if (!existing) {
+  if (!existing || existing.role !== 'manager') {
     return jsonResponse(404, { success: false, error: 'Manager not found.' })
   }
 

@@ -2,6 +2,12 @@ import { app, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse } from '../shared/http.js'
 import { isDevMode } from './utils.js'
+import {
+  USERS_CONTAINER,
+  USERS_PARTITION_KEY,
+  ADMINS_CONTAINER,
+  ADMINS_PARTITION_KEY,
+} from '../shared/userTypes.js'
 
 interface DevUser {
   id: string
@@ -9,6 +15,7 @@ interface DevUser {
   firstName: string
   lastName: string
   companyId?: string
+  role?: string
 }
 
 /**
@@ -26,31 +33,26 @@ export const getDevUsersHandler = async (): Promise<HttpResponseInit> => {
   }
 
   try {
-    // Fetch admins
-    const adminsContainer = await getContainer('admins', '/id')
+    // Fetch admins (separate container)
+    const adminsContainer = await getContainer(ADMINS_CONTAINER, ADMINS_PARTITION_KEY)
     const { resources: admins } = await adminsContainer.items
       .query({
         query: 'SELECT c.id, c.email, c.firstName, c.lastName FROM c',
       })
       .fetchAll()
 
-    // Fetch managers
-    const managersContainer = await getContainer('managers', '/companyId')
-    const { resources: managers } = await managersContainer.items
+    // Fetch all company users from unified container, then split by role
+    const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
+    const { resources: allUsers } = await usersContainer.items
       .query({
         query:
-          'SELECT c.id, c.email, c.firstName, c.lastName, c.companyId FROM c WHERE c.isActive = true',
+          'SELECT c.id, c.email, c.firstName, c.lastName, c.companyId, c.role FROM c WHERE c.isActive = true',
       })
       .fetchAll()
 
-    // Fetch employees
-    const employeesContainer = await getContainer('employees', '/companyId')
-    const { resources: employees } = await employeesContainer.items
-      .query({
-        query:
-          'SELECT c.id, c.email, c.firstName, c.lastName, c.companyId FROM c WHERE c.isActive = true',
-      })
-      .fetchAll()
+    // Split users by role
+    const managers = allUsers.filter((u: DevUser) => u.role === 'manager')
+    const employees = allUsers.filter((u: DevUser) => u.role === 'employee')
 
     return jsonResponse(200, {
       success: true,

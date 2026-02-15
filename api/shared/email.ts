@@ -2,13 +2,21 @@ import { EmailClient, type EmailMessage } from '@azure/communication-email'
 
 /**
  * Send an email using Azure Communication Services.
- * Returns the message ID on success, throws on failure.
+ *
+ * By default, this function queues the email and returns immediately without
+ * waiting for delivery confirmation (fire-and-forget). This is much faster
+ * as it doesn't block on email delivery which can take 5-10+ seconds.
+ *
+ * Set waitForDelivery=true if you need to confirm the email was delivered.
+ *
+ * @returns The operation ID (queued) or message ID (if waitForDelivery=true)
  */
 export async function sendEmail(
   to: string,
   subject: string,
   htmlContent: string,
   plainTextContent?: string,
+  waitForDelivery = false,
 ): Promise<string> {
   const connectionString = process.env.ACS_CONNECTION_STRING
   const senderAddress = process.env.ACS_SENDER_ADDRESS
@@ -19,12 +27,6 @@ export async function sendEmail(
   if (!senderAddress) {
     throw new Error('Missing ACS_SENDER_ADDRESS environment variable')
   }
-
-  console.log('ACS Config:', {
-    hasConnectionString: !!connectionString,
-    senderAddress,
-    recipient: to,
-  })
 
   const client = new EmailClient(connectionString)
 
@@ -40,21 +42,29 @@ export async function sendEmail(
     },
   }
 
-  console.log('Sending email to:', to)
+  console.log('Queuing email to:', to)
 
   try {
     const poller = await client.beginSend(message)
-    const result = await poller.pollUntilDone()
 
-    console.log('Email result:', result.status, result.id)
+    if (waitForDelivery) {
+      // Wait for full delivery confirmation (slow - 5-10+ seconds)
+      const result = await poller.pollUntilDone()
+      console.log('Email delivered:', result.status, result.id)
 
-    if (result.status !== 'Succeeded') {
-      throw new Error(
-        `Email send failed with status: ${result.status}. Error: ${JSON.stringify(result.error)}`,
-      )
+      if (result.status !== 'Succeeded') {
+        throw new Error(
+          `Email send failed with status: ${result.status}. Error: ${JSON.stringify(result.error)}`,
+        )
+      }
+
+      return result.id
     }
 
-    return result.id
+    // Fire-and-forget: return immediately after queuing (fast - <1 second)
+    // The email will be delivered asynchronously by Azure
+    console.log('Email queued successfully')
+    return 'queued'
   } catch (error) {
     console.error('ACS Email error:', error)
     throw error
