@@ -3,9 +3,15 @@ import { getContainer } from './cosmos.js'
 import { jsonResponse, parseJsonBody } from './http.js'
 import { createId, nowIso } from './utils.js'
 import { sendMagicLinkEmail } from './email.js'
+import {
+  USERS_CONTAINER,
+  USERS_PARTITION_KEY,
+  ADMINS_CONTAINER,
+  ADMINS_PARTITION_KEY,
+  type UserType,
+} from './userTypes.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
-type UserType = 'employee' | 'manager' | 'admin'
 
 export interface AuthenticatedUser {
   id: string
@@ -54,16 +60,17 @@ function generateToken(): string {
 }
 
 /**
- * Find a user by email across all user tables (admins, managers, employees).
+ * Find a user by email across all user tables (admins, users).
  * Returns the user record and their type.
+ * Admins are in a separate container, while managers and employees are in the unified 'users' container.
  */
 async function findUserByEmail(
   email: string,
 ): Promise<{ user: Record<string, unknown>; userType: UserType } | null> {
   const normalizedEmail = email.toLowerCase()
 
-  // Check admins
-  const adminsContainer = await getContainer('admins', '/id')
+  // Check admins first (separate container)
+  const adminsContainer = await getContainer(ADMINS_CONTAINER, ADMINS_PARTITION_KEY)
   const { resources: admins } = await adminsContainer.items
     .query({
       query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
@@ -75,30 +82,19 @@ async function findUserByEmail(
     return { user: admins[0], userType: 'admin' }
   }
 
-  // Check managers
-  const managersContainer = await getContainer('managers', '/companyId')
-  const { resources: managers } = await managersContainer.items
+  // Check unified users container (managers + employees)
+  const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
+  const { resources: users } = await usersContainer.items
     .query({
       query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
       parameters: [{ name: '@email', value: normalizedEmail }],
     })
     .fetchAll()
 
-  if (managers.length > 0) {
-    return { user: managers[0], userType: 'manager' }
-  }
-
-  // Check employees
-  const employeesContainer = await getContainer('employees', '/companyId')
-  const { resources: employees } = await employeesContainer.items
-    .query({
-      query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
-      parameters: [{ name: '@email', value: normalizedEmail }],
-    })
-    .fetchAll()
-
-  if (employees.length > 0) {
-    return { user: employees[0], userType: 'employee' }
+  if (users.length > 0) {
+    const user = users[0]
+    // userType is determined by role field
+    return { user, userType: user.role as UserType }
   }
 
   return null

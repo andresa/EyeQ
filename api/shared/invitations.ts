@@ -9,6 +9,7 @@ import {
   createSession,
 } from './auth.js'
 import { sendInvitationEmail } from './email.js'
+import { USERS_CONTAINER, USERS_PARTITION_KEY } from './userTypes.js'
 
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked'
 export type InvitationUserType = 'employee' | 'manager'
@@ -174,11 +175,10 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
   const acceptedEmail = invitation.invitedEmail.toLowerCase()
   const { userType, userId } = invitation
 
-  // Determine which container to use based on user type
-  const containerName = userType === 'manager' ? 'managers' : 'employees'
-  const userContainer = await getContainer(containerName, '/companyId')
+  // Use the unified users container for both managers and employees
+  const userContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
-  // Check if email is already used by another user in the same container
+  // Check if email is already used by another user in the container
   const { resources: existingUsers } = await userContainer.items
     .query({
       query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
@@ -199,7 +199,7 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
   if (!user) {
     return {
       success: false,
-      error: `${userType === 'manager' ? 'Manager' : 'Employee'} record not found.`,
+      error: 'User record not found.',
     }
   }
 
@@ -285,9 +285,9 @@ export const sendInvitationHandler = async (
     })
   }
 
-  // Get employee details
-  const employeesContainer = await getContainer('employees', '/companyId')
-  const { resource: employee } = await employeesContainer
+  // Get employee details from unified users container
+  const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
+  const { resource: employee } = await usersContainer
     .item(employeeId, body.companyId)
     .read()
 
@@ -317,7 +317,7 @@ export const sendInvitationHandler = async (
     })
 
     // Update employee invitation status
-    await employeesContainer.item(employeeId, body.companyId).replace({
+    await usersContainer.item(employeeId, body.companyId).replace({
       ...employee,
       invitationStatus: 'pending',
       invitedEmail: body.invitedEmail,
@@ -476,9 +476,9 @@ export const sendManagerInvitationHandler = async (
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
 
-  // Get manager details
-  const managersContainer = await getContainer('managers', '/companyId')
-  const { resource: manager } = await managersContainer
+  // Get manager details from unified users container
+  const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
+  const { resource: manager } = await usersContainer
     .item(managerId, body.companyId)
     .read()
 
@@ -508,7 +508,7 @@ export const sendManagerInvitationHandler = async (
     })
 
     // Update manager invitation status
-    await managersContainer.item(managerId, body.companyId).replace({
+    await usersContainer.item(managerId, body.companyId).replace({
       ...manager,
       invitationStatus: 'pending',
       invitedEmail: body.invitedEmail,

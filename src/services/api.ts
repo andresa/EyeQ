@@ -20,21 +20,8 @@ export const getSessionToken = (): string | null => {
 export const setSessionToken = (token: string): void => {
   try {
     localStorage.setItem(SESSION_TOKEN_KEY, token)
-    // Debug: verify token was saved
-    const saved = localStorage.getItem(SESSION_TOKEN_KEY)
-    if (saved !== token) {
-      console.error('[setSessionToken] Token mismatch after save!', {
-        expected: token.substring(0, 10),
-        got: saved?.substring(0, 10),
-      })
-    } else {
-      console.log(
-        '[setSessionToken] Token saved successfully:',
-        token.substring(0, 10) + '...',
-      )
-    }
-  } catch (e) {
-    console.error('Failed to save session token', e)
+  } catch {
+    console.error('Failed to save session token')
   }
 }
 
@@ -86,12 +73,6 @@ export const apiRequest = async <T>(
 ): Promise<ApiResponse<T>> => {
   try {
     const token = getSessionToken()
-    // Debug logging
-    console.log(`[apiRequest] ${options.method || 'GET'} ${path}`, {
-      hasToken: !!token,
-      tokenPrefix: token?.substring(0, 10),
-    })
-
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -114,19 +95,8 @@ export const apiRequest = async <T>(
       headers,
     })
 
-    const result = await handleResponse<T>(response)
-
-    // Debug: log if auth failed
-    if (!response.ok && response.status === 401) {
-      console.error(`[apiRequest] 401 on ${path}`, {
-        tokenWasSent: !!token,
-        error: result.error,
-      })
-    }
-
-    return result
-  } catch (e) {
-    console.error(`[apiRequest] Error on ${path}`, e)
+    return handleResponse<T>(response)
+  } catch {
     return { success: false, error: 'Network error. Please try again.' }
   }
 }
