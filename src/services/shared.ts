@@ -27,7 +27,9 @@ export const validateInvitation = (
  */
 export const acceptInvitation = (
   token: string,
-): Promise<ApiResponse<{ message: string; token: string; expiresAt: string }>> =>
+): Promise<
+  ApiResponse<{ message: string; token: string; expiresAt: string; user: UserProfile }>
+> =>
   apiRequest(`/invitation/${encodeURIComponent(token)}/accept`, {
     method: 'POST',
   })
