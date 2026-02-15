@@ -168,9 +168,18 @@ async function validateSession(token: string): Promise<Session | null> {
 }
 
 /**
- * Extract bearer token from Authorization header.
+ * Extract session token from request headers.
+ * Checks X-Session-Token header first (for Azure Static Web Apps compatibility),
+ * then falls back to Authorization Bearer token.
  */
-function getBearerToken(request: HttpRequest): string | null {
+function getSessionToken(request: HttpRequest): string | null {
+  // First check custom header (Azure SWA strips Authorization header)
+  const sessionToken = request.headers.get('x-session-token')
+  if (sessionToken) {
+    return sessionToken
+  }
+
+  // Fall back to Authorization header for local development
   const authHeader = request.headers.get('authorization')
   if (!authHeader) return null
 
@@ -189,7 +198,7 @@ function getBearerToken(request: HttpRequest): string | null {
 export async function getAuthenticatedUser(
   request: HttpRequest,
 ): Promise<AuthenticatedUser | null> {
-  const token = getBearerToken(request)
+  const token = getSessionToken(request)
   if (!token) return null
 
   const session = await validateSession(token)
@@ -435,7 +444,7 @@ export const verifyMagicLinkHandler = async (
  * Invalidate the current session.
  */
 export const logoutHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
-  const token = getBearerToken(request)
+  const token = getSessionToken(request)
 
   if (!token) {
     return jsonResponse(200, { success: true })
@@ -461,7 +470,7 @@ export const logoutHandler = async (request: HttpRequest): Promise<HttpResponseI
 export const getSessionHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
-  const token = getBearerToken(request)
+  const token = getSessionToken(request)
 
   if (!token) {
     return jsonResponse(401, { success: false, error: 'Not authenticated.' })

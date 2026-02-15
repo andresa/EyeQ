@@ -102,9 +102,11 @@ export const apiRequest = async <T>(
       Object.assign(headers, optHeaders)
     }
 
-    // Add Authorization header if we have a session token
+    // Add session token header if we have one
+    // Using X-Session-Token instead of Authorization because Azure Static Web Apps
+    // intercepts/strips the Authorization header for its own auth system
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`
+      headers['X-Session-Token'] = token
     }
 
     const response = await fetch(`${API_BASE}${path}`, {
