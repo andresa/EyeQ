@@ -1,4 +1,9 @@
-import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
+import {
+  app,
+  type HttpRequest,
+  type HttpResponseInit,
+  type InvocationContext,
+} from '@azure/functions'
 import { getContainer } from './cosmos.js'
 import { jsonResponse, parseJsonBody } from './http.js'
 import { createId, nowIso } from './utils.js'
@@ -151,16 +156,39 @@ async function getSessionByToken(token: string): Promise<Session | null> {
  * Validate session and update lastUsedAt.
  */
 async function validateSession(token: string): Promise<Session | null> {
-  console.log(
+  const session = await getSessionByToken(token)
+  if (!session) return null
+
+  // Check if expired
+  if (new Date(session.expiresAt) < new Date()) {
+    return null
+  }
+
+  // Update lastUsedAt
+  const container = await getContainer('sessions', '/id')
+  const updated = { ...session, lastUsedAt: nowIso() }
+  await container.item(session.id, session.id).replace(updated)
+
+  return updated
+}
+
+/**
+ * Validate session with logging for debugging.
+ */
+async function validateSessionWithLogging(
+  token: string,
+  context: InvocationContext,
+): Promise<Session | null> {
+  context.log(
     '[validateSession] Looking up session by token:',
     token.substring(0, 10) + '...',
   )
   const session = await getSessionByToken(token)
   if (!session) {
-    console.log('[validateSession] No session found for token')
+    context.log('[validateSession] No session found for token')
     return null
   }
-  console.log(
+  context.log(
     '[validateSession] Session found:',
     session.id,
     'expires:',
@@ -171,7 +199,7 @@ async function validateSession(token: string): Promise<Session | null> {
   const now = new Date()
   const expiresAt = new Date(session.expiresAt)
   if (expiresAt < now) {
-    console.log(
+    context.log(
       '[validateSession] Session expired. expiresAt:',
       expiresAt.toISOString(),
       'now:',
@@ -481,30 +509,31 @@ export const logoutHandler = async (request: HttpRequest): Promise<HttpResponseI
  */
 export const getSessionHandler = async (
   request: HttpRequest,
+  context: InvocationContext,
 ): Promise<HttpResponseInit> => {
   const token = getBearerToken(request)
 
-  // Debug logging for production issue
+  // Debug logging for production issue - using context.log for Application Insights
   const authHeader = request.headers.get('authorization')
-  console.log('[getSession] Auth header present:', !!authHeader)
-  console.log(
+  context.log('[getSession] Auth header present:', !!authHeader)
+  context.log(
     '[getSession] Auth header value:',
     authHeader ? `${authHeader.substring(0, 20)}...` : 'none',
   )
-  console.log(
+  context.log(
     '[getSession] Token extracted:',
     token ? `${token.substring(0, 10)}...` : 'none',
   )
 
   if (!token) {
-    console.log('[getSession] No token - returning 401')
+    context.log('[getSession] No token - returning 401')
     return jsonResponse(401, { success: false, error: 'Not authenticated.' })
   }
 
-  const session = await validateSession(token)
-  console.log('[getSession] Session found:', !!session)
+  const session = await validateSessionWithLogging(token, context)
+  context.log('[getSession] Session found:', !!session)
   if (!session) {
-    console.log('[getSession] Session invalid or expired - returning 401')
+    context.log('[getSession] Session invalid or expired - returning 401')
     return jsonResponse(401, { success: false, error: 'Session expired or invalid.' })
   }
 
