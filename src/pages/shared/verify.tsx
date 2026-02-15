@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Button, Card, Result, Spin, Typography } from 'antd'
 import {
@@ -22,8 +22,13 @@ const VerifyPage = () => {
 
   const [pageState, setPageState] = useState<PageState>('verifying')
   const [error, setError] = useState<string | null>(null)
+  const verifyAttempted = useRef(false)
 
   useEffect(() => {
+    // Prevent double execution
+    if (verifyAttempted.current) return
+    verifyAttempted.current = true
+
     const verify = async () => {
       if (!token) {
         setError('No verification token provided.')
