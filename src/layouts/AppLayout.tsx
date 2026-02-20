@@ -1,6 +1,7 @@
-import { Layout, Menu, Grid } from 'antd'
+import { Layout, Menu, Grid, Drawer, Button } from 'antd'
+import { MenuOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import EyeQHeader from '../components/organisms/EyeQHeader'
 
 const { Content, Sider } = Layout
@@ -22,24 +23,52 @@ const AppLayout = ({
 }: AppLayoutProps) => {
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.md
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const navMenu = (
+    <Menu
+      mode="inline"
+      className="p-2"
+      items={items}
+      selectedKeys={selectedKeys}
+      onClick={({ key }) => {
+        onNavigate(String(key))
+        if (isMobile) setDrawerOpen(false)
+      }}
+    />
+  )
 
   return (
     <Layout className="min-h-screen">
-      <EyeQHeader title={title} />
+      <EyeQHeader
+        title={title}
+        menuButton={
+          isMobile ? (
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => setDrawerOpen(true)}
+              className="!text-white"
+            />
+          ) : undefined
+        }
+      />
       <Layout>
-        <Sider
-          breakpoint="md"
-          collapsedWidth={isMobile ? 0 : 80}
-          width={220}
-          className="bg-white"
-        >
-          <Menu
-            mode="inline"
-            items={items}
-            selectedKeys={selectedKeys}
-            onClick={({ key }) => onNavigate(String(key))}
-          />
-        </Sider>
+        {isMobile ? (
+          <Drawer
+            placement="left"
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            size={'70vw'}
+            styles={{ body: { padding: 0 } }}
+          >
+            {navMenu}
+          </Drawer>
+        ) : (
+          <Sider width={220} className="bg-white">
+            {navMenu}
+          </Sider>
+        )}
         <Layout className="p-6">
           <Content>{children}</Content>
         </Layout>

@@ -109,12 +109,17 @@ export interface InvitationValidation {
 
 export type ComponentType = 'single_choice' | 'multiple_choice' | 'text' | 'info'
 
+export interface TestSettings {
+  allowBackNavigation: boolean
+}
+
 export interface TestTemplate {
   id: UUID
   companyId: UUID
   managerId: UUID
   name: string
   sections: TestSection[]
+  settings?: TestSettings
   createdAt: string
   updatedAt?: string
   isActive: boolean

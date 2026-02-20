@@ -1,4 +1,5 @@
-import { Button, Card, Input, Space, Typography, message } from 'antd'
+import { Button, Card, Input, Space, Spin, Typography, message } from 'antd'
+import { SettingOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -6,10 +7,12 @@ import ManagerLayout from '../../../layouts/ManagerLayout'
 import SectionList from '../../../components/test-builder/SectionList'
 import ComponentCard from '../../../components/test-builder/ComponentCard'
 import { createUUID } from '../../../utils/uuid'
+import TestSettingsModal from '../../../components/test-builder/TestSettingsModal'
 import type {
   ComponentType,
   TestComponent,
   TestSection,
+  TestSettings,
   TestTemplate,
 } from '../../../types'
 import {
@@ -63,6 +66,10 @@ const TestBuilderForm = ({
 
   const [name, setName] = useState(existingTest?.name || '')
   const [sections, setSections] = useState<TestSection[]>(existingTest?.sections || [])
+  const [settings, setSettings] = useState<TestSettings>(
+    existingTest?.settings ?? { allowBackNavigation: false },
+  )
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedSectionId, setSelectedSectionId] = useState<string>(
     existingTest?.sections[0]?.id || '',
   )
@@ -195,6 +202,7 @@ const TestBuilderForm = ({
       managerId,
       name,
       sections,
+      settings,
     }
 
     const response = testId
@@ -276,10 +284,29 @@ const TestBuilderForm = ({
       </div>
       <Space>
         <Button onClick={() => navigate('/manager/tests')}>Cancel</Button>
+        <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)}>
+          Settings
+        </Button>
         <Button type="primary" onClick={handleSave}>
           Save test
         </Button>
       </Space>
+      <TestSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        onChange={async (updated) => {
+          setSettings(updated)
+          if (testId) {
+            const response = await updateTestTemplate(testId, { settings: updated })
+            if (!response.success) {
+              message.error(response.error || 'Unable to save settings')
+              return
+            }
+            message.success('Settings saved')
+          }
+        }}
+      />
     </Space>
   )
 }
@@ -311,7 +338,9 @@ const TestBuilderPage = () => {
   if (testId && isLoading) {
     return (
       <ManagerLayout>
-        <Typography.Text>Loading test...</Typography.Text>
+        <div className="flex justify-center items-center h-full">
+          <Spin />
+        </div>
       </ManagerLayout>
     )
   }
