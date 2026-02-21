@@ -1,4 +1,4 @@
-import { Button, Input, Space, Typography } from 'antd'
+import { Button, Input, Typography } from 'antd'
 import type { TestSection } from '../../types'
 
 interface SectionListProps {
@@ -20,11 +20,11 @@ const SectionList = ({
   onMove,
   onDelete,
 }: SectionListProps) => (
-  <Space orientation="vertical" className="w-full">
+  <div className="flex flex-col gap-4 w-full">
     <Button type="dashed" onClick={onAdd} block>
       Add section
     </Button>
-    <Space orientation="vertical" className="w-full">
+    <div className="flex flex-col gap-4 w-full">
       {sections.map((section, index) => (
         <div
           key={section.id}
@@ -41,7 +41,7 @@ const SectionList = ({
             section.id === selectedId ? 'bg-[#f0f5ff]' : 'bg-white'
           }`}
         >
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             <Typography.Text strong>{`Section ${index + 1}`}</Typography.Text>
             <Input
               value={section.title}
@@ -50,7 +50,7 @@ const SectionList = ({
               onFocus={() => onSelect(section.id)}
               aria-label="Section title"
             />
-            <Space>
+            <div className="flex gap-4">
               <Button
                 onClick={(event) => {
                   event.stopPropagation()
@@ -76,12 +76,12 @@ const SectionList = ({
               >
                 Delete
               </Button>
-            </Space>
-          </Space>
+            </div>
+          </div>
         </div>
       ))}
-    </Space>
-  </Space>
+    </div>
+  </div>
 )
 
 export default SectionList

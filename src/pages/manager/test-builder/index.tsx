@@ -1,4 +1,4 @@
-import { Button, Card, Input, Space, Spin, Typography, message } from 'antd'
+import { Button, Card, Input, Spin, Typography, message } from 'antd'
 import { SettingOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -218,10 +218,10 @@ const TestBuilderForm = ({
   }
 
   return (
-    <Space orientation="vertical" size="large" className="w-full">
+    <div className="flex flex-col gap-6 w-full">
       <Typography.Title level={3}>Test builder</Typography.Title>
       <Card>
-        <Space orientation="vertical" className="w-full">
+        <div className="flex flex-col gap-4 w-full">
           <Typography.Text strong>Test name</Typography.Text>
           <Input
             value={name}
@@ -229,7 +229,7 @@ const TestBuilderForm = ({
             placeholder="Safety Induction"
             aria-label="Test name"
           />
-        </Space>
+        </div>
       </Card>
       <div className="builder-grid">
         <SectionList
@@ -272,17 +272,17 @@ const TestBuilderForm = ({
           )}
         </div>
         <Card>
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             <Typography.Text strong>Component palette</Typography.Text>
             {componentPalette.map((item) => (
               <Button key={item.type} onClick={() => addComponentToSection(item.type)}>
                 {item.label}
               </Button>
             ))}
-          </Space>
+          </div>
         </Card>
       </div>
-      <Space>
+      <div className="flex gap-4">
         <Button onClick={() => navigate('/manager/tests')}>Cancel</Button>
         <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)}>
           Settings
@@ -290,7 +290,7 @@ const TestBuilderForm = ({
         <Button type="primary" onClick={handleSave}>
           Save test
         </Button>
-      </Space>
+      </div>
       <TestSettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -307,7 +307,7 @@ const TestBuilderForm = ({
           }
         }}
       />
-    </Space>
+    </div>
   )
 }
 

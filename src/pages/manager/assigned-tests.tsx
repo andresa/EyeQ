@@ -1,4 +1,4 @@
-import { Card, Select, Space, Table, Typography } from 'antd'
+import { Card, Select, Table, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
@@ -157,7 +157,7 @@ const AssignedTestsPage = () => {
 
   return (
     <ManagerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <Typography.Title level={3}>Assigned tests</Typography.Title>
         <Card>
           <Typography.Text type="secondary">
@@ -165,8 +165,8 @@ const AssignedTestsPage = () => {
           </Typography.Text>
         </Card>
         <Card>
-          <Space wrap>
-            <Space orientation="vertical" size={4}>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col gap-1">
               <Typography.Text type="secondary">Employee</Typography.Text>
               <Select
                 mode="multiple"
@@ -181,8 +181,8 @@ const AssignedTestsPage = () => {
                 className="min-w-[260px]"
                 aria-label="Filter by employee"
               />
-            </Space>
-            <Space orientation="vertical" size={4}>
+            </div>
+            <div className="flex flex-col gap-1">
               <Typography.Text type="secondary">Status</Typography.Text>
               <Select
                 mode="multiple"
@@ -199,8 +199,8 @@ const AssignedTestsPage = () => {
                 className="min-w-[220px]"
                 aria-label="Filter by status"
               />
-            </Space>
-            <Space orientation="vertical" size={4}>
+            </div>
+            <div className="flex flex-col gap-1">
               <Typography.Text type="secondary">Assigned date</Typography.Text>
               <Select
                 value={assignedFilter}
@@ -216,8 +216,8 @@ const AssignedTestsPage = () => {
                 className="min-w-[180px]"
                 aria-label="Filter by assigned date"
               />
-            </Space>
-          </Space>
+            </div>
+          </div>
         </Card>
         <Table
           loading={isLoading}
@@ -257,7 +257,7 @@ const AssignedTestsPage = () => {
             },
           ]}
         />
-      </Space>
+      </div>
     </ManagerLayout>
   )
 }

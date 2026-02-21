@@ -1,4 +1,4 @@
-import { Button, Card, Space, Typography } from 'antd'
+import { Button, Card, Typography } from 'antd'
 import type { TestComponent } from '../../types'
 import ComponentEditor from './ComponentEditor'
 
@@ -20,20 +20,20 @@ const ComponentCard = ({
   <Card
     className="mb-4"
     title={
-      <Space>
+      <div className="flex gap-4">
         <Typography.Text strong>
           {index + 1}. {component.type.replace('_', ' ')}
         </Typography.Text>
-      </Space>
+      </div>
     }
     extra={
-      <Space>
+      <div className="flex gap-4">
         <Button onClick={() => onMove('up')}>Up</Button>
         <Button onClick={() => onMove('down')}>Down</Button>
         <Button danger onClick={onDelete}>
           Delete
         </Button>
-      </Space>
+      </div>
     }
   >
     <ComponentEditor component={component} onChange={onChange} />

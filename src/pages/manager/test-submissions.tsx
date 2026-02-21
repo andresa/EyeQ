@@ -1,4 +1,4 @@
-import { Button, Card, Drawer, Dropdown, Select, Space, Table, Typography } from 'antd'
+import { Button, Card, Drawer, Dropdown, Select, Table, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
@@ -154,10 +154,10 @@ const TestSubmissionsPage = () => {
 
   return (
     <ManagerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <Typography.Title level={3}>{testName}</Typography.Title>
         <Card>
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             <Select
               placeholder="Select a test"
               value={testId || 'all'}
@@ -175,8 +175,7 @@ const TestSubmissionsPage = () => {
               ]}
               aria-label="Select test"
             />
-            <Button onClick={() => navigate('/manager/tests')}>Back to tests</Button>
-          </Space>
+          </div>
         </Card>
         <Table
           loading={isLoading}
@@ -223,7 +222,7 @@ const TestSubmissionsPage = () => {
             },
           ]}
         />
-      </Space>
+      </div>
       <Drawer
         title="Test answers"
         size={520}
@@ -233,9 +232,9 @@ const TestSubmissionsPage = () => {
         {isLoadingResults ? (
           <Typography.Text>Loading answers...</Typography.Text>
         ) : results ? (
-          <Space orientation="vertical" size="large" className="w-full">
+          <div className="flex flex-col gap-6 w-full">
             <Card>
-              <Space orientation="vertical">
+              <div className="flex flex-col gap-4">
                 <Typography.Text strong>{results.test.name}</Typography.Text>
                 <Typography.Text type="secondary">
                   Employee:{' '}
@@ -251,11 +250,11 @@ const TestSubmissionsPage = () => {
                 >
                   Mark submission
                 </Button>
-              </Space>
+              </div>
             </Card>
             {results.test.sections.map((section) => (
               <Card key={section.id} title={section.title}>
-                <Space orientation="vertical" className="w-full">
+                <div className="flex flex-col gap-4 w-full">
                   {section.components.map((component) => {
                     if (component.type === 'info') {
                       return (
@@ -280,10 +279,10 @@ const TestSubmissionsPage = () => {
                       </Card>
                     )
                   })}
-                </Space>
+                </div>
               </Card>
             ))}
-          </Space>
+          </div>
         ) : (
           <Typography.Text>No answers available.</Typography.Text>
         )}

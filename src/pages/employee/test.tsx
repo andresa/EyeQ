@@ -8,7 +8,6 @@ import {
   Progress,
   Radio,
   Checkbox,
-  Space,
   Typography,
   Spin,
 } from 'antd'
@@ -25,25 +24,25 @@ const renderComponentInput = (component: TestComponent) => {
     case 'single_choice':
       return (
         <Radio.Group>
-          <Space orientation="vertical">
+          <div className="flex flex-col gap-4">
             {(component.options || []).map((option) => (
               <Radio key={option.id} value={option.id}>
                 {option.label}
               </Radio>
             ))}
-          </Space>
+          </div>
         </Radio.Group>
       )
     case 'multiple_choice':
       return (
         <Checkbox.Group>
-          <Space orientation="vertical">
+          <div className="flex flex-col gap-4">
             {(component.options || []).map((option) => (
               <Checkbox key={option.id} value={option.id}>
                 {option.label}
               </Checkbox>
             ))}
-          </Space>
+          </div>
         </Checkbox.Group>
       )
     case 'text':
@@ -181,13 +180,13 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   }
 
   return (
-    <Space orientation="vertical" size="large" className="w-full">
+    <div className="flex flex-col gap-6 w-full">
       <Affix offsetTop={0}>
         <Card>
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             <Typography.Title level={4}>{data.test.name}</Typography.Title>
             <Progress percent={progressPercent} />
-            <Space className="w-full justify-between">
+            <div className="flex w-full justify-between gap-4">
               {sections.length > 1 && (
                 <Typography.Text type="secondary">
                   Section {currentSectionIndex + 1} of {sections.length}
@@ -196,8 +195,8 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
               {data.instance.expiresAt && timeRemaining ? (
                 <Typography.Text type="secondary">Due {timeRemaining}</Typography.Text>
               ) : null}
-            </Space>
-          </Space>
+            </div>
+          </div>
         </Card>
       </Affix>
       <Form form={form} layout="vertical">
@@ -207,7 +206,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
               key={section.id}
               className={`test-section ${index !== currentSectionIndex ? 'test-section-hidden' : ''}`}
             >
-              <Space orientation="vertical" className="w-full gap-4">
+              <div className="flex flex-col w-full gap-4">
                 <Typography.Title level={5}>{section.title}</Typography.Title>
                 {section.components.map((component) => {
                   if (component.type === 'info') {
@@ -248,10 +247,10 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                     </Form.Item>
                   )
                 })}
-              </Space>
+              </div>
             </div>
           ))}
-          <Space className="w-full justify-between mt-4">
+          <div className="flex w-full justify-between gap-4 mt-4">
             {allowBack && currentSectionIndex > 0 ? (
               <Button onClick={handlePrevious}>Previous</Button>
             ) : (
@@ -266,10 +265,10 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                 Next
               </Button>
             )}
-          </Space>
+          </div>
         </Card>
       </Form>
-    </Space>
+    </div>
   )
 }
 
@@ -303,12 +302,12 @@ const EmployeeTestPage = () => {
     return (
       <EmployeeLayout>
         <Card>
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             <Typography.Title level={4}>{data.test.name}</Typography.Title>
             <Typography.Text type="secondary">
               This test has already been completed.
             </Typography.Text>
-            <Space>
+            <div className="flex gap-4">
               <Button
                 type="primary"
                 onClick={() => navigate(`/employee/test-results/${data.instance.id}`)}
@@ -316,8 +315,8 @@ const EmployeeTestPage = () => {
                 View answers
               </Button>
               <Button onClick={() => navigate('/employee')}>Back to dashboard</Button>
-            </Space>
-          </Space>
+            </div>
+          </div>
         </Card>
       </EmployeeLayout>
     )
@@ -327,13 +326,13 @@ const EmployeeTestPage = () => {
     return (
       <EmployeeLayout>
         <Card>
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             <Typography.Title level={4}>{data.test.name}</Typography.Title>
             <Typography.Text type="secondary">
               This test has expired and can no longer be completed.
             </Typography.Text>
             <Button onClick={() => navigate('/employee')}>Back to dashboard</Button>
-          </Space>
+          </div>
         </Card>
       </EmployeeLayout>
     )

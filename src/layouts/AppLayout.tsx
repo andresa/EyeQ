@@ -69,7 +69,7 @@ const AppLayout = ({
             {navMenu}
           </Sider>
         )}
-        <Layout className="p-6">
+        <Layout className="p-6 max-w-7xl mx-auto">
           <Content>{children}</Content>
         </Layout>
       </Layout>

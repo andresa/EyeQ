@@ -1,16 +1,5 @@
 import { useState, useEffect } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Divider,
-  Form,
-  Input,
-  Select,
-  Space,
-  Spin,
-  Typography,
-} from 'antd'
+import { Alert, Button, Card, Divider, Form, Input, Select, Spin, Typography } from 'antd'
 import {
   MailOutlined,
   CheckCircleOutlined,
@@ -147,7 +136,7 @@ const LoginPage = () => {
   return (
     <div className="page-center">
       <Card className="w-full max-w-md">
-        <Space orientation="vertical" size="large" className="w-full">
+        <div className="flex flex-col gap-6 w-full">
           <div className="text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl text-white font-bold">EyeQ</span>
@@ -181,7 +170,7 @@ const LoginPage = () => {
                     <Spin />
                   </div>
                 ) : (
-                  <Space orientation="vertical" className="w-full" size="small">
+                  <div className="flex flex-col gap-2 w-full">
                     {devUsers.admins.length > 0 && (
                       <Select
                         placeholder={
@@ -223,7 +212,7 @@ const LoginPage = () => {
                         allowClear
                       />
                     )}
-                  </Space>
+                  </div>
                 )}
               </div>
 
@@ -290,7 +279,7 @@ const LoginPage = () => {
           <Typography.Text type="secondary" className="text-center text-xs block">
             By signing in, you agree to our terms of service and privacy policy.
           </Typography.Text>
-        </Space>
+        </div>
       </Card>
     </div>
   )

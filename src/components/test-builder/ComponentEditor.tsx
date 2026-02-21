@@ -1,4 +1,4 @@
-import { Checkbox, Input, Space, Typography } from 'antd'
+import { Checkbox, Input, Typography } from 'antd'
 import type { TestComponent } from '../../types'
 import OptionEditor from './OptionEditor'
 
@@ -13,7 +13,7 @@ const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
   }
 
   return (
-    <Space orientation="vertical" className="w-full">
+    <div className="flex flex-col gap-4 w-full">
       <Input
         value={component.title}
         onChange={(event) => update({ title: event.target.value })}
@@ -68,12 +68,10 @@ const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
               correctAnswer: validSelections,
             })
           }}
-          onCorrectAnswerChange={(value) =>
-            update({ correctAnswer: value })
-          }
+          onCorrectAnswerChange={(value) => update({ correctAnswer: value })}
         />
       ) : null}
-    </Space>
+    </div>
   )
 }
 

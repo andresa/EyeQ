@@ -1,4 +1,4 @@
-import { Alert, Input, Select, Space, Spin, Typography } from 'antd'
+import { Alert, Input, Select, Spin, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -63,7 +63,7 @@ const EmployeeDashboard = () => {
 
   return (
     <EmployeeLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <div>
           <Typography.Title level={3}>
             Welcome, {userProfile?.firstName || 'Employee'}
@@ -125,7 +125,7 @@ const EmployeeDashboard = () => {
             }
           />
         ))}
-      </Space>
+      </div>
     </EmployeeLayout>
   )
 }

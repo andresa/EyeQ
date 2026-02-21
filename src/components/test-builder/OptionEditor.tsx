@@ -1,4 +1,4 @@
-import { Button, Checkbox, Input, Radio, Space, Typography } from 'antd'
+import { Button, Checkbox, Input, Radio, Typography } from 'antd'
 import { createUUID } from '../../utils/uuid'
 import type { TestComponentOption } from '../../types'
 
@@ -30,19 +30,17 @@ const OptionEditor = ({
   }
 
   return (
-    <Space orientation="vertical" className="w-full">
+    <div className="flex flex-col gap-4 w-full">
       <Typography.Text type="secondary">Options</Typography.Text>
-      <Typography.Text type="secondary">
-        Select the correct answer(s)
-      </Typography.Text>
+      <Typography.Text type="secondary">Select the correct answer(s)</Typography.Text>
       {type === 'single_choice' ? (
         <Radio.Group
           value={typeof correctAnswer === 'string' ? correctAnswer : undefined}
           onChange={(event) => onCorrectAnswerChange(event.target.value)}
         >
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             {options.map((option) => (
-              <Space key={option.id} className="w-full">
+              <div key={option.id} className="flex gap-4 w-full">
                 <Input
                   value={option.label}
                   onChange={(event) => updateOption(option.id, event.target.value)}
@@ -51,20 +49,18 @@ const OptionEditor = ({
                 />
                 <Radio value={option.id} aria-label="Correct answer" />
                 <Button onClick={() => removeOption(option.id)}>Remove</Button>
-              </Space>
+              </div>
             ))}
-          </Space>
+          </div>
         </Radio.Group>
       ) : (
         <Checkbox.Group
           value={Array.isArray(correctAnswer) ? correctAnswer : []}
-          onChange={(values) =>
-            onCorrectAnswerChange(values as string[])
-          }
+          onChange={(values) => onCorrectAnswerChange(values as string[])}
         >
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             {options.map((option) => (
-              <Space key={option.id} className="w-full">
+              <div key={option.id} className="flex gap-4 w-full">
                 <Input
                   value={option.label}
                   onChange={(event) => updateOption(option.id, event.target.value)}
@@ -73,9 +69,9 @@ const OptionEditor = ({
                 />
                 <Checkbox value={option.id} aria-label="Correct answer" />
                 <Button onClick={() => removeOption(option.id)}>Remove</Button>
-              </Space>
+              </div>
             ))}
-          </Space>
+          </div>
         </Checkbox.Group>
       )}
       <Button
@@ -87,7 +83,7 @@ const OptionEditor = ({
       <Button type="dashed" onClick={addOption} block>
         Add option
       </Button>
-    </Space>
+    </div>
   )
 }
 
