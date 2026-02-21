@@ -8,7 +8,7 @@ const instance: TestInstance = {
   testId: 'test_1',
   employeeId: 'employee_1',
   assignedByManagerId: 'manager_1',
-  status: 'pending',
+  status: 'assigned',
   assignedAt: '2026-01-01T00:00:00Z',
 }
 

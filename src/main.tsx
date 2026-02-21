@@ -2,11 +2,13 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ConfigProvider } from 'antd'
+import { App as AntApp, ConfigProvider } from 'antd'
 import 'antd/dist/reset.css'
 import './index.css'
 import App from './App.tsx'
 import { SessionProvider } from './hooks/useSession'
+import { antdColourTheme } from './theme/colors'
+import { ThemeStyles } from './theme/ThemeStyles'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,11 +21,30 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ThemeStyles />
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
         <BrowserRouter>
-          <ConfigProvider>
-            <App />
+          <ConfigProvider
+            theme={{
+              ...antdColourTheme,
+              components: {
+                Button: {
+                  paddingInline: 8,
+                },
+                Typography: {
+                  titleMarginBottom: 0,
+                  titleMarginTop: 0,
+                },
+                Card: {
+                  bodyPadding: 16,
+                },
+              },
+            }}
+          >
+            <AntApp>
+              <App />
+            </AntApp>
           </ConfigProvider>
         </BrowserRouter>
       </SessionProvider>

@@ -4,11 +4,16 @@ import { jsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 
+interface TestSettings {
+  allowBackNavigation: boolean
+}
+
 interface TestBody {
   companyId?: string
   managerId?: string
   name?: string
   sections?: unknown[]
+  settings?: TestSettings
   isActive?: boolean
 }
 
@@ -76,6 +81,7 @@ export const createTestHandler = async (
     managerId: body.managerId,
     name: body.name,
     sections: body.sections,
+    settings: body.settings ?? { allowBackNavigation: false },
     createdAt: nowIso(),
     updatedAt: nowIso(),
     isActive: true,
@@ -116,6 +122,7 @@ export const updateTestHandler = async (
     ...existing,
     name: body?.name ?? existing.name,
     sections: body?.sections ?? existing.sections,
+    settings: body?.settings ?? existing.settings,
     isActive: body?.isActive ?? existing.isActive,
     updatedAt: nowIso(),
   }
@@ -163,7 +170,7 @@ export const assignTestHandler = async (
       testId,
       employeeId,
       assignedByManagerId: test.managerId,
-      status: 'pending',
+      status: 'assigned',
       assignedAt: nowIso(),
       expiresAt: body.expiresAt,
       completedAt: null,

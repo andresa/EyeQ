@@ -1,4 +1,4 @@
-import { Card, Space, Typography } from 'antd'
+import { Card, Typography } from 'antd'
 import StatusBadge from '../atoms/StatusBadge'
 import type { TestInstance, TestTemplate } from '../../types'
 import { formatDateTime } from '../../utils/date'
@@ -12,7 +12,7 @@ interface TestCardProps {
 const TestCard = ({ instance, test, onOpen }: TestCardProps) => (
   <Card hoverable onClick={onOpen} className="mb-4">
     <div className="flex items-start justify-between gap-4">
-      <Space orientation="vertical" size={4}>
+      <div className="flex flex-col gap-1">
         <Typography.Text strong>
           {test?.name || instance.testName || instance.testId}
         </Typography.Text>
@@ -24,7 +24,7 @@ const TestCard = ({ instance, test, onOpen }: TestCardProps) => (
             Due {formatDateTime(instance.expiresAt)}
           </Typography.Text>
         ) : null}
-      </Space>
+      </div>
       <StatusBadge status={instance.status} />
     </div>
   </Card>

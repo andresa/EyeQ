@@ -1,4 +1,4 @@
-import { Alert, Card, Space, Statistic, Typography } from 'antd'
+import { Alert, Card, Statistic, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import { listEmployees, listTests } from '../../services/manager'
@@ -50,7 +50,7 @@ const ManagerDashboard = () => {
 
   return (
     <ManagerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <div>
           <Typography.Title level={3}>
             Welcome, {userProfile?.firstName || 'Manager'}
@@ -68,7 +68,7 @@ const ManagerDashboard = () => {
             <Statistic title="Tests" value={tests?.length || 0} />
           </Card>
         </div>
-      </Space>
+      </div>
     </ManagerLayout>
   )
 }

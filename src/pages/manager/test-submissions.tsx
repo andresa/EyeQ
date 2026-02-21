@@ -1,19 +1,40 @@
-import { Button, Card, Drawer, Dropdown, Select, Space, Table, Typography } from 'antd'
+import { Button, Card, Drawer, Dropdown, Select, Table, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import { listManagersShared } from '../../services/shared'
 import {
   fetchTestInstanceResults,
   listEmployees,
   listTestInstances,
   listTests,
 } from '../../services/manager'
-import type { Employee, ResponseRecord, TestComponent, TestTemplate } from '../../types'
+import type {
+  Employee,
+  Manager,
+  ResponseRecord,
+  TestComponent,
+  TestInstance,
+  TestTemplate,
+} from '../../types'
 import { formatDateTime } from '../../utils/date'
 import { useSession } from '../../hooks/useSession'
+import StatusBadge from '../../components/atoms/StatusBadge'
+import {
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  isWithinInterval,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+  subWeeks,
+} from 'date-fns'
 
 const buildResponseMap = (responses: ResponseRecord[]) =>
   responses.reduce((map, response) => {
@@ -43,13 +64,16 @@ const resolveAnswer = (component: TestComponent, response?: ResponseRecord) => {
   return 'No response'
 }
 
-const TestSubmissionsPage = () => {
+const SubmissionsPage = () => {
   const { testId } = useParams()
   const navigate = useNavigate()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
 
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null)
+  const [employeeFilter, setEmployeeFilter] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [assignedFilter, setAssignedFilter] = useState<string>('all')
 
   const { data: tests } = useQuery({
     queryKey: ['manager', 'tests', companyId],
@@ -75,15 +99,29 @@ const TestSubmissionsPage = () => {
     },
   })
 
+  const { data: managers } = useQuery({
+    queryKey: ['admin', 'managers', companyId],
+    queryFn: async () => {
+      if (!companyId) return [] as Manager[]
+      const response = await listManagersShared(companyId)
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Unable to load managers')
+      }
+      return response.data
+    },
+    enabled: Boolean(companyId),
+  })
+
   const { data: instances, isLoading } = useQuery({
     queryKey: ['manager', 'testInstances', testId, companyId],
     queryFn: async () => {
+      if (!companyId) return [] as TestInstance[]
       const response = await listTestInstances({
         testId: testId || undefined,
         companyId: testId ? undefined : companyId,
       })
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load test instances')
+        throw new Error(response.error || 'Unable to load submissions')
       }
       return response.data
     },
@@ -103,10 +141,14 @@ const TestSubmissionsPage = () => {
     },
   })
 
-  const testName = useMemo(() => {
-    if (!testId) return 'All test submissions'
-    return tests?.find((test) => test.id === testId)?.name || 'Test submissions'
-  }, [testId, tests])
+  const testMap = useMemo(
+    () =>
+      (tests || []).reduce<Record<string, string>>((map, test) => {
+        map[test.id] = test.name
+        return map
+      }, {}),
+    [tests],
+  )
 
   const employeeMap = useMemo(
     () =>
@@ -117,15 +159,67 @@ const TestSubmissionsPage = () => {
     [employees],
   )
 
+  const managerMap = useMemo(
+    () =>
+      (managers || []).reduce<Record<string, string>>((map, manager) => {
+        map[manager.id] = `${manager.firstName} ${manager.lastName}`
+        return map
+      }, {}),
+    [managers],
+  )
+
   const responseMap = useMemo(() => buildResponseMap(results?.responses || []), [results])
 
-  const sortedInstances = useMemo(() => {
-    return (instances || []).slice().sort((a, b) => {
-      const aDate = a.completedAt || a.assignedAt
-      const bDate = b.completedAt || b.assignedAt
-      return new Date(bDate).getTime() - new Date(aDate).getTime()
-    })
-  }, [instances])
+  const filteredInstances = useMemo(() => {
+    const now = new Date()
+    const resolveAssignedRange = () => {
+      switch (assignedFilter) {
+        case 'today':
+          return { start: startOfDay(now), end: endOfDay(now) }
+        case 'this_week':
+          return {
+            start: startOfWeek(now, { weekStartsOn: 1 }),
+            end: endOfWeek(now, { weekStartsOn: 1 }),
+          }
+        case 'last_week': {
+          const lastWeek = subWeeks(now, 1)
+          return {
+            start: startOfWeek(lastWeek, { weekStartsOn: 1 }),
+            end: endOfWeek(lastWeek, { weekStartsOn: 1 }),
+          }
+        }
+        case 'this_month':
+          return { start: startOfMonth(now), end: endOfMonth(now) }
+        case 'last_month': {
+          const lastMonth = subMonths(now, 1)
+          return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) }
+        }
+        default:
+          return null
+      }
+    }
+
+    const range = resolveAssignedRange()
+
+    return (instances || [])
+      .filter((instance) => {
+        if (employeeFilter.length > 0 && !employeeFilter.includes(instance.employeeId)) {
+          return false
+        }
+        if (statusFilter.length > 0 && !statusFilter.includes(instance.status)) {
+          return false
+        }
+        if (range) {
+          return isWithinInterval(parseISO(instance.assignedAt), range)
+        }
+        return true
+      })
+      .sort((a, b) => {
+        const aDate = a.completedAt || a.assignedAt
+        const bDate = b.completedAt || b.assignedAt
+        return new Date(bDate).getTime() - new Date(aDate).getTime()
+      })
+  }, [assignedFilter, employeeFilter, instances, statusFilter])
 
   const handleViewAnswers = (instanceId: string) => {
     setSelectedInstanceId(instanceId)
@@ -154,33 +248,88 @@ const TestSubmissionsPage = () => {
 
   return (
     <ManagerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
-        <Typography.Title level={3}>{testName}</Typography.Title>
+      <div className="flex flex-col gap-6 w-full">
+        <Typography.Title level={3}>Submissions</Typography.Title>
         <Card>
-          <Space orientation="vertical" className="w-full">
-            <Select
-              placeholder="Select a test"
-              value={testId || 'all'}
-              onChange={(value) =>
-                value === 'all'
-                  ? navigate('/manager/test-submissions')
-                  : navigate(`/manager/test-submissions/${value}`)
-              }
-              options={[
-                { label: 'All tests', value: 'all' },
-                ...(tests || []).map((test) => ({
-                  label: test.name,
-                  value: test.id,
-                })),
-              ]}
-              aria-label="Select test"
-            />
-            <Button onClick={() => navigate('/manager/tests')}>Back to tests</Button>
-          </Space>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col gap-1">
+              <Typography.Text type="secondary">Test</Typography.Text>
+              <Select
+                value={testId || 'all'}
+                onChange={(value) =>
+                  value === 'all'
+                    ? navigate('/manager/test-submissions')
+                    : navigate(`/manager/test-submissions/${value}`)
+                }
+                options={[
+                  { label: 'All tests', value: 'all' },
+                  ...(tests || []).map((test) => ({
+                    label: test.name,
+                    value: test.id,
+                  })),
+                ]}
+                className="min-w-[220px]"
+                aria-label="Filter by test"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Typography.Text type="secondary">Employee</Typography.Text>
+              <Select
+                mode="multiple"
+                value={employeeFilter}
+                onChange={setEmployeeFilter}
+                options={(employees || []).map((employee) => ({
+                  label: `${employee.firstName} ${employee.lastName}`,
+                  value: employee.id,
+                }))}
+                placeholder="All employees"
+                allowClear
+                className="min-w-[260px]"
+                aria-label="Filter by employee"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Typography.Text type="secondary">Status</Typography.Text>
+              <Select
+                mode="multiple"
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={[
+                  { label: 'Assigned', value: 'assigned' },
+                  { label: 'Opened', value: 'opened' },
+                  { label: 'In Progress', value: 'in-progress' },
+                  { label: 'Completed', value: 'completed' },
+                  { label: 'Marked', value: 'marked' },
+                  { label: 'Expired', value: 'expired' },
+                ]}
+                placeholder="All statuses"
+                allowClear
+                className="min-w-[220px]"
+                aria-label="Filter by status"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Typography.Text type="secondary">Assigned date</Typography.Text>
+              <Select
+                value={assignedFilter}
+                onChange={setAssignedFilter}
+                options={[
+                  { label: 'All dates', value: 'all' },
+                  { label: 'Today', value: 'today' },
+                  { label: 'This week', value: 'this_week' },
+                  { label: 'Last week', value: 'last_week' },
+                  { label: 'This month', value: 'this_month' },
+                  { label: 'Last month', value: 'last_month' },
+                ]}
+                className="min-w-[180px]"
+                aria-label="Filter by assigned date"
+              />
+            </div>
+          </div>
         </Card>
         <Table
           loading={isLoading}
-          dataSource={sortedInstances}
+          dataSource={filteredInstances}
           rowKey="id"
           onRow={(record) => ({
             onClick: () => navigate(`/manager/marking/${record.id}`),
@@ -193,11 +342,27 @@ const TestSubmissionsPage = () => {
           }}
           columns={[
             {
+              title: 'Test',
+              dataIndex: 'testId',
+              render: (value: string) => testMap[value] || value,
+            },
+            {
               title: 'Employee',
               dataIndex: 'employeeId',
               render: (value: string) => employeeMap[value] || value,
             },
-            { title: 'Status', dataIndex: 'status' },
+            {
+              title: 'Assigned by',
+              dataIndex: 'assignedByManagerId',
+              render: (value: string) => managerMap[value] || value,
+            },
+            {
+              title: 'Status',
+              dataIndex: 'status',
+              render: (value: string) => (
+                <StatusBadge status={value as TestInstance['status']} />
+              ),
+            },
             {
               title: 'Assigned',
               dataIndex: 'assignedAt',
@@ -206,6 +371,11 @@ const TestSubmissionsPage = () => {
             {
               title: 'Completed',
               dataIndex: 'completedAt',
+              render: (value: string) => (value ? formatDateTime(value) : '-'),
+            },
+            {
+              title: 'Marked',
+              dataIndex: 'markedAt',
               render: (value: string) => (value ? formatDateTime(value) : '-'),
             },
             {
@@ -223,7 +393,7 @@ const TestSubmissionsPage = () => {
             },
           ]}
         />
-      </Space>
+      </div>
       <Drawer
         title="Test answers"
         size={520}
@@ -233,9 +403,9 @@ const TestSubmissionsPage = () => {
         {isLoadingResults ? (
           <Typography.Text>Loading answers...</Typography.Text>
         ) : results ? (
-          <Space orientation="vertical" size="large" className="w-full">
+          <div className="flex flex-col gap-6 w-full">
             <Card>
-              <Space orientation="vertical">
+              <div className="flex flex-col gap-4">
                 <Typography.Text strong>{results.test.name}</Typography.Text>
                 <Typography.Text type="secondary">
                   Employee:{' '}
@@ -251,11 +421,11 @@ const TestSubmissionsPage = () => {
                 >
                   Mark submission
                 </Button>
-              </Space>
+              </div>
             </Card>
             {results.test.sections.map((section) => (
               <Card key={section.id} title={section.title}>
-                <Space orientation="vertical" className="w-full">
+                <div className="flex flex-col gap-4 w-full">
                   {section.components.map((component) => {
                     if (component.type === 'info') {
                       return (
@@ -280,10 +450,10 @@ const TestSubmissionsPage = () => {
                       </Card>
                     )
                   })}
-                </Space>
+                </div>
               </Card>
             ))}
-          </Space>
+          </div>
         ) : (
           <Typography.Text>No answers available.</Typography.Text>
         )}
@@ -292,4 +462,4 @@ const TestSubmissionsPage = () => {
   )
 }
 
-export default TestSubmissionsPage
+export default SubmissionsPage

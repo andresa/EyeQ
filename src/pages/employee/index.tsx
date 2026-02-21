@@ -1,4 +1,4 @@
-import { Alert, Input, Select, Space, Typography } from 'antd'
+import { Alert, Input, Select, Spin, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -14,15 +14,19 @@ const EmployeeDashboard = () => {
   const employeeId = userProfile?.userType === 'employee' ? userProfile.id : undefined
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<TestInstanceStatus | 'all'>('all')
+  const [loading, setLoading] = useState(false)
 
   const { data: instances } = useQuery({
     queryKey: ['employee', 'testInstances', employeeId],
     queryFn: async () => {
+      setLoading(true)
       if (!employeeId) return [] as TestInstance[]
       const response = await listEmployeeTestInstances(employeeId)
       if (!response.success || !response.data) {
+        setLoading(false)
         throw new Error(response.error || 'Unable to load tests')
       }
+      setLoading(false)
       return response.data
     },
     enabled: !!employeeId,
@@ -49,7 +53,7 @@ const EmployeeDashboard = () => {
       <EmployeeLayout>
         <Alert
           type="error"
-          message="Account not found"
+          title="Account not found"
           description={profileError}
           showIcon
         />
@@ -59,7 +63,7 @@ const EmployeeDashboard = () => {
 
   return (
     <EmployeeLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <div>
           <Typography.Title level={3}>
             Welcome, {userProfile?.firstName || 'Employee'}
@@ -71,27 +75,40 @@ const EmployeeDashboard = () => {
 
         <Typography.Title level={4}>Your assigned tests</Typography.Title>
 
-        <Space wrap className="w-full">
+        <div className="flex gap-4 w-full">
           <Input
             placeholder="Search tests"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             aria-label="Search tests"
+            className="flex-1"
           />
           <Select
             value={status}
             onChange={(value) => setStatus(value)}
             options={[
               { label: 'All', value: 'all' },
-              { label: 'Pending', value: 'pending' },
+              { label: 'Assigned', value: 'assigned' },
+              { label: 'Opened', value: 'opened' },
+              { label: 'In Progress', value: 'in-progress' },
               { label: 'Completed', value: 'completed' },
               { label: 'Marked', value: 'marked' },
               { label: 'Expired', value: 'expired' },
             ]}
+            className="w-[9rem]"
           />
-        </Space>
-
-        {filtered.length === 0 && (
+        </div>
+        {loading && (
+          <div className="flex justify-center items-center h-full">
+            <Spin />
+          </div>
+        )}
+        {!loading && filtered.length === 0 && query && (
+          <Typography.Text type="secondary">
+            No tests found matching &quot;{query}&quot;.
+          </Typography.Text>
+        )}
+        {!loading && filtered.length === 0 && !query && (
           <Typography.Text type="secondary">
             No tests assigned to you yet.
           </Typography.Text>
@@ -110,7 +127,7 @@ const EmployeeDashboard = () => {
             }
           />
         ))}
-      </Space>
+      </div>
     </EmployeeLayout>
   )
 }

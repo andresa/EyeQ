@@ -4,7 +4,6 @@ import {
   Input,
   Modal,
   Popconfirm,
-  Space,
   Table,
   Tag,
   Tooltip,
@@ -144,7 +143,7 @@ const ManagerEmployeesPage = () => {
 
   return (
     <ManagerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-between">
           <Typography.Title level={3} className="m-0">
             Employees
@@ -209,7 +208,7 @@ const ManagerEmployeesPage = () => {
             {
               title: 'Actions',
               render: (_, record) => (
-                <Space>
+                <div className="flex gap-4">
                   <Button
                     type="link"
                     icon={<EditOutlined />}
@@ -251,12 +250,12 @@ const ManagerEmployeesPage = () => {
                       Delete
                     </Button>
                   </Popconfirm>
-                </Space>
+                </div>
               ),
             },
           ]}
         />
-      </Space>
+      </div>
 
       <UserModal
         open={open}

@@ -5,13 +5,14 @@ interface StatusBadgeProps {
   status: TestInstanceStatus
 }
 
-const statusMap: Record<TestInstanceStatus, { color: string; label: string }> =
-  {
-    pending: { color: 'blue', label: 'Pending' },
-    completed: { color: 'green', label: 'Completed' },
-    marked: { color: 'purple', label: 'Marked' },
-    expired: { color: 'red', label: 'Expired' },
-  }
+const statusMap: Record<TestInstanceStatus, { color: string; label: string }> = {
+  assigned: { color: 'blue', label: 'Assigned' },
+  opened: { color: 'cyan', label: 'Opened' },
+  'in-progress': { color: 'orange', label: 'In Progress' },
+  completed: { color: 'green', label: 'Completed' },
+  marked: { color: 'purple', label: 'Marked' },
+  expired: { color: 'red', label: 'Expired' },
+}
 
 const StatusBadge = ({ status }: StatusBadgeProps) => {
   const { color, label } = statusMap[status]

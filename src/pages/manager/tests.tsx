@@ -4,7 +4,6 @@ import {
   Dropdown,
   Modal,
   Select,
-  Space,
   Table,
   Typography,
   message,
@@ -190,7 +189,7 @@ const ManagerTestsPage = () => {
 
   return (
     <ManagerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-between">
           <Typography.Title level={3} className="m-0">
             Tests
@@ -233,7 +232,7 @@ const ManagerTestsPage = () => {
             },
           ]}
         />
-      </Space>
+      </div>
       <Modal
         title="Assign Test"
         open={assignOpen}
@@ -241,7 +240,7 @@ const ManagerTestsPage = () => {
         onCancel={() => setAssignOpen(false)}
         okText="Assign"
       >
-        <Space orientation="horizontal" className="flex justify-between w-full">
+        <div className="flex justify-between w-full gap-4">
           <Select
             mode="multiple"
             className="min-w-[260px]"
@@ -259,7 +258,7 @@ const ManagerTestsPage = () => {
             onChange={(value) => setExpiry(value?.toISOString())}
             placeholder="Expiry date"
           />
-        </Space>
+        </div>
       </Modal>
     </ManagerLayout>
   )

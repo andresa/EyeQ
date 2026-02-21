@@ -1,4 +1,4 @@
-import { Button, Card, Space, Tag, Typography } from 'antd'
+import { Button, Card, Tag, Typography } from 'antd'
 import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -65,10 +65,10 @@ const EmployeeTestResultsPage = () => {
 
   return (
     <EmployeeLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <Typography.Title level={3}>{data.test.name}</Typography.Title>
         <Card>
-          <Space orientation="vertical">
+          <div className="flex flex-col gap-4">
             <Typography.Text type="secondary">
               Status: {data.instance.status}
             </Typography.Text>
@@ -82,11 +82,11 @@ const EmployeeTestResultsPage = () => {
                 Completed {formatDateTime(data.instance.completedAt)}
               </Typography.Text>
             ) : null}
-          </Space>
+          </div>
         </Card>
         {data.test.sections.map((section) => (
           <Card key={section.id} title={section.title}>
-            <Space orientation="vertical" className="w-full">
+            <div className="flex flex-col gap-4 w-full">
               {section.components.map((component) => {
                 if (component.type === 'info') {
                   return (
@@ -107,7 +107,7 @@ const EmployeeTestResultsPage = () => {
                       {resolveAnswer(component, response)}
                     </Typography.Text>
                     {isMarked ? (
-                      <Space className="mt-2">
+                      <div className="flex gap-4 mt-2">
                         {response?.isCorrect ? (
                           <Tag color="green">Correct</Tag>
                         ) : (
@@ -118,16 +118,16 @@ const EmployeeTestResultsPage = () => {
                             Note: {response.note}
                           </Typography.Text>
                         ) : null}
-                      </Space>
+                      </div>
                     ) : null}
                   </Card>
                 )
               })}
-            </Space>
+            </div>
           </Card>
         ))}
         <Button onClick={() => navigate('/employee')}>Back to dashboard</Button>
-      </Space>
+      </div>
     </EmployeeLayout>
   )
 }

@@ -17,6 +17,20 @@ export const fetchTestInstanceDetails = (
 ): Promise<ApiResponse<TestInstanceDetails>> =>
   apiRequest(`/employee/testInstances/${instanceId}`)
 
+export const openTestInstance = (
+  instanceId: string,
+): Promise<ApiResponse<TestInstance>> =>
+  apiRequest(`/employee/testInstances/${instanceId}/open`, { method: 'POST' })
+
+export const saveTestResponses = (
+  instanceId: string,
+  payload: { responses: ResponsePayload[] },
+): Promise<ApiResponse<TestInstance>> =>
+  apiRequest(`/employee/testInstances/${instanceId}/save`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
 export const submitTestInstance = (
   instanceId: string,
   payload: { responses: ResponsePayload[]; completedAt: string },

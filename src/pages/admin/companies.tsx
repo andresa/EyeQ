@@ -1,4 +1,4 @@
-import { Button, Card, Form, Input, Modal, Space, Switch, Table, message } from 'antd'
+import { Button, Card, Form, Input, Modal, Switch, Table, message } from 'antd'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import AdminLayout from '../../layouts/AdminLayout'
@@ -60,17 +60,17 @@ const AdminCompaniesPage = () => {
 
   return (
     <AdminLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <div className="page-title">
-          <Space orientation="vertical">
+          <div className="flex flex-col gap-4">
             <Card>
-              <Space orientation="vertical">
+              <div className="flex flex-col gap-4">
                 <Button type="primary" onClick={openCreate}>
                   Add company
                 </Button>
-              </Space>
+              </div>
             </Card>
-          </Space>
+          </div>
         </div>
         <Table
           loading={isLoading}
@@ -94,7 +94,7 @@ const AdminCompaniesPage = () => {
             },
           ]}
         />
-      </Space>
+      </div>
       <Modal
         title={editing ? 'Edit company' : 'Add company'}
         open={open}

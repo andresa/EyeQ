@@ -1,4 +1,4 @@
-import { Button, Card, Input, Radio, Space, Tag, Typography, message } from 'antd'
+import { Button, Card, Input, Radio, Tag, Typography, message } from 'antd'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -200,19 +200,19 @@ const MarkingPage = () => {
 
   return (
     <ManagerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <Typography.Title level={3}>Mark submission</Typography.Title>
         <Card>
-          <Space orientation="vertical">
+          <div className="flex flex-col gap-4">
             <Typography.Text strong>{data.test.name}</Typography.Text>
             <Typography.Text type="secondary">
               Submission: {data.instance.id}
             </Typography.Text>
-          </Space>
+          </div>
         </Card>
         {data.test.sections.map((section) => (
           <Card key={section.id} title={section.title}>
-            <Space orientation="vertical" className="w-full">
+            <div className="flex flex-col gap-4 w-full">
               {section.components.map((component) => {
                 if (component.type === 'info') {
                   return (
@@ -231,7 +231,7 @@ const MarkingPage = () => {
 
                 return (
                   <Card key={component.id} type="inner">
-                    <Space orientation="vertical" className="w-full">
+                    <div className="flex flex-col gap-4 w-full">
                       <Typography.Text strong>{component.title}</Typography.Text>
                       <Typography.Paragraph type="secondary">
                         {component.description}
@@ -244,13 +244,13 @@ const MarkingPage = () => {
                           Correct answer: {correctAnswerLabel}
                         </Typography.Text>
                       ) : null}
-                      <Space>
+                      <div className="flex gap-4">
                         {isCorrectValue ? (
                           <Tag color="green">Correct</Tag>
                         ) : (
                           <Tag color="red">Incorrect</Tag>
                         )}
-                      </Space>
+                      </div>
                       <Radio.Group
                         value={mark?.isCorrect ?? undefined}
                         onChange={(event) =>
@@ -259,10 +259,10 @@ const MarkingPage = () => {
                           })
                         }
                       >
-                        <Space>
+                        <div className="flex gap-4">
                           <Radio value={true}>Correct</Radio>
                           <Radio value={false}>Incorrect</Radio>
-                        </Space>
+                        </div>
                       </Radio.Group>
                       <Input.TextArea
                         rows={2}
@@ -272,22 +272,22 @@ const MarkingPage = () => {
                           updateMark(component.id, { note: event.target.value })
                         }
                       />
-                    </Space>
+                    </div>
                   </Card>
                 )
               })}
-            </Space>
+            </div>
           </Card>
         ))}
-        <Space>
+        <div className="flex gap-4">
           <Button onClick={() => navigate(`/manager/test-submissions/${data.test.id}`)}>
             Cancel
           </Button>
           <Button type="primary" onClick={handleSubmit}>
             Submit marks
           </Button>
-        </Space>
-      </Space>
+        </div>
+      </div>
     </ManagerLayout>
   )
 }

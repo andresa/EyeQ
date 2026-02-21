@@ -1,14 +1,4 @@
-import {
-  Button,
-  Card,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  message,
-} from 'antd'
+import { Button, Card, Popconfirm, Select, Table, Tag, Tooltip, message } from 'antd'
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -138,9 +128,9 @@ const AdminManagersPage = () => {
 
   return (
     <AdminLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+      <div className="flex flex-col gap-6 w-full">
         <Card>
-          <Space orientation="vertical" className="w-full">
+          <div className="flex flex-col gap-4 w-full">
             <Select
               placeholder="Select company"
               value={companyId || undefined}
@@ -155,7 +145,7 @@ const AdminManagersPage = () => {
             <Button type="primary" onClick={openCreate} disabled={!companyId}>
               Add manager
             </Button>
-          </Space>
+          </div>
         </Card>
         <Table
           loading={isLoading}
@@ -212,7 +202,7 @@ const AdminManagersPage = () => {
             {
               title: 'Actions',
               render: (_, record) => (
-                <Space>
+                <div className="flex gap-4">
                   <Button
                     type="link"
                     icon={<EditOutlined />}
@@ -255,12 +245,12 @@ const AdminManagersPage = () => {
                       Delete
                     </Button>
                   </Popconfirm>
-                </Space>
+                </div>
               ),
             },
           ]}
         />
-      </Space>
+      </div>
 
       <UserModal
         open={open}
