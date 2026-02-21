@@ -149,7 +149,7 @@ const LoginPage = () => {
       <Card className="w-full max-w-md">
         <Space orientation="vertical" size="large" className="w-full">
           <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl text-white font-bold">EyeQ</span>
             </div>
             <Typography.Title level={3} className="mb-1">
@@ -166,11 +166,10 @@ const LoginPage = () => {
           {showDevLogin && !success && (
             <>
               <div
+                className="rounded-lg border p-4"
                 style={{
-                  background: '#f6ffed',
-                  border: '1px solid #b7eb8f',
-                  borderRadius: 8,
-                  padding: 16,
+                  background: 'var(--color-success-bg)',
+                  borderColor: 'var(--color-success-border)',
                 }}
               >
                 <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
@@ -239,8 +238,8 @@ const LoginPage = () => {
           {success ? (
             <div className="text-center py-4">
               <CheckCircleOutlined
-                style={{ fontSize: 48, color: '#52c41a' }}
-                className="mb-4"
+                style={{ fontSize: 48 }}
+                className="mb-4 text-[var(--color-success)]"
               />
               <Typography.Paragraph>
                 We&apos;ve sent a login link to <strong>{email}</strong>

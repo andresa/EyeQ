@@ -1,7 +1,8 @@
-import { Layout, Typography } from 'antd'
+import { Button, Layout, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../hooks/useSession'
+import { LogOut } from 'lucide-react'
 
 interface EyeQHeaderProps {
   title: string
@@ -18,7 +19,7 @@ const EyeQHeader = ({ title, menuButton }: EyeQHeaderProps) => {
   }
 
   return (
-    <Layout.Header className="flex items-center justify-between bg-[#0b1f3a] px-3 md:px-5 lg:px-6">
+    <Layout.Header className="flex items-center justify-between bg-[var(--color-header-bg)] px-3 md:px-5 lg:px-6">
       <div className="flex items-center gap-2 md:gap-3 min-w-0">
         {menuButton}
         <Typography.Title
@@ -28,23 +29,20 @@ const EyeQHeader = ({ title, menuButton }: EyeQHeaderProps) => {
         >
           EyeQ
         </Typography.Title>
-        <Typography.Text className="hidden text-[#d6e4ff] md:inline">
+        <Typography.Text className="hidden text-white md:inline font-semibold">
           {title}
         </Typography.Text>
       </div>
       {userProfile && (
         <div className="flex min-w-0 items-center gap-4 md:gap-3">
           {userProfile?.firstName && (
-            <Typography.Text className="truncate text-[#d6e4ff]">
+            <Typography.Text className="truncate text-white font-semibold">
               {userProfile.firstName}
             </Typography.Text>
           )}
-          <Typography.Link
-            className="shrink-0 whitespace-nowrap text-white"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </Typography.Link>
+          <Button type="text" onClick={handleSignOut} className="text-white">
+            <LogOut />
+          </Button>
         </div>
       )}
     </Layout.Header>
