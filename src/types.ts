@@ -144,6 +144,21 @@ export interface TestComponent {
   required?: boolean
   options?: TestComponentOption[]
   correctAnswer?: string | string[]
+  saveToLibrary?: boolean
+}
+
+export interface QuestionLibraryItem {
+  id: string
+  companyId: string
+  createdBy: string
+  type: ComponentType
+  title: string
+  description?: string
+  required?: boolean
+  options?: TestComponentOption[]
+  correctAnswer?: string | string[]
+  createdAt: string
+  updatedAt?: string
 }
 
 export type TestInstanceStatus =

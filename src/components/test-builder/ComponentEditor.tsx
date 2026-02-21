@@ -39,6 +39,12 @@ const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
           Info blocks are always optional.
         </Typography.Text>
       )}
+      <Checkbox
+        checked={component.saveToLibrary}
+        onChange={(event) => update({ saveToLibrary: event.target.checked })}
+      >
+        Add to library
+      </Checkbox>
       {component.type === 'single_choice' || component.type === 'multiple_choice' ? (
         <OptionEditor
           options={component.options || []}

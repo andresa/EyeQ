@@ -11,6 +11,7 @@ const ManagerLayout = ({ children }: PropsWithChildren) => {
     { key: '/manager', label: 'Dashboard' },
     { key: '/manager/employees', label: 'Employees' },
     { key: '/manager/tests', label: 'Tests' },
+    { key: '/manager/question-library', label: 'Question Library' },
     { key: '/manager/test-submissions', label: 'Submissions' },
   ]
 

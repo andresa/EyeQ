@@ -1,6 +1,6 @@
 import { Button, Card, Input, Spin, Typography, message } from 'antd'
 import { SettingOutlined } from '@ant-design/icons'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../../layouts/ManagerLayout'
@@ -8,6 +8,7 @@ import SectionList from '../../../components/test-builder/SectionList'
 import ComponentCard from '../../../components/test-builder/ComponentCard'
 import { createUUID } from '../../../utils/uuid'
 import TestSettingsModal from '../../../components/test-builder/TestSettingsModal'
+import QuestionLibraryModal from '../../../components/test-builder/QuestionLibraryModal'
 import type {
   ComponentType,
   TestComponent,
@@ -16,6 +17,7 @@ import type {
   TestTemplate,
 } from '../../../types'
 import {
+  createQuestionLibraryItems,
   createTestTemplate,
   listTests,
   updateTestTemplate,
@@ -70,6 +72,7 @@ const TestBuilderForm = ({
     existingTest?.settings ?? { allowBackNavigation: false },
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [libraryOpen, setLibraryOpen] = useState(false)
   const [selectedSectionId, setSelectedSectionId] = useState<string>(
     existingTest?.sections[0]?.id || '',
   )
@@ -184,6 +187,26 @@ const TestBuilderForm = ({
     )
   }
 
+  const addFromLibrary = useCallback(
+    (components: TestComponent[]) => {
+      if (!selectedSectionId) {
+        message.error('Select a section first.')
+        return
+      }
+      setSections((prev) =>
+        prev.map((section) =>
+          section.id === selectedSectionId
+            ? { ...section, components: [...section.components, ...components] }
+            : section,
+        ),
+      )
+      message.success(
+        `${components.length} question${components.length === 1 ? '' : 's'} added from library`,
+      )
+    },
+    [selectedSectionId],
+  )
+
   const handleSave = async () => {
     if (!companyId || !managerId) {
       message.error('Select a company and manager first.')
@@ -197,11 +220,25 @@ const TestBuilderForm = ({
       message.error('Add at least one section.')
       return
     }
+
+    const libraryItems = sections
+      .flatMap((s) => s.components)
+      .filter((c) => c.saveToLibrary && c.title)
+
+    const cleanedSections = sections.map((section) => ({
+      ...section,
+      components: section.components.map((c) => {
+        const { saveToLibrary, ...rest } = c
+        void saveToLibrary
+        return rest
+      }),
+    }))
+
     const payload = {
       companyId,
       managerId,
       name,
-      sections,
+      sections: cleanedSections,
       settings,
     }
 
@@ -213,6 +250,22 @@ const TestBuilderForm = ({
       message.error(response.error || 'Unable to save test')
       return
     }
+
+    if (libraryItems.length > 0) {
+      await createQuestionLibraryItems({
+        companyId,
+        managerId,
+        items: libraryItems.map((c) => ({
+          type: c.type,
+          title: c.title!,
+          description: c.description,
+          required: c.required,
+          options: c.options,
+          correctAnswer: c.correctAnswer,
+        })),
+      })
+    }
+
     message.success('Test saved')
     navigate('/manager/tests')
   }
@@ -274,6 +327,9 @@ const TestBuilderForm = ({
         <Card>
           <div className="flex flex-col gap-4 w-full">
             <Typography.Text strong>Component palette</Typography.Text>
+            <Button type="dashed" onClick={() => setLibraryOpen(true)}>
+              Select from library
+            </Button>
             {componentPalette.map((item) => (
               <Button key={item.type} onClick={() => addComponentToSection(item.type)}>
                 {item.label}
@@ -307,6 +363,14 @@ const TestBuilderForm = ({
           }
         }}
       />
+      {companyId && (
+        <QuestionLibraryModal
+          open={libraryOpen}
+          companyId={companyId}
+          onAdd={addFromLibrary}
+          onClose={() => setLibraryOpen(false)}
+        />
+      )}
     </div>
   )
 }
