@@ -88,12 +88,14 @@ const EmployeeDashboard = () => {
             onChange={(value) => setStatus(value)}
             options={[
               { label: 'All', value: 'all' },
-              { label: 'Pending', value: 'pending' },
+              { label: 'Assigned', value: 'assigned' },
+              { label: 'Opened', value: 'opened' },
+              { label: 'In Progress', value: 'in-progress' },
               { label: 'Completed', value: 'completed' },
               { label: 'Marked', value: 'marked' },
               { label: 'Expired', value: 'expired' },
             ]}
-            className="w-[7rem]"
+            className="w-[9rem]"
           />
         </div>
         {loading && (

@@ -146,7 +146,13 @@ export interface TestComponent {
   correctAnswer?: string | string[]
 }
 
-export type TestInstanceStatus = 'pending' | 'completed' | 'expired' | 'marked'
+export type TestInstanceStatus =
+  | 'assigned'
+  | 'opened'
+  | 'in-progress'
+  | 'completed'
+  | 'expired'
+  | 'marked'
 
 export interface TestInstance {
   id: UUID
@@ -156,6 +162,7 @@ export interface TestInstance {
   assignedByManagerId: UUID
   status: TestInstanceStatus
   assignedAt: string
+  openedAt?: string
   expiresAt?: string
   completedAt?: string
   markedAt?: string
@@ -165,6 +172,7 @@ export interface TestInstance {
 export interface TestInstanceDetails {
   instance: TestInstance
   test: TestTemplate
+  responses: ResponseRecord[]
 }
 
 export interface ResponseRecord {

@@ -170,7 +170,7 @@ export const assignTestHandler = async (
       testId,
       employeeId,
       assignedByManagerId: test.managerId,
-      status: 'pending',
+      status: 'assigned',
       assignedAt: nowIso(),
       expiresAt: body.expiresAt,
       completedAt: null,

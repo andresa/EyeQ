@@ -12,7 +12,6 @@ import ManagerTestsPage from './pages/manager/tests'
 import ManagerTestBuilderPage from './pages/manager/test-builder'
 import ManagerTestSubmissionsPage from './pages/manager/test-submissions'
 import ManagerMarkingPage from './pages/manager/marking'
-import ManagerAssignedTestsPage from './pages/manager/assigned-tests'
 import AdminDashboard from './pages/admin'
 import AdminCompaniesPage from './pages/admin/companies'
 import AdminManagersPage from './pages/admin/managers'
@@ -120,14 +119,6 @@ const App = () => {
         element={
           <RouteGuard allowedRoles={['manager']}>
             <ManagerTestSubmissionsPage />
-          </RouteGuard>
-        }
-      />
-      <Route
-        path="/manager/assigned-tests"
-        element={
-          <RouteGuard allowedRoles={['manager']}>
-            <ManagerAssignedTestsPage />
           </RouteGuard>
         }
       />

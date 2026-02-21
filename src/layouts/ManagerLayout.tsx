@@ -11,16 +11,15 @@ const ManagerLayout = ({ children }: PropsWithChildren) => {
     { key: '/manager', label: 'Dashboard' },
     { key: '/manager/employees', label: 'Employees' },
     { key: '/manager/tests', label: 'Tests' },
-    { key: '/manager/test-submissions', label: 'Test submissions' },
-    { key: '/manager/assigned-tests', label: 'Assigned tests' },
+    { key: '/manager/test-submissions', label: 'Submissions' },
   ]
 
   const selectedPath = location.pathname.startsWith('/manager/test-submissions')
     ? '/manager/test-submissions'
     : location.pathname.startsWith('/manager/test-builder')
       ? '/manager/tests'
-      : location.pathname.startsWith('/manager/assigned-tests')
-        ? '/manager/assigned-tests'
+      : location.pathname.startsWith('/manager/marking')
+        ? '/manager/test-submissions'
         : location.pathname
 
   return (

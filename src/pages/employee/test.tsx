@@ -11,19 +11,31 @@ import {
   Typography,
   Spin,
 } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
-import { fetchTestInstanceDetails, submitTestInstance } from '../../services/employee'
-import type { ResponsePayload, TestComponent, TestInstanceDetails } from '../../types'
+import {
+  fetchTestInstanceDetails,
+  openTestInstance,
+  saveTestResponses,
+  submitTestInstance,
+} from '../../services/employee'
+import type {
+  ResponsePayload,
+  ResponseRecord,
+  TestComponent,
+  TestInstanceDetails,
+} from '../../types'
 import { formatDistanceToNowStrict, parseISO } from 'date-fns'
+
+const AUTO_SAVE_DELAY_MS = 2000
 
 const renderComponentInput = (component: TestComponent) => {
   switch (component.type) {
     case 'single_choice':
       return (
-        <Radio.Group>
+        <Radio.Group className="m-2">
           <div className="flex flex-col gap-4">
             {(component.options || []).map((option) => (
               <Radio key={option.id} value={option.id}>
@@ -35,7 +47,7 @@ const renderComponentInput = (component: TestComponent) => {
       )
     case 'multiple_choice':
       return (
-        <Checkbox.Group>
+        <Checkbox.Group className="m-2">
           <div className="flex flex-col gap-4">
             {(component.options || []).map((option) => (
               <Checkbox key={option.id} value={option.id}>
@@ -46,10 +58,29 @@ const renderComponentInput = (component: TestComponent) => {
         </Checkbox.Group>
       )
     case 'text':
-      return <Input.TextArea rows={4} />
+      return <Input.TextArea rows={4} className="m-2" />
     default:
       return null
   }
+}
+
+const buildFormValues = (
+  components: TestComponent[],
+  responses: ResponseRecord[],
+): Record<string, unknown> => {
+  const responseMap = new Map(responses.map((r) => [r.questionId, r]))
+  const values: Record<string, unknown> = {}
+  for (const component of components) {
+    if (component.type === 'info') continue
+    const response = responseMap.get(component.id)
+    if (!response) continue
+    if (component.type === 'text') {
+      values[`q_${component.id}`] = response.textAnswer ?? undefined
+    } else {
+      values[`q_${component.id}`] = response.answer ?? undefined
+    }
+  }
+  return values
 }
 
 interface TestFormProps {
@@ -63,6 +94,10 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   const [form] = Form.useForm()
   const [timeRemaining, setTimeRemaining] = useState('')
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastSavedRef = useRef<string>('')
+  const isInitializedRef = useRef(false)
 
   const sections = data.test.sections
   const isLastSection = currentSectionIndex === sections.length - 1
@@ -96,6 +131,62 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   const progressPercent = totalQuestions
     ? Math.round((answeredCount / totalQuestions) * 100)
     : 0
+
+  const buildResponses = useCallback((): ResponsePayload[] => {
+    const values = form.getFieldsValue()
+    return questionComponents.map((component) => {
+      const value = values[`q_${component.id}`]
+      if (component.type === 'text') {
+        return { questionId: component.id, answer: null, textAnswer: value || null }
+      }
+      return { questionId: component.id, answer: value ?? null, textAnswer: null }
+    })
+  }, [form, questionComponents])
+
+  // Pre-populate form with saved responses
+  useEffect(() => {
+    if (isInitializedRef.current) return
+    if (data.responses && data.responses.length > 0) {
+      const values = buildFormValues(components, data.responses)
+      form.setFieldsValue(values)
+    }
+    isInitializedRef.current = true
+  }, [components, data.responses, form])
+
+  // Call open on mount
+  useEffect(() => {
+    openTestInstance(instanceId)
+  }, [instanceId])
+
+  // Auto-save on value changes
+  useEffect(() => {
+    if (!isInitializedRef.current || !watchedValues) return
+
+    const serialized = JSON.stringify(watchedValues)
+    if (serialized === lastSavedRef.current) return
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(async () => {
+      const responses = buildResponses()
+      const hasContent = responses.some(
+        (r) => r.answer !== null || (r.textAnswer !== null && r.textAnswer !== ''),
+      )
+      if (!hasContent) return
+
+      setSaveStatus('saving')
+      const result = await saveTestResponses(instanceId, { responses })
+      if (result.success) {
+        lastSavedRef.current = serialized
+        setSaveStatus('saved')
+      } else {
+        setSaveStatus('idle')
+      }
+    }, AUTO_SAVE_DELAY_MS)
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
+  }, [watchedValues, instanceId, buildResponses])
 
   useEffect(() => {
     const expiresAt = data.instance.expiresAt
@@ -162,6 +253,9 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
             textAnswer: null,
           }
         })
+
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+
       const response = await submitTestInstance(instanceId, {
         responses,
         completedAt: new Date().toISOString(),
@@ -184,7 +278,21 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
       <Affix offsetTop={0}>
         <Card>
           <div className="flex flex-col gap-4 w-full">
-            <Typography.Title level={4}>{data.test.name}</Typography.Title>
+            <div className="flex items-center justify-between">
+              <Typography.Title level={4} className="!mb-0">
+                {data.test.name}
+              </Typography.Title>
+              {saveStatus === 'saving' && (
+                <Typography.Text type="secondary" className="text-xs">
+                  Saving...
+                </Typography.Text>
+              )}
+              {saveStatus === 'saved' && (
+                <Typography.Text type="secondary" className="text-xs">
+                  Saved
+                </Typography.Text>
+              )}
+            </div>
             <Progress percent={progressPercent} />
             <div className="flex w-full justify-between gap-4">
               {sections.length > 1 && (
@@ -243,7 +351,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                           : []
                       }
                     >
-                      <div className="m-2">{renderComponentInput(component)}</div>
+                      {renderComponentInput(component)}
                     </Form.Item>
                   )
                 })}
