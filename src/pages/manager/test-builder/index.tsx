@@ -1,3 +1,4 @@
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { Button, Card, Input, Spin, Typography, message } from 'antd'
 import { SettingOutlined } from '@ant-design/icons'
 import { useCallback, useMemo, useState } from 'react'
@@ -23,6 +24,7 @@ import {
   updateTestTemplate,
 } from '../../../services/manager'
 import { useSession } from '../../../hooks/useSession'
+import { CheckCircle, CheckSquare, FileText, Info, Library } from 'lucide-react'
 
 const componentPalette: { type: ComponentType; label: string }[] = [
   { type: 'single_choice', label: 'Single choice' },
@@ -51,6 +53,27 @@ const createComponent = (type: ComponentType): TestComponent => {
   return base
 }
 
+const componentIcons: Record<
+  ComponentType,
+  { icon: React.ReactNode; className: string }
+> = {
+  single_choice: {
+    icon: <CheckCircle size={20} color="blue" />,
+    className: 'border-blue',
+  },
+  multiple_choice: {
+    icon: <CheckSquare size={20} color="purple" />,
+    className: 'border-purple',
+  },
+  text: {
+    icon: <FileText size={20} color="green" />,
+    className: 'border-green',
+  },
+  info: {
+    icon: <Info size={20} color="gray" />,
+    className: 'border-gray',
+  },
+}
 interface TestBuilderFormProps {
   testId?: string
   existingTest?: TestTemplate
@@ -73,6 +96,7 @@ const TestBuilderForm = ({
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [componentsAnimateRef] = useAutoAnimate({ duration: 250 })
   const [selectedSectionId, setSelectedSectionId] = useState<string>(
     existingTest?.sections[0]?.id || '',
   )
@@ -271,33 +295,41 @@ const TestBuilderForm = ({
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className="flex flex-col gap-6 w-full h-[calc(100dvh-112px)]">
       <Typography.Title level={3}>Test builder</Typography.Title>
-      <Card>
-        <div className="flex flex-col gap-4 w-full">
-          <Typography.Text strong>Test name</Typography.Text>
-          <Input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Safety Induction"
-            aria-label="Test name"
-          />
-        </div>
-      </Card>
       <div className="builder-grid">
-        <SectionList
-          sections={sections}
-          selectedId={selectedSectionId}
-          onSelect={setSelectedSectionId}
-          onAdd={addSection}
-          onRename={renameSection}
-          onMove={moveSection}
-          onDelete={deleteSection}
-        />
-        <div>
+        <div className="flex flex-col gap-4 h-full">
+          <Card className="shrink-0">
+            <div className="flex flex-col gap-4 w-full">
+              <Typography.Text strong>Test name</Typography.Text>
+              <Input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Safety Induction"
+                aria-label="Test name"
+              />
+            </div>
+          </Card>
+          <div className="builder-grid-scroll flex-1 min-h-0">
+            <SectionList
+              sections={sections}
+              selectedId={selectedSectionId}
+              onSelect={setSelectedSectionId}
+              onAdd={addSection}
+              onRename={renameSection}
+              onMove={moveSection}
+              onDelete={deleteSection}
+            />
+          </div>
+        </div>
+        <div className="builder-grid-pane flex flex-col gap-4 min-h-0">
           {activeSection ? (
             <>
-              <Typography.Title level={4}>{activeSection.title}</Typography.Title>
+              <Card>
+                <Typography.Title level={4} className="shrink-0">
+                  {activeSection.title}
+                </Typography.Title>
+              </Card>
               {activeSection.components.length === 0 ? (
                 <Card>
                   <Typography.Text type="secondary">
@@ -305,16 +337,24 @@ const TestBuilderForm = ({
                   </Typography.Text>
                 </Card>
               ) : null}
-              {activeSection.components.map((component, index) => (
-                <ComponentCard
-                  key={component.id}
-                  component={component}
-                  index={index}
-                  onChange={(updated) => updateComponent(component.id, updated)}
-                  onMove={(direction) => moveComponent(component.id, direction)}
-                  onDelete={() => removeComponent(component.id)}
-                />
-              ))}
+              <div className="builder-grid-scroll flex-1 min-h-0">
+                <div
+                  ref={componentsAnimateRef}
+                  className="flex flex-col gap-4 overflow-visible"
+                >
+                  {activeSection.components.map((component, index) => (
+                    <ComponentCard
+                      key={component.id}
+                      component={component}
+                      index={index}
+                      componentsCount={activeSection.components.length}
+                      onChange={(updated) => updateComponent(component.id, updated)}
+                      onMove={(direction) => moveComponent(component.id, direction)}
+                      onDelete={() => removeComponent(component.id)}
+                    />
+                  ))}
+                </div>
+              </div>
             </>
           ) : (
             <Card>
@@ -324,19 +364,32 @@ const TestBuilderForm = ({
             </Card>
           )}
         </div>
-        <Card>
-          <div className="flex flex-col gap-4 w-full">
-            <Typography.Text strong>Component palette</Typography.Text>
-            <Button type="dashed" onClick={() => setLibraryOpen(true)}>
-              Select from library
-            </Button>
-            {componentPalette.map((item) => (
-              <Button key={item.type} onClick={() => addComponentToSection(item.type)}>
-                {item.label}
-              </Button>
-            ))}
+        <div className="builder-grid-pane min-h-0">
+          <div className="builder-grid-scroll h-full">
+            <Card className="h-full">
+              <div className="flex flex-col gap-4 w-full">
+                <Typography.Text strong>Component palette</Typography.Text>
+                <Button
+                  type="dashed"
+                  icon={<Library size={20} />}
+                  onClick={() => setLibraryOpen(true)}
+                >
+                  Select from library
+                </Button>
+                {componentPalette.map((item) => (
+                  <Button
+                    key={item.type}
+                    icon={componentIcons[item.type].icon}
+                    className={componentIcons[item.type].className}
+                    onClick={() => addComponentToSection(item.type)}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </div>
+            </Card>
           </div>
-        </Card>
+        </div>
       </div>
       <div className="flex gap-4">
         <Button onClick={() => navigate('/manager/tests')}>Cancel</Button>

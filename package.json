@@ -22,6 +22,7 @@
     "@ant-design/icons": "^6.1.0",
     "@azure/cosmos": "^4.9.0",
     "@azure/functions": "^4.11.0",
+    "@formkit/auto-animate": "^0.9.0",
     "@tanstack/react-query": "^5.90.17",
     "antd": "^6.2.0",
     "antd-mobile": "^5.42.3",

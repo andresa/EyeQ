@@ -1,4 +1,4 @@
-import { Checkbox, Input, Typography } from 'antd'
+import { Checkbox, Input, Switch } from 'antd'
 import type { TestComponent } from '../../types'
 import OptionEditor from './OptionEditor'
 
@@ -27,24 +27,6 @@ const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
         rows={3}
         aria-label="Question description"
       />
-      {component.type !== 'info' ? (
-        <Checkbox
-          checked={component.required}
-          onChange={(event) => update({ required: event.target.checked })}
-        >
-          Required
-        </Checkbox>
-      ) : (
-        <Typography.Text type="secondary">
-          Info blocks are always optional.
-        </Typography.Text>
-      )}
-      <Checkbox
-        checked={component.saveToLibrary}
-        onChange={(event) => update({ saveToLibrary: event.target.checked })}
-      >
-        Add to library
-      </Checkbox>
       {component.type === 'single_choice' || component.type === 'multiple_choice' ? (
         <OptionEditor
           options={component.options || []}
@@ -77,6 +59,22 @@ const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
           onCorrectAnswerChange={(value) => update({ correctAnswer: value })}
         />
       ) : null}
+      <div className="flex justify-between">
+        <Checkbox
+          checked={component.saveToLibrary}
+          onChange={(event) => update({ saveToLibrary: event.target.checked })}
+        >
+          Save to library
+        </Checkbox>
+        {component.type !== 'info' && (
+          <Switch
+            checked={component.required}
+            onChange={(checked) => update({ required: checked })}
+            checkedChildren="Required"
+            unCheckedChildren="Optional"
+          />
+        )}
+      </div>
     </div>
   )
 }

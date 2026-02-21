@@ -40,9 +40,12 @@ const EyeQHeader = ({ title, menuButton }: EyeQHeaderProps) => {
               {userProfile.firstName}
             </Typography.Text>
           )}
-          <Button type="text" onClick={handleSignOut} className="text-white">
-            <LogOut />
-          </Button>
+          <Button
+            type="text"
+            icon={<LogOut />}
+            onClick={handleSignOut}
+            className="text-white"
+          />
         </div>
       )}
     </Layout.Header>

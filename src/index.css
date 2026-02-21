@@ -23,6 +23,12 @@
   box-sizing: border-box;
 }
 
+.ant-btn .ant-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -58,6 +64,16 @@ body {
   display: grid;
   grid-template-columns: 240px 1fr 220px;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.builder-grid > * {
+  min-height: 0;
+}
+
+.builder-grid-scroll {
+  overflow-y: auto;
 }
 
 @media (max-width: 900px) {

@@ -1,4 +1,4 @@
-import { Form, Modal, Switch } from 'antd'
+import { Checkbox, Form, Modal } from 'antd'
 import { useEffect } from 'react'
 import type { TestSettings } from '../../types'
 
@@ -41,12 +41,11 @@ const TestSettingsModal = ({
         <Form.Item
           name="allowBackNavigation"
           valuePropName="checked"
-          extra="When enabled, employees can navigate back to review and change answers in previous sections. When disabled, they can only move forward."
+          extra="When selected, employees can navigate back to review and change answers in previous sections. When disabled, they can only move forward."
         >
-          <Switch
-            checkedChildren="Back navigation allowed"
-            unCheckedChildren="Back navigation disabled"
-          />
+          <Checkbox checked={settings.allowBackNavigation}>
+            Allow back navigation
+          </Checkbox>
         </Form.Item>
       </Form>
     </Modal>

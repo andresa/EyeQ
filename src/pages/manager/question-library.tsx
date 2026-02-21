@@ -22,6 +22,7 @@ import type { ComponentType, QuestionLibraryItem, TestComponentOption } from '..
 import { useSession } from '../../hooks/useSession'
 import { formatDateTime } from '../../utils/date'
 import { createUUID } from '../../utils/uuid'
+import { Trash2 } from 'lucide-react'
 
 const typeOptions = [
   { value: '', label: 'All types' },
@@ -230,14 +231,14 @@ const QuestionLibraryPage = () => {
       >
         {editing && (
           <div className="flex flex-col gap-4">
-            <div>
+            <div className="flex flex-col gap-1">
               <Typography.Text strong>Title</Typography.Text>
               <Input
                 value={editing.title}
                 onChange={(e) => updateEditing({ title: e.target.value })}
               />
             </div>
-            <div>
+            <div className="flex flex-col gap-1">
               <Typography.Text strong>Type</Typography.Text>
               <Select
                 value={editing.type}
@@ -246,7 +247,7 @@ const QuestionLibraryPage = () => {
                 className="w-full"
               />
             </div>
-            <div>
+            <div className="flex flex-col gap-1">
               <Typography.Text strong>Description</Typography.Text>
               <Input.TextArea
                 value={editing.description}
@@ -274,12 +275,12 @@ const QuestionLibraryPage = () => {
                     />
                     <Button
                       size="small"
-                      danger
+                      type="text"
+                      icon={<Trash2 size={20} />}
+                      className="text-red-500"
                       onClick={() => removeOption(idx)}
                       disabled={(editing.options?.length ?? 0) <= 1}
-                    >
-                      Remove
-                    </Button>
+                    />
                   </div>
                 ))}
                 <Button size="small" onClick={addOption}>
