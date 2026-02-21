@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "main": "dist/index.js",
+  "version": "0.0.1",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && func start"
