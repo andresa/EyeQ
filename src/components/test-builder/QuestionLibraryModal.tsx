@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Button, Input, Modal, Select, Table, Tag } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import type { QuestionLibraryItem, TestComponent } from '../../types'
-import { listQuestionLibrary } from '../../services/manager'
+import { listQuestionCategories, listQuestionLibrary } from '../../services/manager'
 import { createUUID } from '../../utils/uuid'
 
 interface QuestionLibraryModalProps {
@@ -35,6 +35,7 @@ const toComponent = (item: QuestionLibraryItem): TestComponent => ({
   required: item.required,
   options: item.options?.map((opt) => ({ id: createUUID(), label: opt.label })),
   correctAnswer: undefined,
+  categoryId: item.categoryId,
 })
 
 const QuestionLibraryModal = ({
@@ -46,6 +47,7 @@ const QuestionLibraryModal = ({
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['questionLibrary', companyId],
@@ -57,11 +59,24 @@ const QuestionLibraryModal = ({
     enabled: open && !!companyId,
   })
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ['questionCategories', companyId],
+    queryFn: async () => {
+      const res = await listQuestionCategories(companyId)
+      if (!res.success || !res.data) return []
+      return res.data
+    },
+    enabled: open && !!companyId,
+  })
+
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
+
   const handleAfterOpenChange = (visible: boolean) => {
     if (!visible) {
       setSelectedKeys([])
       setNameFilter('')
       setTypeFilter('')
+      setCategoryFilter('')
     }
   }
 
@@ -74,8 +89,15 @@ const QuestionLibraryModal = ({
     if (typeFilter) {
       result = result.filter((i) => i.type === typeFilter)
     }
+    if (categoryFilter) {
+      if (categoryFilter === 'uncategorised') {
+        result = result.filter((i) => !i.categoryId)
+      } else {
+        result = result.filter((i) => i.categoryId === categoryFilter)
+      }
+    }
     return result
-  }, [items, nameFilter, typeFilter])
+  }, [items, nameFilter, typeFilter, categoryFilter])
 
   const handleAdd = () => {
     const selected = items.filter((i) => selectedKeys.includes(i.id))
@@ -118,6 +140,16 @@ const QuestionLibraryModal = ({
           options={typeOptions}
           className="w-40"
         />
+        <Select
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+          options={[
+            { value: '', label: 'All categories' },
+            { value: 'uncategorised', label: 'Uncategorised' },
+            ...categories.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+          className="w-44"
+        />
       </div>
       <Table
         loading={isLoading}
@@ -140,10 +172,15 @@ const QuestionLibraryModal = ({
             ),
           },
           {
-            title: 'Description',
-            dataIndex: 'description',
-            ellipsis: true,
-            width: 200,
+            title: 'Category',
+            dataIndex: 'categoryId',
+            width: 140,
+            render: (categoryId: string | null | undefined) =>
+              categoryId && categoryMap[categoryId] ? (
+                <Tag>{categoryMap[categoryId]}</Tag>
+              ) : (
+                <Tag color="default">Uncategorised</Tag>
+              ),
           },
         ]}
       />

@@ -145,6 +145,7 @@ export interface TestComponent {
   options?: TestComponentOption[]
   correctAnswer?: string | string[]
   saveToLibrary?: boolean
+  categoryId?: string | null
 }
 
 export interface QuestionLibraryItem {
@@ -157,6 +158,15 @@ export interface QuestionLibraryItem {
   required?: boolean
   options?: TestComponentOption[]
   correctAnswer?: string | string[]
+  categoryId?: string | null
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface QuestionCategory {
+  id: string
+  companyId: string
+  name: string
   createdAt: string
   updatedAt?: string
 }

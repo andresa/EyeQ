@@ -259,6 +259,7 @@ const TestBuilderForm = ({
           required: c.required,
           options: c.options,
           correctAnswer: c.correctAnswer,
+          categoryId: c.categoryId,
         })),
       })
     }
@@ -321,6 +322,7 @@ const TestBuilderForm = ({
                       component={component}
                       index={index}
                       componentsCount={activeSection.components.length}
+                      companyId={companyId}
                       onChange={(updated) => updateComponent(component.id, updated)}
                       onMove={(direction) => moveComponent(component.id, direction)}
                       onDelete={() => removeComponent(component.id)}

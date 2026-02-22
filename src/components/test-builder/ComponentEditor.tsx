@@ -1,16 +1,30 @@
-import { Checkbox, Input, Switch } from 'antd'
+import { Checkbox, Input, Select, Switch } from 'antd'
+import { useQuery } from '@tanstack/react-query'
 import type { TestComponent } from '../../types'
+import { listQuestionCategories } from '../../services/manager'
 import OptionEditor from './OptionEditor'
 
 interface ComponentEditorProps {
   component: TestComponent
+  companyId?: string
   onChange: (component: TestComponent) => void
 }
 
-const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
+const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProps) => {
   const update = (updates: Partial<TestComponent>) => {
     onChange({ ...component, ...updates })
   }
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['questionCategories', companyId],
+    queryFn: async () => {
+      if (!companyId) return []
+      const res = await listQuestionCategories(companyId)
+      if (!res.success || !res.data) return []
+      return res.data
+    },
+    enabled: !!companyId,
+  })
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -26,6 +40,17 @@ const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
         placeholder="Description"
         rows={3}
         aria-label="Question description"
+      />
+      <Select
+        value={component.categoryId ?? undefined}
+        onChange={(v) => update({ categoryId: v || null })}
+        options={[
+          { value: '', label: 'Uncategorised' },
+          ...categories.map((c) => ({ value: c.id, label: c.name })),
+        ]}
+        allowClear
+        placeholder="Select category"
+        className="w-full"
       />
       {component.type === 'single_choice' || component.type === 'multiple_choice' ? (
         <OptionEditor

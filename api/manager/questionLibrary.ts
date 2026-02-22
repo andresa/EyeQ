@@ -14,6 +14,7 @@ interface LibraryItemInput {
   required?: boolean
   options?: { id: string; label: string }[]
   correctAnswer?: string | string[]
+  categoryId?: string
 }
 
 interface CreateBody {
@@ -29,6 +30,7 @@ interface UpdateBody {
   required?: boolean
   options?: { id: string; label: string }[]
   correctAnswer?: string | string[]
+  categoryId?: string | null
 }
 
 const getItemById = async (itemId: string) => {
@@ -50,6 +52,7 @@ const listHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
 
   const nameFilter = request.query.get('name')
   const typeFilter = request.query.get('type')
+  const categoryFilter = request.query.get('categoryId')
 
   let query = 'SELECT * FROM c WHERE c.companyId = @companyId'
   const parameters: { name: string; value: string }[] = [
@@ -63,6 +66,14 @@ const listHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   if (typeFilter) {
     query += ' AND c.type = @type'
     parameters.push({ name: '@type', value: typeFilter })
+  }
+  if (categoryFilter) {
+    if (categoryFilter === 'uncategorised') {
+      query += ' AND (NOT IS_DEFINED(c.categoryId) OR IS_NULL(c.categoryId))'
+    } else {
+      query += ' AND c.categoryId = @categoryId'
+      parameters.push({ name: '@categoryId', value: categoryFilter })
+    }
   }
 
   query += ' ORDER BY c.createdAt DESC'
@@ -108,6 +119,7 @@ const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
       required: item.required ?? false,
       options: item.options ?? [],
       correctAnswer: item.correctAnswer,
+      categoryId: item.categoryId ?? null,
       createdAt: nowIso(),
     }
     await container.items.create(doc)
@@ -175,6 +187,7 @@ const updateHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
     options: body?.options ?? existing.options,
     correctAnswer:
       body?.correctAnswer !== undefined ? body.correctAnswer : existing.correctAnswer,
+    categoryId: body?.categoryId !== undefined ? body.categoryId : existing.categoryId,
     updatedAt: nowIso(),
   }
 

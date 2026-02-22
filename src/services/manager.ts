@@ -1,6 +1,7 @@
 import type {
   ApiResponse,
   Employee,
+  QuestionCategory,
   QuestionLibraryItem,
   TestInstance,
   TestInstanceResults,
@@ -168,6 +169,7 @@ export const createQuestionLibraryItems = (payload: {
     required?: boolean
     options?: { id: string; label: string }[]
     correctAnswer?: string | string[]
+    categoryId?: string | null
   }[]
 }): Promise<ApiResponse<QuestionLibraryItem[]>> =>
   apiRequest('/manager/question-library', {
@@ -188,5 +190,39 @@ export const deleteQuestionLibraryItem = (
   itemId: string,
 ): Promise<ApiResponse<{ id: string }>> =>
   apiRequest(`/manager/question-library/${itemId}`, {
+    method: 'DELETE',
+  })
+
+// ============================================================================
+// Question Categories
+// ============================================================================
+
+export const listQuestionCategories = (
+  companyId: string,
+): Promise<ApiResponse<QuestionCategory[]>> =>
+  apiRequest(`/manager/question-categories?companyId=${encodeURIComponent(companyId)}`)
+
+export const createQuestionCategory = (payload: {
+  companyId: string
+  name: string
+}): Promise<ApiResponse<QuestionCategory>> =>
+  apiRequest('/manager/question-categories', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const updateQuestionCategory = (
+  categoryId: string,
+  payload: { name: string },
+): Promise<ApiResponse<QuestionCategory>> =>
+  apiRequest(`/manager/question-categories/${categoryId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+export const deleteQuestionCategory = (
+  categoryId: string,
+): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(`/manager/question-categories/${categoryId}`, {
     method: 'DELETE',
   })

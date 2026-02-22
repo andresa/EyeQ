@@ -8,6 +8,7 @@ interface ComponentCardProps {
   component: TestComponent
   index: number
   componentsCount: number
+  companyId?: string
   onChange: (component: TestComponent) => void
   onMove: (direction: 'up' | 'down') => void
   onDelete: () => void
@@ -17,6 +18,7 @@ const ComponentCard = ({
   component,
   index,
   componentsCount,
+  companyId,
   onChange,
   onMove,
   onDelete,
@@ -54,7 +56,7 @@ const ComponentCard = ({
       </div>
     }
   >
-    <ComponentEditor component={component} onChange={onChange} />
+    <ComponentEditor component={component} companyId={companyId} onChange={onChange} />
   </Card>
 )
 

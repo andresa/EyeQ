@@ -7,6 +7,7 @@ import {
   Modal,
   Select,
   Table,
+  Tag,
   Typography,
   message,
 } from 'antd'
@@ -16,6 +17,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import {
   deleteQuestionLibraryItem,
+  listQuestionCategories,
   listQuestionLibrary,
   updateQuestionLibraryItem,
 } from '../../services/manager'
@@ -26,6 +28,7 @@ import { createUUID } from '../../utils/uuid'
 import { Trash2 } from 'lucide-react'
 import { questionTypeLabels } from '../../utils/questions'
 import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
+import CategoriesModal from '../../components/organisms/CategoriesModal'
 
 const QuestionLibraryPage = () => {
   const { userProfile } = useSession()
@@ -34,8 +37,10 @@ const QuestionLibraryPage = () => {
 
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
   const [editing, setEditing] = useState<QuestionLibraryItem | null>(null)
   const [saving, setSaving] = useState(false)
+  const [categoriesOpen, setCategoriesOpen] = useState(false)
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['questionLibrary', companyId],
@@ -47,10 +52,29 @@ const QuestionLibraryPage = () => {
     },
   })
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ['questionCategories', companyId],
+    queryFn: async () => {
+      if (!companyId) return []
+      const res = await listQuestionCategories(companyId)
+      if (!res.success || !res.data) throw new Error(res.error || 'Failed to load')
+      return res.data
+    },
+  })
+
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
+
   const filtered = (items || []).filter((item) => {
     if (nameFilter && !item.title.toLowerCase().includes(nameFilter.toLowerCase()))
       return false
     if (typeFilter && item.type !== typeFilter) return false
+    if (categoryFilter) {
+      if (categoryFilter === 'uncategorised') {
+        if (item.categoryId) return false
+      } else if (item.categoryId !== categoryFilter) {
+        return false
+      }
+    }
     return true
   })
 
@@ -102,6 +126,7 @@ const QuestionLibraryPage = () => {
       required: editing.required,
       options: editing.options,
       correctAnswer: editing.correctAnswer,
+      categoryId: editing.categoryId,
     })
     setSaving(false)
     if (!res.success) {
@@ -189,6 +214,17 @@ const QuestionLibraryPage = () => {
             options={[{ value: '', label: 'All types' }, ...questionTypeLabels]}
             className="w-40"
           />
+          <Select
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            options={[
+              { value: '', label: 'All categories' },
+              { value: 'uncategorised', label: 'Uncategorised' },
+              ...categories.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+            className="w-48"
+          />
+          <Button onClick={() => setCategoriesOpen(true)}>Categories</Button>
         </div>
         <Table
           loading={isLoading}
@@ -205,6 +241,17 @@ const QuestionLibraryPage = () => {
               dataIndex: 'type',
               width: 200,
               render: (type: ComponentType) => <QuestionTypeTag type={type} />,
+            },
+            {
+              title: 'Category',
+              dataIndex: 'categoryId',
+              width: 180,
+              render: (categoryId: string | null | undefined) =>
+                categoryId && categoryMap[categoryId] ? (
+                  <Tag>{categoryMap[categoryId]}</Tag>
+                ) : (
+                  <Tag color="default">Uncategorised</Tag>
+                ),
             },
             {
               title: 'Created',
@@ -256,6 +303,20 @@ const QuestionLibraryPage = () => {
                 value={editing.type}
                 onChange={handleTypeChange}
                 options={questionTypeLabels}
+                className="w-full"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Typography.Text strong>Category</Typography.Text>
+              <Select
+                value={editing.categoryId ?? undefined}
+                onChange={(v) => updateEditing({ categoryId: v || null })}
+                options={[
+                  { value: '', label: 'Uncategorised' },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                allowClear
+                placeholder="Select category"
                 className="w-full"
               />
             </div>
@@ -341,6 +402,13 @@ const QuestionLibraryPage = () => {
           </div>
         )}
       </Modal>
+      {companyId && (
+        <CategoriesModal
+          open={categoriesOpen}
+          companyId={companyId}
+          onClose={() => setCategoriesOpen(false)}
+        />
+      )}
     </ManagerLayout>
   )
 }
