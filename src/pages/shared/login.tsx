@@ -138,7 +138,7 @@ const LoginPage = () => {
       <Card className="w-full max-w-md">
         <div className="flex flex-col gap-6 w-full">
           <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl text-white font-bold">EyeQ</span>
             </div>
             <Typography.Title level={3} className="mb-1">
@@ -154,17 +154,8 @@ const LoginPage = () => {
           {/* Dev Login Section */}
           {showDevLogin && !success && (
             <>
-              <div
-                className="rounded-lg border p-4"
-                style={{
-                  background: 'var(--color-success-bg)',
-                  borderColor: 'var(--color-success-border)',
-                }}
-              >
-                <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
-                  Dev Login (EyeQDBDev)
-                </Typography.Text>
-
+              <div className="rounded-lg border p-4 bg-accent-700">
+                <div className="mb-4 font-semibold text-white">Dev Login (EyeQDBDev)</div>
                 {devLoginLoading ? (
                   <div className="text-center py-4">
                     <Spin />

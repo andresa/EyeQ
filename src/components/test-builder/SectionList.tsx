@@ -45,7 +45,7 @@ const SectionList = ({
                 }
               }}
               className={`cursor-pointer rounded-lg border border-slate-200 p-3 ${
-                section.id === selectedId ? 'bg-[#f0f5ff]' : 'bg-white'
+                section.id === selectedId ? 'bg-accent-50' : 'bg-white'
               }`}
             >
               <div className="flex flex-col gap-4 w-full">

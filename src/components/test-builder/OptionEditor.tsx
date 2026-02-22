@@ -52,7 +52,6 @@ const OptionEditor = ({
               size="small"
               type="text"
               icon={<X size={20} />}
-              className="text-red-500"
               onClick={() => removeOption(option.id)}
               disabled={options.length <= 1}
             />

@@ -1,10 +1,9 @@
-import { Button, Card, Popconfirm, Select, Table, Tag, Tooltip, message } from 'antd'
+import { Button, Card, Dropdown, Modal, Select, Table, Tag, Tooltip, message } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  MailOutlined,
+  EllipsisOutlined,
   MinusCircleOutlined,
 } from '@ant-design/icons'
 import { useState } from 'react'
@@ -36,8 +35,6 @@ const invitationStatusConfig: Record<
 const AdminManagersPage = () => {
   const [open, setOpen] = useState(false)
   const [editingManager, setEditingManager] = useState<Manager | null>(null)
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
-  const [inviteLoading, setInviteLoading] = useState<string | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
 
   const { data: companies } = useQuery({
@@ -85,29 +82,66 @@ const AdminManagersPage = () => {
     setEditingManager(null)
   }
 
-  const onDeleteManager = async (manager: Manager) => {
+  const onDeleteManager = (manager: Manager) => {
     if (!companyId) return
 
-    setDeleteLoading(manager.id)
-    try {
-      const response = await deleteManager(manager.id, companyId)
-      if (!response.success) {
-        message.error(response.error || 'Failed to delete manager')
-        return
-      }
-      message.success(`${manager.firstName} ${manager.lastName} has been deleted`)
-      refetch()
-    } catch {
-      message.error('Failed to delete manager')
-    } finally {
-      setDeleteLoading(null)
+    Modal.confirm({
+      title: 'Delete manager',
+      content: `Are you sure you want to delete ${manager.firstName} ${manager.lastName}? This action cannot be undone.`,
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const response = await deleteManager(manager.id, companyId)
+        if (!response.success) {
+          message.error(response.error || 'Failed to delete manager')
+          return
+        }
+        message.success(`${manager.firstName} ${manager.lastName} has been deleted`)
+        refetch()
+      },
+    })
+  }
+
+  const getMenuItems = (record: Manager): MenuProps['items'] => {
+    const items: MenuProps['items'] = [
+      {
+        key: 'edit',
+        label: 'Edit',
+        onClick: (e) => {
+          e.domEvent.stopPropagation()
+          openEdit(record)
+        },
+      },
+    ]
+
+    if (record.invitationStatus !== 'accepted' && record.email) {
+      items.push({
+        key: 'invite',
+        label:
+          record.invitationStatus === 'pending' ? 'Resend invitation' : 'Send invitation',
+        onClick: (e) => {
+          e.domEvent.stopPropagation()
+          onSendInvitation(record)
+        },
+      })
     }
+
+    items.push({
+      key: 'delete',
+      danger: true,
+      label: 'Delete',
+      onClick: (e) => {
+        e.domEvent.stopPropagation()
+        onDeleteManager(record)
+      },
+    })
+
+    return items
   }
 
   const onSendInvitation = async (manager: Manager) => {
     if (!companyId || !manager.email) return
 
-    setInviteLoading(manager.id)
     try {
       const response = await sendManagerInvitation(manager.id, {
         companyId,
@@ -121,8 +155,6 @@ const AdminManagersPage = () => {
       refetch()
     } catch {
       message.error('Failed to send invitation')
-    } finally {
-      setInviteLoading(null)
     }
   }
 
@@ -151,6 +183,10 @@ const AdminManagersPage = () => {
           loading={isLoading}
           dataSource={managers || []}
           rowKey="id"
+          onRow={(record) => ({
+            onClick: () => openEdit(record),
+            style: { cursor: 'pointer' },
+          })}
           columns={[
             {
               title: 'Name',
@@ -201,50 +237,17 @@ const AdminManagersPage = () => {
             },
             {
               title: 'Actions',
+              width: 100,
               render: (_, record) => (
-                <div className="flex gap-4">
-                  <Button
-                    type="link"
-                    icon={<EditOutlined />}
-                    onClick={() => openEdit(record)}
-                  >
-                    Edit
-                  </Button>
-                  {record.invitationStatus !== 'accepted' && record.email && (
-                    <Tooltip
-                      title={
-                        record.invitationStatus === 'pending'
-                          ? 'Resend invitation'
-                          : 'Send invitation'
-                      }
-                    >
-                      <Button
-                        type="link"
-                        icon={<MailOutlined />}
-                        onClick={() => onSendInvitation(record)}
-                        loading={inviteLoading === record.id}
-                      >
-                        {record.invitationStatus === 'pending' ? 'Resend' : 'Invite'}
-                      </Button>
-                    </Tooltip>
-                  )}
-                  <Popconfirm
-                    title="Delete manager"
-                    description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
-                    onConfirm={() => onDeleteManager(record)}
-                    okText="Delete"
-                    okType="danger"
-                    cancelText="Cancel"
-                  >
+                <div className="flex items-center justify-center">
+                  <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
                     <Button
-                      type="link"
-                      danger
-                      icon={<DeleteOutlined />}
-                      loading={deleteLoading === record.id}
-                    >
-                      Delete
-                    </Button>
-                  </Popconfirm>
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Manager actions"
+                    />
+                  </Dropdown>
                 </div>
               ),
             },

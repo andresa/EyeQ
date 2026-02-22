@@ -2,15 +2,16 @@ import { useState } from 'react'
 import {
   Button,
   Checkbox,
+  Dropdown,
   Input,
   Modal,
-  Popconfirm,
   Select,
   Table,
-  Tag,
   Typography,
   message,
 } from 'antd'
+import type { MenuProps } from 'antd'
+import { EllipsisOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import {
@@ -23,21 +24,8 @@ import { useSession } from '../../hooks/useSession'
 import { formatDateTime } from '../../utils/date'
 import { createUUID } from '../../utils/uuid'
 import { Trash2 } from 'lucide-react'
-
-const typeOptions = [
-  { value: '', label: 'All types' },
-  { value: 'single_choice', label: 'Single choice' },
-  { value: 'multiple_choice', label: 'Multiple choice' },
-  { value: 'text', label: 'Text response' },
-  { value: 'info', label: 'Info block' },
-]
-
-const typeColors: Record<string, string> = {
-  single_choice: 'blue',
-  multiple_choice: 'purple',
-  text: 'green',
-  info: 'default',
-}
+import { questionTypeLabels } from '../../utils/questions'
+import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
 
 const QuestionLibraryPage = () => {
   const { userProfile } = useSession()
@@ -66,15 +54,43 @@ const QuestionLibraryPage = () => {
     return true
   })
 
-  const handleDelete = async (id: string) => {
-    const res = await deleteQuestionLibraryItem(id)
-    if (!res.success) {
-      message.error(res.error || 'Failed to delete')
-      return
-    }
-    message.success('Question deleted')
-    queryClient.invalidateQueries({ queryKey: ['questionLibrary'] })
+  const handleDelete = (record: QuestionLibraryItem) => {
+    Modal.confirm({
+      title: 'Delete question',
+      content: `Are you sure you want to delete "${record.title}"?`,
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const res = await deleteQuestionLibraryItem(record.id)
+        if (!res.success) {
+          message.error(res.error || 'Failed to delete')
+          return
+        }
+        message.success('Question deleted')
+        queryClient.invalidateQueries({ queryKey: ['questionLibrary'] })
+      },
+    })
   }
+
+  const getMenuItems = (record: QuestionLibraryItem): MenuProps['items'] => [
+    {
+      key: 'edit',
+      label: 'Edit',
+      onClick: (e) => {
+        e.domEvent.stopPropagation()
+        setEditing({ ...record })
+      },
+    },
+    {
+      key: 'delete',
+      danger: true,
+      label: 'Delete',
+      onClick: (e) => {
+        e.domEvent.stopPropagation()
+        handleDelete(record)
+      },
+    },
+  ]
 
   const handleSaveEdit = async () => {
     if (!editing) return
@@ -170,7 +186,7 @@ const QuestionLibraryPage = () => {
           <Select
             value={typeFilter}
             onChange={setTypeFilter}
-            options={typeOptions}
+            options={[{ value: '', label: 'All types' }, ...questionTypeLabels]}
             className="w-40"
           />
         </div>
@@ -187,10 +203,8 @@ const QuestionLibraryPage = () => {
             {
               title: 'Type',
               dataIndex: 'type',
-              width: 140,
-              render: (type: string) => (
-                <Tag color={typeColors[type]}>{type.replace('_', ' ')}</Tag>
-              ),
+              width: 200,
+              render: (type: ComponentType) => <QuestionTypeTag type={type} />,
             },
             {
               title: 'Created',
@@ -199,21 +213,19 @@ const QuestionLibraryPage = () => {
               render: (v: string) => formatDateTime(v),
             },
             {
-              title: '',
-              width: 80,
+              title: 'Actions',
+              width: 100,
               render: (_: unknown, record: QuestionLibraryItem) => (
-                <Popconfirm
-                  title="Delete this question?"
-                  onConfirm={(e) => {
-                    e?.stopPropagation()
-                    handleDelete(record.id)
-                  }}
-                  onCancel={(e) => e?.stopPropagation()}
-                >
-                  <Button danger size="small" onClick={(e) => e.stopPropagation()}>
-                    Delete
-                  </Button>
-                </Popconfirm>
+                <div className="flex items-center justify-center">
+                  <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
+                    <Button
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Question actions"
+                    />
+                  </Dropdown>
+                </div>
               ),
             },
           ]}
@@ -243,7 +255,7 @@ const QuestionLibraryPage = () => {
               <Select
                 value={editing.type}
                 onChange={handleTypeChange}
-                options={typeOptions.filter((o) => o.value !== '')}
+                options={questionTypeLabels}
                 className="w-full"
               />
             </div>

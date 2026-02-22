@@ -24,14 +24,8 @@ import {
   updateTestTemplate,
 } from '../../../services/manager'
 import { useSession } from '../../../hooks/useSession'
-import { CheckCircle, CheckSquare, FileText, Info, Library } from 'lucide-react'
-
-const componentPalette: { type: ComponentType; label: string }[] = [
-  { type: 'single_choice', label: 'Single choice' },
-  { type: 'multiple_choice', label: 'Multiple choice' },
-  { type: 'text', label: 'Text response' },
-  { type: 'info', label: 'Info block' },
-]
+import { Library } from 'lucide-react'
+import { getQuestionTypeIcon, questionTypeLabels } from '../../../utils/questions'
 
 const createComponent = (type: ComponentType): TestComponent => {
   const base = {
@@ -53,27 +47,6 @@ const createComponent = (type: ComponentType): TestComponent => {
   return base
 }
 
-const componentIcons: Record<
-  ComponentType,
-  { icon: React.ReactNode; className: string }
-> = {
-  single_choice: {
-    icon: <CheckCircle size={20} color="blue" />,
-    className: 'border-blue',
-  },
-  multiple_choice: {
-    icon: <CheckSquare size={20} color="purple" />,
-    className: 'border-purple',
-  },
-  text: {
-    icon: <FileText size={20} color="green" />,
-    className: 'border-green',
-  },
-  info: {
-    icon: <Info size={20} color="gray" />,
-    className: 'border-gray',
-  },
-}
 interface TestBuilderFormProps {
   testId?: string
   existingTest?: TestTemplate
@@ -368,7 +341,7 @@ const TestBuilderForm = ({
           <div className="builder-grid-scroll h-full">
             <Card className="h-full">
               <div className="flex flex-col gap-4 w-full">
-                <Typography.Text strong>Component palette</Typography.Text>
+                <Typography.Text strong>Components</Typography.Text>
                 <Button
                   type="dashed"
                   icon={<Library size={20} />}
@@ -376,12 +349,11 @@ const TestBuilderForm = ({
                 >
                   Select from library
                 </Button>
-                {componentPalette.map((item) => (
+                {questionTypeLabels.map((item) => (
                   <Button
-                    key={item.type}
-                    icon={componentIcons[item.type].icon}
-                    className={componentIcons[item.type].className}
-                    onClick={() => addComponentToSection(item.type)}
+                    key={item.value}
+                    icon={getQuestionTypeIcon(item.value, 20)}
+                    onClick={() => addComponentToSection(item.value)}
                   >
                     {item.label}
                   </Button>

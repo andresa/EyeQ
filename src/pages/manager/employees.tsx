@@ -1,21 +1,20 @@
 import {
   Button,
+  Dropdown,
   Form,
   Input,
   Modal,
-  Popconfirm,
   Table,
   Tag,
   Tooltip,
   Typography,
   message,
 } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  MailOutlined,
+  EllipsisOutlined,
   MinusCircleOutlined,
 } from '@ant-design/icons'
 import { useState } from 'react'
@@ -50,7 +49,6 @@ const ManagerEmployeesPage = () => {
   const [invitingEmployee, setInvitingEmployee] = useState<Employee | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [inviteLoading, setInviteLoading] = useState(false)
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
   const [inviteForm] = Form.useForm()
 
   const { data, isLoading, refetch } = useQuery({
@@ -122,23 +120,61 @@ const ManagerEmployeesPage = () => {
     }
   }
 
-  const onDeleteEmployee = async (employee: Employee) => {
+  const onDeleteEmployee = (employee: Employee) => {
     if (!companyId) return
 
-    setDeleteLoading(employee.id)
-    try {
-      const response = await deleteEmployee(employee.id, companyId)
-      if (!response.success) {
-        message.error(response.error || 'Failed to delete employee')
-        return
-      }
-      message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
-      refetch()
-    } catch {
-      message.error('Failed to delete employee')
-    } finally {
-      setDeleteLoading(null)
+    Modal.confirm({
+      title: 'Delete employee',
+      content: `Are you sure you want to delete ${employee.firstName} ${employee.lastName}? This action cannot be undone.`,
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const response = await deleteEmployee(employee.id, companyId)
+        if (!response.success) {
+          message.error(response.error || 'Failed to delete employee')
+          return
+        }
+        message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
+        refetch()
+      },
+    })
+  }
+
+  const getMenuItems = (record: Employee): MenuProps['items'] => {
+    const items: MenuProps['items'] = [
+      {
+        key: 'edit',
+        label: 'Edit',
+        onClick: (e) => {
+          e.domEvent.stopPropagation()
+          openEdit(record)
+        },
+      },
+    ]
+
+    if (record.invitationStatus !== 'accepted') {
+      items.push({
+        key: 'invite',
+        label:
+          record.invitationStatus === 'pending' ? 'Resend invitation' : 'Send invitation',
+        onClick: (e) => {
+          e.domEvent.stopPropagation()
+          openInviteModal(record)
+        },
+      })
     }
+
+    items.push({
+      key: 'delete',
+      danger: true,
+      label: 'Delete',
+      onClick: (e) => {
+        e.domEvent.stopPropagation()
+        onDeleteEmployee(record)
+      },
+    })
+
+    return items
   }
 
   return (
@@ -156,6 +192,10 @@ const ManagerEmployeesPage = () => {
           loading={isLoading}
           dataSource={data || []}
           rowKey="id"
+          onRow={(record) => ({
+            onClick: () => openEdit(record),
+            style: { cursor: 'pointer' },
+          })}
           columns={[
             {
               title: 'Name',
@@ -207,49 +247,17 @@ const ManagerEmployeesPage = () => {
             },
             {
               title: 'Actions',
+              width: 100,
               render: (_, record) => (
-                <div className="flex gap-4">
-                  <Button
-                    type="link"
-                    icon={<EditOutlined />}
-                    onClick={() => openEdit(record)}
-                  >
-                    Edit
-                  </Button>
-                  {record.invitationStatus !== 'accepted' && (
-                    <Tooltip
-                      title={
-                        record.invitationStatus === 'pending'
-                          ? 'Resend invitation'
-                          : 'Send invitation'
-                      }
-                    >
-                      <Button
-                        type="link"
-                        icon={<MailOutlined />}
-                        onClick={() => openInviteModal(record)}
-                      >
-                        {record.invitationStatus === 'pending' ? 'Resend' : 'Invite'}
-                      </Button>
-                    </Tooltip>
-                  )}
-                  <Popconfirm
-                    title="Delete employee"
-                    description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
-                    onConfirm={() => onDeleteEmployee(record)}
-                    okText="Delete"
-                    okType="danger"
-                    cancelText="Cancel"
-                  >
+                <div className="flex items-center justify-center">
+                  <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
                     <Button
-                      type="link"
-                      danger
-                      icon={<DeleteOutlined />}
-                      loading={deleteLoading === record.id}
-                    >
-                      Delete
-                    </Button>
-                  </Popconfirm>
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Employee actions"
+                    />
+                  </Dropdown>
                 </div>
               ),
             },

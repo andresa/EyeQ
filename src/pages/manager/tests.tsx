@@ -219,15 +219,18 @@ const ManagerTestsPage = () => {
             },
             {
               title: 'Actions',
+              width: 100,
               render: (_, record) => (
-                <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
-                  <Button
-                    type="text"
-                    icon={<EllipsisOutlined />}
-                    onClick={(event) => event.stopPropagation()}
-                    aria-label="Test actions"
-                  />
-                </Dropdown>
+                <div className="flex items-center justify-center">
+                  <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
+                    <Button
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(event) => event.stopPropagation()}
+                      aria-label="Test actions"
+                    />
+                  </Dropdown>
+                </div>
               ),
             },
           ]}

@@ -1,45 +1,36 @@
-/**
- * Single source of truth for application colors.
- * Green palette used throughout the app (buttons, inputs, spinners, etc.)
- */
-
 import type { ThemeConfig } from 'antd'
+import palette from './palette.json'
 
-// Green palette: lightest (50) to darkest (900)
-export const greenPalette = [
-  '#f0fdf4',
-  '#dcfce7',
-  '#bbf7d0',
-  '#86efac',
-  '#4ade80',
-  '#22c55e',
-  '#16a34a',
-  '#15803d',
-  '#166534',
-  '#14532d',
-] as const
+const neutralShades = Object.values(palette.neutral) as readonly string[]
+const accentShades = Object.values(palette.accent) as readonly string[]
 
-// Link colors (teal for cohesive green theme)
+export const neutralPalette = neutralShades
+export const accentPalette = accentShades
+
 export const linkColors = {
-  default: '#0d9488',
-  hover: '#14b8a6',
-  active: '#0f766e',
+  default: palette.accent['700'],
+  hover: palette.accent['500'],
+  active: palette.accent['800'],
 } as const
 
 export const themeColors = {
-  primary: '#15803d',
-  primaryLight: greenPalette[6],
-  primaryDark: greenPalette[8],
-  primaryBg: greenPalette[1],
-  primaryBorder: greenPalette[3],
-  // Header (dark green)
-  headerBg: '#14532d',
-  headerText: greenPalette[2],
-  headerTextMuted: greenPalette[3],
-  // Success (align with palette)
-  success: greenPalette[5],
-  successBg: greenPalette[1],
-  successBorder: greenPalette[3],
+  primary: palette.neutral['900'],
+  primaryLight: palette.neutral['700'],
+  primaryDark: '#000000',
+  primaryBg: palette.neutral['50'],
+  primaryBgDark: palette.neutral['200'],
+  primaryBorder: palette.neutral['300'],
+  accent: palette.accent['700'],
+  accentLight: palette.accent['500'],
+  accentDark: palette.accent['800'],
+  accentBg: palette.accent['50'],
+  accentBorder: palette.accent['200'],
+  headerBg: palette.accent['700'],
+  headerText: '#FFFFFF',
+  headerTextMuted: palette.accent['200'],
+  success: '#22c55e',
+  successBg: '#dcfce7',
+  successBorder: '#86efac',
 } as const
 
 /** Ant Design theme config for ConfigProvider */
@@ -47,25 +38,20 @@ export const antdColourTheme: ThemeConfig = {
   token: {
     colorPrimary: themeColors.primary,
     colorPrimaryBg: themeColors.primaryBg,
-    colorPrimaryBgHover: greenPalette[2],
+    colorPrimaryBgHover: palette.neutral['100'],
     colorPrimaryBorder: themeColors.primaryBorder,
-    colorPrimaryBorderHover: greenPalette[4],
+    colorPrimaryBorderHover: palette.neutral['400'],
     colorPrimaryHover: themeColors.primaryLight,
-    colorBgSolidHover: greenPalette[2],
+    colorBgSolidHover: palette.neutral['700'],
     colorPrimaryActive: themeColors.primaryDark,
     colorPrimaryTextHover: themeColors.primaryLight,
     colorPrimaryText: themeColors.primary,
     colorPrimaryTextActive: themeColors.primaryDark,
-    colorSuccess: themeColors.success,
-    colorSuccessBg: themeColors.successBg,
-    colorSuccessBgHover: greenPalette[2],
-    colorSuccessBorder: themeColors.successBorder,
-    colorSuccessBorderHover: greenPalette[4],
-    colorInfo: themeColors.primary,
-    colorInfoBg: themeColors.primaryBg,
-    colorInfoBgHover: greenPalette[2],
-    colorInfoBorder: themeColors.primaryBorder,
-    colorInfoBorderHover: greenPalette[4],
+    colorInfo: themeColors.accent,
+    colorInfoBg: themeColors.accentBg,
+    colorInfoBgHover: palette.accent['100'],
+    colorInfoBorder: themeColors.accentBorder,
+    colorInfoBorderHover: palette.accent['300'],
     colorLink: linkColors.default,
     colorLinkHover: linkColors.hover,
     colorLinkActive: linkColors.active,
@@ -82,6 +68,11 @@ export function getCssVariables(): string {
   --color-primary-dark: ${themeColors.primaryDark};
   --color-primary-bg: ${themeColors.primaryBg};
   --color-primary-border: ${themeColors.primaryBorder};
+  --color-accent: ${themeColors.accent};
+  --color-accent-light: ${themeColors.accentLight};
+  --color-accent-dark: ${themeColors.accentDark};
+  --color-accent-bg: ${themeColors.accentBg};
+  --color-accent-border: ${themeColors.accentBorder};
   --color-header-bg: ${themeColors.headerBg};
   --color-header-text: ${themeColors.headerText};
   --color-header-text-muted: ${themeColors.headerTextMuted};

@@ -1,8 +1,15 @@
-import { Button, Card, Form, Input, Modal, Switch, Table, message } from 'antd'
+import { Button, Card, Dropdown, Form, Input, Modal, Switch, Table, message } from 'antd'
+import type { MenuProps } from 'antd'
+import { EllipsisOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import AdminLayout from '../../layouts/AdminLayout'
-import { createCompany, listCompanies, updateCompany } from '../../services/admin'
+import {
+  createCompany,
+  deleteCompany,
+  listCompanies,
+  updateCompany,
+} from '../../services/admin'
 import type { Company } from '../../types'
 
 const AdminCompaniesPage = () => {
@@ -44,6 +51,44 @@ const AdminCompaniesPage = () => {
     setOpen(true)
   }
 
+  const handleDelete = (company: Company) => {
+    Modal.confirm({
+      title: 'Delete company',
+      content: `Are you sure you want to delete "${company.name}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const response = await deleteCompany(company.id)
+        if (!response.success) {
+          message.error(response.error || 'Failed to delete company')
+          return
+        }
+        message.success('Company deleted')
+        refetch()
+      },
+    })
+  }
+
+  const getMenuItems = (record: Company): MenuProps['items'] => [
+    {
+      key: 'edit',
+      label: 'Edit',
+      onClick: (e) => {
+        e.domEvent.stopPropagation()
+        openEdit(record)
+      },
+    },
+    {
+      key: 'delete',
+      danger: true,
+      label: 'Delete',
+      onClick: (e) => {
+        e.domEvent.stopPropagation()
+        handleDelete(record)
+      },
+    },
+  ]
+
   const onSubmit = async () => {
     const values = await form.validateFields()
     const response = editing
@@ -76,6 +121,10 @@ const AdminCompaniesPage = () => {
           loading={isLoading}
           dataSource={data || []}
           rowKey="id"
+          onRow={(record) => ({
+            onClick: () => openEdit(record),
+            style: { cursor: 'pointer' },
+          })}
           columns={[
             { title: 'Name', dataIndex: 'name' },
             { title: 'Address', dataIndex: 'address' },
@@ -86,10 +135,18 @@ const AdminCompaniesPage = () => {
             },
             {
               title: 'Actions',
+              width: 100,
               render: (_, record) => (
-                <Button type="link" onClick={() => openEdit(record)}>
-                  Edit
-                </Button>
+                <div className="flex items-center justify-center">
+                  <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
+                    <Button
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Company actions"
+                    />
+                  </Dropdown>
+                </div>
               ),
             },
           ]}

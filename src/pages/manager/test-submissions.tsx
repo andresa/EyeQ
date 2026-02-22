@@ -380,15 +380,18 @@ const SubmissionsPage = () => {
             },
             {
               title: 'Actions',
+              width: 100,
               render: (_, record) => (
-                <Dropdown menu={{ items: getMenuItems(record.id) }} trigger={['click']}>
-                  <Button
-                    type="text"
-                    icon={<EllipsisOutlined />}
-                    onClick={(event) => event.stopPropagation()}
-                    aria-label="Submission actions"
-                  />
-                </Dropdown>
+                <div className="flex items-center justify-center">
+                  <Dropdown menu={{ items: getMenuItems(record.id) }} trigger={['click']}>
+                    <Button
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(event) => event.stopPropagation()}
+                      aria-label="Submission actions"
+                    />
+                  </Dropdown>
+                </div>
               ),
             },
           ]}

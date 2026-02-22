@@ -70,7 +70,7 @@ const VerifyPage = () => {
   // Verifying state
   if (pageState === 'verifying') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700">
         <Card className="w-full max-w-md text-center shadow-2xl">
           <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
           <Title level={4} className="mt-4">
@@ -84,7 +84,7 @@ const VerifyPage = () => {
   // Success state
   if (pageState === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 p-4">
         <Card className="w-full max-w-md shadow-2xl">
           <Result
             status="success"
@@ -110,7 +110,7 @@ const VerifyPage = () => {
 
   // Error state
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <Result
           status="error"
