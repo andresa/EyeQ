@@ -18,10 +18,10 @@ const ManagerLayout = ({ children }: PropsWithChildren) => {
 
   const selectedPath = location.pathname.startsWith('/manager/test-submissions')
     ? '/manager/test-submissions'
-    : location.pathname.startsWith('/manager/test-builder')
-      ? '/manager/tests'
-      : location.pathname.startsWith('/manager/marking')
-        ? '/manager/test-submissions'
+    : location.pathname.startsWith('/manager/submission')
+      ? '/manager/test-submissions'
+      : location.pathname.startsWith('/manager/test-builder')
+        ? '/manager/tests'
         : location.pathname
 
   return (

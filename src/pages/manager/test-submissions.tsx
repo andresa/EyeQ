@@ -1,23 +1,12 @@
-import { Button, Card, Drawer, Dropdown, Select, Table, Typography } from 'antd'
+import { Button, Dropdown, Select, Table, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
-import {
-  fetchTestInstanceResults,
-  listEmployees,
-  listTestInstances,
-  listTests,
-} from '../../services/manager'
-import type {
-  Employee,
-  ResponseRecord,
-  TestComponent,
-  TestInstance,
-  TestTemplate,
-} from '../../types'
+import { listEmployees, listTestInstances, listTests } from '../../services/manager'
+import type { Employee, TestInstance, TestTemplate } from '../../types'
 import { formatDateTime } from '../../utils/date'
 import { useSession } from '../../hooks/useSession'
 import StatusBadge from '../../components/atoms/StatusBadge'
@@ -34,34 +23,6 @@ import {
   subWeeks,
 } from 'date-fns'
 
-const buildResponseMap = (responses: ResponseRecord[]) =>
-  responses.reduce((map, response) => {
-    map.set(response.questionId, response)
-    return map
-  }, new Map<string, ResponseRecord>())
-
-const resolveAnswer = (component: TestComponent, response?: ResponseRecord) => {
-  if (!response) return 'No response'
-  if (component.type === 'text') {
-    return response.textAnswer || 'No response'
-  }
-  const rawAnswer = response.answer
-  if (Array.isArray(rawAnswer)) {
-    if (!component.options) return rawAnswer.join(', ')
-    return rawAnswer
-      .map(
-        (optionId) => component.options?.find((option) => option.id === optionId)?.label,
-      )
-      .filter(Boolean)
-      .join(', ')
-  }
-  if (typeof rawAnswer === 'string') {
-    if (!component.options) return rawAnswer
-    return component.options.find((option) => option.id === rawAnswer)?.label || rawAnswer
-  }
-  return 'No response'
-}
-
 const SubmissionsPage = () => {
   const { testId } = useParams()
   const navigate = useNavigate()
@@ -69,7 +30,6 @@ const SubmissionsPage = () => {
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
 
-  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null)
   const [employeeFilter, setEmployeeFilter] = useState<string[]>([])
   const [statusFilter, setStatusFilter] = useState<string[]>(() =>
     searchParams.get('status') === 'completed' ? ['completed'] : [],
@@ -116,19 +76,6 @@ const SubmissionsPage = () => {
     enabled: Boolean(companyId),
   })
 
-  const { data: results, isFetching: isLoadingResults } = useQuery({
-    queryKey: ['manager', 'testInstanceResults', selectedInstanceId],
-    enabled: Boolean(selectedInstanceId),
-    queryFn: async () => {
-      if (!selectedInstanceId) return null
-      const response = await fetchTestInstanceResults(selectedInstanceId)
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load submissions')
-      }
-      return response.data
-    },
-  })
-
   const testMap = useMemo(
     () =>
       (tests || []).reduce<Record<string, string>>((map, test) => {
@@ -146,8 +93,6 @@ const SubmissionsPage = () => {
       }, {}),
     [employees],
   )
-
-  const responseMap = useMemo(() => buildResponseMap(results?.responses || []), [results])
 
   const filteredInstances = useMemo(() => {
     const now = new Date()
@@ -200,19 +145,13 @@ const SubmissionsPage = () => {
       })
   }, [assignedFilter, employeeFilter, instances, statusFilter])
 
-  const handleViewAnswers = (instanceId: string) => {
-    setSelectedInstanceId(instanceId)
-  }
-
-  const closeDrawer = () => setSelectedInstanceId(null)
-
   const getMenuItems = (instanceId: string): MenuProps['items'] => [
     {
       key: 'view',
       label: 'View answers',
       onClick: (event) => {
         event?.domEvent?.stopPropagation()
-        handleViewAnswers(instanceId)
+        navigate(`/manager/submission/${instanceId}?tab=view`)
       },
     },
     {
@@ -220,7 +159,7 @@ const SubmissionsPage = () => {
       label: 'Mark answers',
       onClick: (event) => {
         event?.domEvent?.stopPropagation()
-        navigate(`/manager/marking/${instanceId}`)
+        navigate(`/manager/submission/${instanceId}?tab=mark`)
       },
     },
   ]
@@ -297,7 +236,7 @@ const SubmissionsPage = () => {
           dataSource={filteredInstances}
           rowKey="id"
           onRow={(record) => ({
-            onClick: () => navigate(`/manager/marking/${record.id}`),
+            onClick: () => navigate(`/manager/submission/${record.id}?tab=view`),
             style: { cursor: 'pointer' },
           })}
           locale={{
@@ -352,70 +291,6 @@ const SubmissionsPage = () => {
           ]}
         />
       </div>
-      <Drawer
-        title="Test answers"
-        size={520}
-        open={Boolean(selectedInstanceId)}
-        onClose={closeDrawer}
-      >
-        {isLoadingResults ? (
-          <Typography.Text>Loading answers...</Typography.Text>
-        ) : results ? (
-          <div className="flex flex-col gap-6 w-full">
-            <Card>
-              <div className="flex flex-col gap-4">
-                <Typography.Text strong>{results.test.name}</Typography.Text>
-                <Typography.Text type="secondary">
-                  Employee:{' '}
-                  {employeeMap[results.instance.employeeId] ||
-                    results.instance.employeeId}
-                </Typography.Text>
-                <Typography.Text type="secondary">
-                  Status: {results.instance.status}
-                </Typography.Text>
-                <Button
-                  type="primary"
-                  onClick={() => navigate(`/manager/marking/${results.instance.id}`)}
-                >
-                  Mark Submission
-                </Button>
-              </div>
-            </Card>
-            {results.test.sections.map((section) => (
-              <Card key={section.id} title={section.title}>
-                <div className="flex flex-col gap-4 w-full">
-                  {section.components.map((component) => {
-                    if (component.type === 'info') {
-                      return (
-                        <Card key={component.id} type="inner">
-                          <Typography.Text strong>{component.title}</Typography.Text>
-                          <Typography.Paragraph>
-                            {component.description}
-                          </Typography.Paragraph>
-                        </Card>
-                      )
-                    }
-                    const response = responseMap.get(component.id)
-                    return (
-                      <Card key={component.id} type="inner">
-                        <Typography.Text strong>{component.title}</Typography.Text>
-                        <Typography.Paragraph type="secondary">
-                          {component.description}
-                        </Typography.Paragraph>
-                        <Typography.Text>
-                          {resolveAnswer(component, response)}
-                        </Typography.Text>
-                      </Card>
-                    )
-                  })}
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Typography.Text>No answers available.</Typography.Text>
-        )}
-      </Drawer>
     </ManagerLayout>
   )
 }
