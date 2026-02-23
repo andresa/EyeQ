@@ -16,6 +16,7 @@ import {
 import type { Employee, TestInstance, TestTemplate } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { formatDateTime } from '../../utils/date'
+import dayjs from 'dayjs'
 
 const ManagerTestsPage = () => {
   const navigate = useNavigate()
@@ -81,15 +82,25 @@ const ManagerTestsPage = () => {
     })
   }, [tests])
 
-  const openAssign = (testId: string) => {
-    setAssignTestId(testId)
+  const openAssign = (testId?: string) => {
+    setAssignTestId(testId ?? '')
     setSelectedEmployees([])
     setExpiry(undefined)
     setAssignOpen(true)
   }
 
+  const closeAssign = () => {
+    setAssignOpen(false)
+    setAssignTestId('')
+    setSelectedEmployees([])
+    setExpiry(undefined)
+  }
+
   const handleAssign = async () => {
-    if (!assignTestId) return
+    if (!assignTestId) {
+      message.error('Select a test.')
+      return
+    }
     if (selectedEmployees.length === 0) {
       message.error('Select at least one employee.')
       return
@@ -103,7 +114,7 @@ const ManagerTestsPage = () => {
       return
     }
     message.success('Test assigned')
-    setAssignOpen(false)
+    closeAssign()
   }
 
   const handleDuplicate = async (testId: string) => {
@@ -186,9 +197,12 @@ const ManagerTestsPage = () => {
           <Typography.Title level={3} className="m-0">
             Tests
           </Typography.Title>
-          <Button type="primary" onClick={() => navigate('/manager/test-builder')}>
-            Create Test
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => openAssign('')}>Assign Test</Button>
+            <Button type="primary" onClick={() => navigate('/manager/test-builder')}>
+              Create Test
+            </Button>
+          </div>
         </div>
         <Table
           dataSource={sortedTests}
@@ -232,27 +246,106 @@ const ManagerTestsPage = () => {
         title="Assign Test"
         open={assignOpen}
         onOk={handleAssign}
-        onCancel={() => setAssignOpen(false)}
+        onCancel={closeAssign}
         okText="Assign"
       >
-        <div className="flex justify-between w-full gap-4">
-          <Select
-            mode="multiple"
-            className="min-w-[260px]"
-            value={selectedEmployees}
-            onChange={(values) => setSelectedEmployees(values)}
-            placeholder="Select employees"
-            options={(employees || []).map((employee) => ({
-              label: `${employee.firstName} ${employee.lastName}`,
-              value: employee.id,
-            }))}
-          />
-          <DatePicker
-            showTime
-            className="w-full"
-            onChange={(value) => setExpiry(value?.toISOString())}
-            placeholder="Expiry date"
-          />
+        <div className="flex w-full flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <Typography.Text strong>Test</Typography.Text>
+            <Select
+              value={assignTestId || undefined}
+              onChange={(id) => setAssignTestId(id || '')}
+              placeholder="Select test"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={sortedTests.map((test) => ({
+                label: test.name,
+                value: test.id,
+              }))}
+              filterOption={(input, option) =>
+                (option?.label ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              className="w-full"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
+              <Typography.Text strong>Employees</Typography.Text>
+              <Button
+                type="link"
+                size="small"
+                className="p-0 h-auto"
+                onClick={() => setSelectedEmployees((employees || []).map((e) => e.id))}
+                disabled={!employees?.length}
+              >
+                Select all
+              </Button>
+            </div>
+            <Select
+              mode="multiple"
+              value={selectedEmployees}
+              onChange={(values) => setSelectedEmployees(values)}
+              placeholder="Select employees"
+              showSearch
+              optionFilterProp="label"
+              options={(employees || []).map((employee) => ({
+                label: `${employee.firstName} ${employee.lastName}`,
+                value: employee.id,
+              }))}
+              filterOption={(input, option) =>
+                (option?.label ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              className="w-full"
+              allowClear
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Typography.Text strong>Expiry (optional)</Typography.Text>
+            <DatePicker
+              showTime={{ format: 'HH:mm' }}
+              format="YYYY-MM-DD HH:mm"
+              className="w-full"
+              value={expiry ? dayjs(expiry) : null}
+              onChange={(value) => setExpiry(value?.toISOString())}
+              placeholder="Expiry date"
+              showNow={false}
+            />
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                size="small"
+                onClick={() =>
+                  setExpiry(dayjs().add(1, 'day').second(0).millisecond(0).toISOString())
+                }
+              >
+                In 1 day
+              </Button>
+              <Button
+                size="small"
+                onClick={() =>
+                  setExpiry(dayjs().add(1, 'week').second(0).millisecond(0).toISOString())
+                }
+              >
+                In 1 week
+              </Button>
+              <Button
+                size="small"
+                onClick={() =>
+                  setExpiry(
+                    dayjs().add(1, 'month').second(0).millisecond(0).toISOString(),
+                  )
+                }
+              >
+                In 1 month
+              </Button>
+            </div>
+          </div>
         </div>
       </Modal>
     </ManagerLayout>
