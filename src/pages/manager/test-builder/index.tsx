@@ -1,5 +1,5 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react'
-import { Button, Card, Input, Spin, Typography, message } from 'antd'
+import { Button, Card, Input, Spin, Typography, App } from 'antd'
 import { SettingOutlined } from '@ant-design/icons'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -61,6 +61,7 @@ const TestBuilderForm = ({
   managerId,
 }: TestBuilderFormProps) => {
   const navigate = useNavigate()
+  const { message } = App.useApp()
 
   const [name, setName] = useState(existingTest?.name || '')
   const [sections, setSections] = useState<TestSection[]>(existingTest?.sections || [])
@@ -201,7 +202,7 @@ const TestBuilderForm = ({
         `${components.length} question${components.length === 1 ? '' : 's'} added from library`,
       )
     },
-    [selectedSectionId],
+    [selectedSectionId, message],
   )
 
   const handleSave = async () => {

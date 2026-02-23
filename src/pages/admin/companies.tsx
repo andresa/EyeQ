@@ -1,4 +1,4 @@
-import { Button, Card, Dropdown, Form, Input, Modal, Switch, Table, message } from 'antd'
+import { App, Button, Card, Dropdown, Form, Input, Modal, Switch, Table } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useState } from 'react'
@@ -13,6 +13,7 @@ import {
 import type { Company } from '../../types'
 
 const AdminCompaniesPage = () => {
+  const { message, modal } = App.useApp()
   const [form] = Form.useForm()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Company | null>(null)
@@ -52,7 +53,7 @@ const AdminCompaniesPage = () => {
   }
 
   const handleDelete = (company: Company) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete company',
       content: `Are you sure you want to delete "${company.name}"? This action cannot be undone.`,
       okText: 'Delete',

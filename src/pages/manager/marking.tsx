@@ -1,4 +1,4 @@
-import { Button, Card, Input, Radio, Tag, Typography, message } from 'antd'
+import { App, Button, Card, Input, Radio, Tag, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -90,6 +90,7 @@ const formatCorrectAnswer = (
 const MarkingPage = () => {
   const { instanceId } = useParams()
   const navigate = useNavigate()
+  const { message } = App.useApp()
   const { userProfile } = useSession()
   const [marksOverrides, setMarksOverrides] = useState<Record<string, MarkState>>({})
 

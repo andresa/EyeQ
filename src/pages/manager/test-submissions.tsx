@@ -5,7 +5,6 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
-import { listManagersShared } from '../../services/shared'
 import {
   fetchTestInstanceResults,
   listEmployees,
@@ -14,7 +13,6 @@ import {
 } from '../../services/manager'
 import type {
   Employee,
-  Manager,
   ResponseRecord,
   TestComponent,
   TestInstance,
@@ -99,19 +97,6 @@ const SubmissionsPage = () => {
     },
   })
 
-  const { data: managers } = useQuery({
-    queryKey: ['admin', 'managers', companyId],
-    queryFn: async () => {
-      if (!companyId) return [] as Manager[]
-      const response = await listManagersShared(companyId)
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load managers')
-      }
-      return response.data
-    },
-    enabled: Boolean(companyId),
-  })
-
   const { data: instances, isLoading } = useQuery({
     queryKey: ['manager', 'testInstances', testId, companyId],
     queryFn: async () => {
@@ -157,15 +142,6 @@ const SubmissionsPage = () => {
         return map
       }, {}),
     [employees],
-  )
-
-  const managerMap = useMemo(
-    () =>
-      (managers || []).reduce<Record<string, string>>((map, manager) => {
-        map[manager.id] = `${manager.firstName} ${manager.lastName}`
-        return map
-      }, {}),
-    [managers],
   )
 
   const responseMap = useMemo(() => buildResponseMap(results?.responses || []), [results])
@@ -352,21 +328,11 @@ const SubmissionsPage = () => {
               render: (value: string) => employeeMap[value] || value,
             },
             {
-              title: 'Assigned by',
-              dataIndex: 'assignedByManagerId',
-              render: (value: string) => managerMap[value] || value,
-            },
-            {
               title: 'Status',
               dataIndex: 'status',
               render: (value: string) => (
                 <StatusBadge status={value as TestInstance['status']} />
               ),
-            },
-            {
-              title: 'Assigned',
-              dataIndex: 'assignedAt',
-              render: (value: string) => formatDateTime(value),
             },
             {
               title: 'Completed',

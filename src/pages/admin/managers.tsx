@@ -1,4 +1,4 @@
-import { Button, Card, Dropdown, Modal, Select, Table, Tag, Tooltip, message } from 'antd'
+import { App, Button, Card, Dropdown, Select, Table, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
@@ -33,6 +33,7 @@ const invitationStatusConfig: Record<
 }
 
 const AdminManagersPage = () => {
+  const { message, modal } = App.useApp()
   const [open, setOpen] = useState(false)
   const [editingManager, setEditingManager] = useState<Manager | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
@@ -85,7 +86,7 @@ const AdminManagersPage = () => {
   const onDeleteManager = (manager: Manager) => {
     if (!companyId) return
 
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete manager',
       content: `Are you sure you want to delete ${manager.firstName} ${manager.lastName}? This action cannot be undone.`,
       okText: 'Delete',

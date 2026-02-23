@@ -1,4 +1,5 @@
 import {
+  App,
   Button,
   Dropdown,
   Form,
@@ -8,7 +9,6 @@ import {
   Tag,
   Tooltip,
   Typography,
-  message,
 } from 'antd'
 import type { MenuProps } from 'antd'
 import {
@@ -41,6 +41,7 @@ const invitationStatusConfig: Record<
 }
 
 const ManagerEmployeesPage = () => {
+  const { message, modal } = App.useApp()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId || ''
 
@@ -123,7 +124,7 @@ const ManagerEmployeesPage = () => {
   const onDeleteEmployee = (employee: Employee) => {
     if (!companyId) return
 
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete employee',
       content: `Are you sure you want to delete ${employee.firstName} ${employee.lastName}? This action cannot be undone.`,
       okText: 'Delete',
@@ -218,8 +219,6 @@ const ManagerEmployeesPage = () => {
                 return email || <span className="text-gray-400 italic">No email</span>
               },
             },
-            { title: 'Phone', dataIndex: 'phone' },
-            { title: 'DOB', dataIndex: 'dob' },
             {
               title: 'Role',
               dataIndex: 'role',

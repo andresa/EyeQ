@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Input, Modal, Typography, message } from 'antd'
+import { App, Button, Input, Modal, Typography } from 'antd'
 import { Pencil, Trash2, Check, X } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -17,6 +17,7 @@ interface CategoriesModalProps {
 }
 
 const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => {
+  const { message, modal } = App.useApp()
   const queryClient = useQueryClient()
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -77,7 +78,7 @@ const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => 
   }
 
   const handleDelete = (cat: QuestionCategory) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete category',
       content: `Are you sure you want to delete "${cat.name}"? Questions in this category will become uncategorised.`,
       okText: 'Delete',

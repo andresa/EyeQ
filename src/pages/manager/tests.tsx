@@ -1,13 +1,4 @@
-import {
-  Button,
-  DatePicker,
-  Dropdown,
-  Modal,
-  Select,
-  Table,
-  Typography,
-  message,
-} from 'antd'
+import { App, Button, DatePicker, Dropdown, Modal, Select, Table, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
@@ -29,6 +20,7 @@ import { formatDateTime } from '../../utils/date'
 const ManagerTestsPage = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { message, modal } = App.useApp()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
 
@@ -125,7 +117,7 @@ const ManagerTestsPage = () => {
   }
 
   const handleDelete = (record: TestTemplate) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete test',
       content: `Are you sure you want to delete "${record.name}"?`,
       okText: 'Delete',

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  App,
   Button,
   Checkbox,
   Dropdown,
@@ -9,7 +10,6 @@ import {
   Table,
   Tag,
   Typography,
-  message,
 } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
@@ -31,6 +31,7 @@ import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
 import CategoriesModal from '../../components/organisms/CategoriesModal'
 
 const QuestionLibraryPage = () => {
+  const { message, modal } = App.useApp()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
   const queryClient = useQueryClient()
@@ -79,7 +80,7 @@ const QuestionLibraryPage = () => {
   })
 
   const handleDelete = (record: QuestionLibraryItem) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete question',
       content: `Are you sure you want to delete "${record.title}"?`,
       okText: 'Delete',
@@ -240,7 +241,9 @@ const QuestionLibraryPage = () => {
               title: 'Type',
               dataIndex: 'type',
               width: 200,
-              render: (type: ComponentType) => <QuestionTypeTag type={type} />,
+              render: (type: ComponentType) => (
+                <QuestionTypeTag type={type} size="small" />
+              ),
             },
             {
               title: 'Category',

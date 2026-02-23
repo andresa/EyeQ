@@ -1,4 +1,4 @@
-import { Button, Card, Dropdown, Modal, Select, Table, Tag, Tooltip, message } from 'antd'
+import { App, Button, Card, Dropdown, Select, Table, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
@@ -29,6 +29,7 @@ const invitationStatusConfig: Record<
 }
 
 const AdminEmployeesPage = () => {
+  const { message, modal } = App.useApp()
   const [open, setOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
@@ -81,7 +82,7 @@ const AdminEmployeesPage = () => {
   const onDeleteEmployee = (employee: Employee) => {
     if (!companyId) return
 
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete employee',
       content: `Are you sure you want to delete ${employee.firstName} ${employee.lastName}? This action cannot be undone.`,
       okText: 'Delete',
@@ -205,8 +206,6 @@ const AdminEmployeesPage = () => {
                 return email || <span className="text-gray-400 italic">No email</span>
               },
             },
-            { title: 'Phone', dataIndex: 'phone' },
-            { title: 'DOB', dataIndex: 'dob' },
             {
               title: 'Role',
               dataIndex: 'role',
