@@ -2,7 +2,7 @@ import { Button, Card, Drawer, Dropdown, Select, Table, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import {
@@ -65,12 +65,15 @@ const resolveAnswer = (component: TestComponent, response?: ResponseRecord) => {
 const SubmissionsPage = () => {
   const { testId } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
 
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null)
   const [employeeFilter, setEmployeeFilter] = useState<string[]>([])
-  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState<string[]>(() =>
+    searchParams.get('status') === 'completed' ? ['completed'] : [],
+  )
   const [assignedFilter, setAssignedFilter] = useState<string>('all')
 
   const { data: tests } = useQuery({
@@ -227,79 +230,67 @@ const SubmissionsPage = () => {
       <div className="flex flex-col gap-6 w-full">
         <Typography.Title level={3}>Submissions</Typography.Title>
         <div className="flex flex-wrap gap-4">
-          <div className="flex flex-col gap-1">
-            <Typography.Text type="secondary">Test</Typography.Text>
-            <Select
-              value={testId || 'all'}
-              onChange={(value) =>
-                value === 'all'
-                  ? navigate('/manager/test-submissions')
-                  : navigate(`/manager/test-submissions/${value}`)
-              }
-              options={[
-                { label: 'All tests', value: 'all' },
-                ...(tests || []).map((test) => ({
-                  label: test.name,
-                  value: test.id,
-                })),
-              ]}
-              className="min-w-[220px]"
-              aria-label="Filter by test"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Typography.Text type="secondary">Employee</Typography.Text>
-            <Select
-              mode="multiple"
-              value={employeeFilter}
-              onChange={setEmployeeFilter}
-              options={(employees || []).map((employee) => ({
-                label: `${employee.firstName} ${employee.lastName}`,
-                value: employee.id,
-              }))}
-              placeholder="All employees"
-              allowClear
-              className="min-w-[260px]"
-              aria-label="Filter by employee"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Typography.Text type="secondary">Status</Typography.Text>
-            <Select
-              mode="multiple"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={[
-                { label: 'Assigned', value: 'assigned' },
-                { label: 'Opened', value: 'opened' },
-                { label: 'In Progress', value: 'in-progress' },
-                { label: 'Completed', value: 'completed' },
-                { label: 'Marked', value: 'marked' },
-                { label: 'Expired', value: 'expired' },
-              ]}
-              placeholder="All statuses"
-              allowClear
-              className="min-w-[220px]"
-              aria-label="Filter by status"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Typography.Text type="secondary">Assigned date</Typography.Text>
-            <Select
-              value={assignedFilter}
-              onChange={setAssignedFilter}
-              options={[
-                { label: 'All dates', value: 'all' },
-                { label: 'Today', value: 'today' },
-                { label: 'This week', value: 'this_week' },
-                { label: 'Last week', value: 'last_week' },
-                { label: 'This month', value: 'this_month' },
-                { label: 'Last month', value: 'last_month' },
-              ]}
-              className="min-w-[180px]"
-              aria-label="Filter by assigned date"
-            />
-          </div>
+          <Select
+            value={testId || 'all'}
+            onChange={(value) =>
+              value === 'all'
+                ? navigate('/manager/test-submissions')
+                : navigate(`/manager/test-submissions/${value}`)
+            }
+            options={[
+              { label: 'All tests', value: 'all' },
+              ...(tests || []).map((test) => ({
+                label: test.name,
+                value: test.id,
+              })),
+            ]}
+            className="min-w-[220px]"
+            aria-label="Filter by test"
+          />
+          <Select
+            mode="multiple"
+            value={employeeFilter}
+            onChange={setEmployeeFilter}
+            options={(employees || []).map((employee) => ({
+              label: `${employee.firstName} ${employee.lastName}`,
+              value: employee.id,
+            }))}
+            placeholder="All employees"
+            allowClear
+            className="min-w-[260px]"
+            aria-label="Filter by employee"
+          />
+          <Select
+            mode="multiple"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { label: 'Assigned', value: 'assigned' },
+              { label: 'Opened', value: 'opened' },
+              { label: 'In Progress', value: 'in-progress' },
+              { label: 'Completed', value: 'completed' },
+              { label: 'Marked', value: 'marked' },
+              { label: 'Expired', value: 'expired' },
+            ]}
+            placeholder="All statuses"
+            allowClear
+            className="min-w-[220px]"
+            aria-label="Filter by status"
+          />
+          <Select
+            value={assignedFilter}
+            onChange={setAssignedFilter}
+            options={[
+              { label: 'All dates', value: 'all' },
+              { label: 'Today', value: 'today' },
+              { label: 'This week', value: 'this_week' },
+              { label: 'Last week', value: 'last_week' },
+              { label: 'This month', value: 'this_month' },
+              { label: 'Last month', value: 'last_month' },
+            ]}
+            className="min-w-[180px]"
+            aria-label="Filter by assigned date"
+          />
         </div>
         <Table
           loading={isLoading}
@@ -386,7 +377,7 @@ const SubmissionsPage = () => {
                   type="primary"
                   onClick={() => navigate(`/manager/marking/${results.instance.id}`)}
                 >
-                  Mark submission
+                  Mark Submission
                 </Button>
               </div>
             </Card>

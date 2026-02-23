@@ -51,6 +51,7 @@ const ManagerEmployeesPage = () => {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteForm] = Form.useForm()
+  const [nameFilter, setNameFilter] = useState('')
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['manager', 'employees', companyId],
@@ -63,6 +64,13 @@ const ManagerEmployeesPage = () => {
       return response.data
     },
     enabled: !!companyId,
+  })
+
+  const filteredEmployees = (data || []).filter((employee) => {
+    if (!nameFilter.trim()) return true
+    const q = nameFilter.trim().toLowerCase()
+    const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase()
+    return fullName.includes(q)
   })
 
   const openCreate = () => {
@@ -189,9 +197,16 @@ const ManagerEmployeesPage = () => {
             Add employee
           </Button>
         </div>
+        <Input
+          placeholder="Filter by name"
+          value={nameFilter}
+          onChange={(e) => setNameFilter(e.target.value)}
+          allowClear
+          className="max-w-xs"
+        />
         <Table
           loading={isLoading}
-          dataSource={data || []}
+          dataSource={filteredEmployees}
           rowKey="id"
           onRow={(record) => ({
             onClick: () => openEdit(record),

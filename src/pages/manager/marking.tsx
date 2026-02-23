@@ -1,4 +1,4 @@
-import { App, Button, Card, Input, Radio, Tag, Typography } from 'antd'
+import { App, Button, Card, Input, Radio, Spin, Tag, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -194,7 +194,9 @@ const MarkingPage = () => {
   if (isLoading || !data) {
     return (
       <ManagerLayout>
-        <Typography.Text>Loading submission...</Typography.Text>
+        <div className="flex justify-center items-center h-full">
+          <Spin />
+        </div>
       </ManagerLayout>
     )
   }

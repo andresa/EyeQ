@@ -1,4 +1,14 @@
-import { App, Button, DatePicker, Dropdown, Modal, Select, Table, Typography } from 'antd'
+import {
+  App,
+  Button,
+  DatePicker,
+  Dropdown,
+  Input,
+  Modal,
+  Select,
+  Table,
+  Typography,
+} from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
@@ -29,6 +39,7 @@ const ManagerTestsPage = () => {
   const [assignTestId, setAssignTestId] = useState<string>('')
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
   const [expiry, setExpiry] = useState<string | undefined>()
+  const [nameFilter, setNameFilter] = useState('')
 
   const { data: tests } = useQuery({
     queryKey: ['manager', 'tests', companyId],
@@ -81,6 +92,12 @@ const ManagerTestsPage = () => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
   }, [tests])
+
+  const filteredTests = useMemo(() => {
+    if (!nameFilter.trim()) return sortedTests
+    const q = nameFilter.trim().toLowerCase()
+    return sortedTests.filter((test) => test.name.toLowerCase().includes(q))
+  }, [sortedTests, nameFilter])
 
   const openAssign = (testId?: string) => {
     setAssignTestId(testId ?? '')
@@ -204,8 +221,15 @@ const ManagerTestsPage = () => {
             </Button>
           </div>
         </div>
+        <Input
+          placeholder="Filter by name"
+          value={nameFilter}
+          onChange={(e) => setNameFilter(e.target.value)}
+          allowClear
+          className="max-w-xs"
+        />
         <Table
-          dataSource={sortedTests}
+          dataSource={filteredTests}
           rowKey="id"
           onRow={(record) => ({
             onClick: () => navigate(`/manager/test-builder/${record.id}`),
