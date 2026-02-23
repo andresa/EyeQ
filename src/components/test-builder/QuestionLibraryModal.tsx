@@ -161,6 +161,16 @@ const QuestionLibraryModal = ({
           selectedRowKeys: selectedKeys,
           onChange: (keys) => setSelectedKeys(keys as string[]),
         }}
+        onRow={(record) => ({
+          onClick: () => {
+            setSelectedKeys((prev) =>
+              prev.includes(record.id)
+                ? prev.filter((k) => k !== record.id)
+                : [...prev, record.id],
+            )
+          },
+          style: { cursor: 'pointer' },
+        })}
         columns={[
           { title: 'Title', dataIndex: 'title', ellipsis: true },
           {

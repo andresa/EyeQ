@@ -29,7 +29,6 @@ import { createUUID } from '../../utils/uuid'
 import { Trash2 } from 'lucide-react'
 import { questionTypeLabels } from '../../utils/questions'
 import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
-import CategoriesModal from '../../components/organisms/CategoriesModal'
 
 /** Draft for creating a new question (no server fields). */
 type QuestionDraft = Pick<
@@ -68,7 +67,6 @@ const QuestionLibraryPage = () => {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [editing, setEditing] = useState<QuestionLibraryItem | QuestionDraft | null>(null)
   const [saving, setSaving] = useState(false)
-  const [categoriesOpen, setCategoriesOpen] = useState(false)
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['questionLibrary', companyId],
@@ -298,7 +296,6 @@ const QuestionLibraryPage = () => {
             ]}
             className="w-48"
           />
-          <Button onClick={() => setCategoriesOpen(true)}>Categories</Button>
         </div>
         <Table
           loading={isLoading}
@@ -480,13 +477,6 @@ const QuestionLibraryPage = () => {
           </div>
         )}
       </Modal>
-      {companyId && (
-        <CategoriesModal
-          open={categoriesOpen}
-          companyId={companyId}
-          onClose={() => setCategoriesOpen(false)}
-        />
-      )}
     </ManagerLayout>
   )
 }

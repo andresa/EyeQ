@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { App, Button, Input, Modal, Typography } from 'antd'
+import { App, Button, Card, Input, Typography } from 'antd'
 import { Pencil, Trash2, Check, X } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -10,13 +10,11 @@ import {
 } from '../../services/manager'
 import type { QuestionCategory } from '../../types'
 
-interface CategoriesModalProps {
-  open: boolean
+interface CategoriesSectionProps {
   companyId: string
-  onClose: () => void
 }
 
-const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => {
+const CategoriesSection = ({ companyId }: CategoriesSectionProps) => {
   const { message, modal } = App.useApp()
   const queryClient = useQueryClient()
   const [newName, setNewName] = useState('')
@@ -32,7 +30,7 @@ const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => 
       if (!res.success || !res.data) throw new Error(res.error || 'Failed to load')
       return res.data
     },
-    enabled: open && !!companyId,
+    enabled: !!companyId,
   })
 
   const invalidate = () =>
@@ -96,13 +94,11 @@ const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => 
   }
 
   return (
-    <Modal
-      title="Manage Categories"
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      width={480}
-    >
+    <Card title="Question categories" className="w-full max-w-2xl">
+      <Typography.Paragraph type="secondary" className="mb-4">
+        Organise your question library with categories. Assign categories when creating or
+        editing questions, then filter by category in the Question Library.
+      </Typography.Paragraph>
       <div className="flex flex-col gap-4">
         {isLoading ? (
           <Typography.Text type="secondary">Loading...</Typography.Text>
@@ -124,8 +120,7 @@ const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => 
                       onChange={(e) => setEditingName(e.target.value)}
                       onPressEnter={handleSaveEdit}
                       className="flex-1"
-                      // eslint-disable-next-line jsx-a11y/no-autofocus
-                      autoFocus
+                      aria-label="Edit category name"
                     />
                     <Button
                       size="small"
@@ -133,12 +128,14 @@ const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => 
                       icon={<Check size={16} />}
                       onClick={handleSaveEdit}
                       loading={savingEdit}
+                      aria-label="Save"
                     />
                     <Button
                       size="small"
                       type="text"
                       icon={<X size={16} />}
                       onClick={handleCancelEdit}
+                      aria-label="Cancel"
                     />
                   </>
                 ) : (
@@ -149,6 +146,7 @@ const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => 
                       type="text"
                       icon={<Pencil size={16} />}
                       onClick={() => handleStartEdit(cat)}
+                      aria-label="Edit"
                     />
                     <Button
                       size="small"
@@ -156,6 +154,7 @@ const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => 
                       danger
                       icon={<Trash2 size={16} />}
                       onClick={() => handleDelete(cat)}
+                      aria-label="Delete"
                     />
                   </>
                 )}
@@ -163,21 +162,27 @@ const CategoriesModal = ({ open, companyId, onClose }: CategoriesModalProps) => 
             ))}
           </div>
         )}
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full">
           <Input
             placeholder="New category name"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onPressEnter={handleCreate}
-            className="flex-1"
+            className="flex-1 min-w-0"
+            aria-label="New category name"
           />
-          <Button type="primary" onClick={handleCreate} loading={creating}>
-            Add
+          <Button
+            type="primary"
+            onClick={handleCreate}
+            loading={creating}
+            className="flex-shrink-0"
+          >
+            Add category
           </Button>
         </div>
       </div>
-    </Modal>
+    </Card>
   )
 }
 
-export default CategoriesModal
+export default CategoriesSection

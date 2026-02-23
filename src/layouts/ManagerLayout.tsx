@@ -13,6 +13,7 @@ const ManagerLayout = ({ children }: PropsWithChildren) => {
     { key: '/manager/tests', label: 'Tests' },
     { key: '/manager/question-library', label: 'Question Library' },
     { key: '/manager/test-submissions', label: 'Submissions' },
+    { key: '/manager/settings', label: 'Settings' },
   ]
 
   const selectedPath = location.pathname.startsWith('/manager/test-submissions')
