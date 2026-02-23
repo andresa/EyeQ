@@ -172,7 +172,7 @@ const AdminEmployeesPage = () => {
               className="w-full"
             />
             <Button type="primary" onClick={openCreate} disabled={!companyId}>
-              Add employee
+              Add Employee
             </Button>
           </div>
         </Card>

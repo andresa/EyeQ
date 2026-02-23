@@ -20,6 +20,7 @@ import {
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import PageHeading from '../../components/atoms/PageHeading'
 import { deleteEmployee, listEmployees, sendInvitation } from '../../services/manager'
 import type { Employee, InvitationStatus, UserRole } from '../../types'
 import { useSession } from '../../hooks/useSession'
@@ -187,23 +188,28 @@ const ManagerEmployeesPage = () => {
   }
 
   return (
-    <ManagerLayout>
-      <div className="flex flex-col gap-6 w-full">
-        <div className="flex items-center justify-between">
-          <Typography.Title level={3} className="m-0">
+    <ManagerLayout
+      pageHeading={
+        <PageHeading>
+          <Typography.Title level={4} className="!m-0">
             Employees
           </Typography.Title>
+        </PageHeading>
+      }
+    >
+      <div className="flex flex-col gap-6 w-full">
+        <div className="flex items-center justify-between">
+          <Input
+            placeholder="Filter by name"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            allowClear
+            className="max-w-xs"
+          />
           <Button type="primary" onClick={openCreate}>
-            Add employee
+            Add Employee
           </Button>
         </div>
-        <Input
-          placeholder="Filter by name"
-          value={nameFilter}
-          onChange={(e) => setNameFilter(e.target.value)}
-          allowClear
-          className="max-w-xs"
-        />
         <Table
           loading={isLoading}
           dataSource={filteredEmployees}

@@ -8,6 +8,7 @@ const { Content, Sider } = Layout
 
 interface AppLayoutProps {
   title: string
+  pageHeading?: ReactNode
   items: MenuProps['items']
   selectedKeys: string[]
   onNavigate: (path: string) => void
@@ -16,6 +17,7 @@ interface AppLayoutProps {
 
 const AppLayout = ({
   title,
+  pageHeading,
   items,
   selectedKeys,
   onNavigate,
@@ -39,7 +41,7 @@ const AppLayout = ({
   )
 
   return (
-    <Layout className="min-h-screen">
+    <Layout className="h-screen flex flex-col">
       <EyeQHeader
         title={title}
         menuButton={
@@ -53,7 +55,7 @@ const AppLayout = ({
           ) : undefined
         }
       />
-      <Layout>
+      <Layout className="flex-1 !flex-row overflow-hidden">
         {isMobile ? (
           <Drawer
             placement="left"
@@ -65,12 +67,15 @@ const AppLayout = ({
             {navMenu}
           </Drawer>
         ) : (
-          <Sider width={220} className="bg-white">
+          <Sider width={220} className="bg-white overflow-y-auto">
             {navMenu}
           </Sider>
         )}
-        <Layout className="p-6 max-w-7xl mx-auto">
-          <Content>{children}</Content>
+        <Layout className="flex-1 flex flex-col overflow-hidden">
+          {pageHeading}
+          <Content className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full">
+            {children}
+          </Content>
         </Layout>
       </Layout>
     </Layout>

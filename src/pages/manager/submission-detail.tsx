@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import PageHeading from '../../components/atoms/PageHeading'
 import {
   fetchTestInstanceResults,
   listEmployees,
@@ -169,9 +170,25 @@ const SubmissionDetailPage = () => {
     navigate(`/manager/test-submissions/${data.test.id}`)
   }
 
+  const heading = (
+    <PageHeading>
+      <div className="flex items-center gap-4">
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={handleBack}
+          aria-label="Back to submissions"
+        />
+        <Typography.Title level={4} className="!m-0">
+          Submission
+        </Typography.Title>
+      </div>
+    </PageHeading>
+  )
+
   if (isLoading || !data) {
     return (
-      <ManagerLayout>
+      <ManagerLayout pageHeading={heading}>
         <div className="flex justify-center items-center h-full">
           <Spin />
         </div>
@@ -296,10 +313,10 @@ const SubmissionDetailPage = () => {
               </div>
             </Card>
           ))}
-          <div className="flex gap-4">
+          <div className="flex gap-4 justify-end">
             <Button onClick={handleBack}>Cancel</Button>
             <Button type="primary" onClick={handleSubmit}>
-              Submit marks
+              Submit Marks
             </Button>
           </div>
         </div>
@@ -308,26 +325,24 @@ const SubmissionDetailPage = () => {
   ]
 
   return (
-    <ManagerLayout>
+    <ManagerLayout pageHeading={heading}>
       <div className="flex flex-col gap-6 w-full">
-        <div className="flex items-center gap-4">
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={handleBack}
-            aria-label="Back to submissions"
-          />
-          <Typography.Title level={3} className="!mb-0">
-            Submission
-          </Typography.Title>
-        </div>
         <Card>
-          <div className="flex justify-between gap-4">
-            <Typography.Text>{data.test.name}</Typography.Text>
-            <Typography.Text>
-              {employeeMap[data.instance.employeeId] || data.instance.employeeId}
-            </Typography.Text>
-            <StatusBadge status={data.instance.status} />
+          <div className="flex justify-between">
+            <div className="flex items-center gap-1">
+              <Typography.Text strong>Test:</Typography.Text>
+              <Typography.Text>{data.test.name}</Typography.Text>
+            </div>
+            <div className="flex items-center gap-1">
+              <Typography.Text strong>Employee:</Typography.Text>
+              <Typography.Text>
+                {employeeMap[data.instance.employeeId] || data.instance.employeeId}
+              </Typography.Text>
+            </div>
+            <div className="flex items-center gap-1">
+              <Typography.Text strong>Status:</Typography.Text>
+              <StatusBadge status={data.instance.status} />
+            </div>
           </div>
         </Card>
         <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} />

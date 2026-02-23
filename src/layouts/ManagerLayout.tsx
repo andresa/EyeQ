@@ -1,9 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { MenuProps } from 'antd'
-import type { PropsWithChildren } from 'react'
+import type { PropsWithChildren, ReactNode } from 'react'
 import AppLayout from './AppLayout'
 
-const ManagerLayout = ({ children }: PropsWithChildren) => {
+interface ManagerLayoutProps extends PropsWithChildren {
+  pageHeading?: ReactNode
+}
+
+const ManagerLayout = ({ pageHeading, children }: ManagerLayoutProps) => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -27,6 +31,7 @@ const ManagerLayout = ({ children }: PropsWithChildren) => {
   return (
     <AppLayout
       title="Manager Portal"
+      pageHeading={pageHeading}
       items={items}
       selectedKeys={[selectedPath]}
       onNavigate={navigate}

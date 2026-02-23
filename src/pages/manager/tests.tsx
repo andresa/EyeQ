@@ -15,6 +15,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import PageHeading from '../../components/atoms/PageHeading'
 import {
   assignTest,
   deleteTestTemplate,
@@ -208,12 +209,24 @@ const ManagerTestsPage = () => {
   ]
 
   return (
-    <ManagerLayout>
-      <div className="flex flex-col gap-6 w-full">
-        <div className="flex items-center justify-between">
-          <Typography.Title level={3} className="m-0">
+    <ManagerLayout
+      pageHeading={
+        <PageHeading>
+          <Typography.Title level={4} className="!m-0">
             Tests
           </Typography.Title>
+        </PageHeading>
+      }
+    >
+      <div className="flex flex-col gap-6 w-full">
+        <div className="flex items-center justify-between">
+          <Input
+            placeholder="Filter by name"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            allowClear
+            className="max-w-xs"
+          />
           <div className="flex items-center gap-2">
             <Button onClick={() => openAssign('')}>Assign Test</Button>
             <Button type="primary" onClick={() => navigate('/manager/test-builder')}>
@@ -221,13 +234,7 @@ const ManagerTestsPage = () => {
             </Button>
           </div>
         </div>
-        <Input
-          placeholder="Filter by name"
-          value={nameFilter}
-          onChange={(e) => setNameFilter(e.target.value)}
-          allowClear
-          className="max-w-xs"
-        />
+
         <Table
           dataSource={filteredTests}
           rowKey="id"

@@ -28,6 +28,7 @@ import type {
   TestInstanceDetails,
 } from '../../types'
 import { formatDistanceToNowStrict, parseISO } from 'date-fns'
+import { CheckCircleOutlined } from '@ant-design/icons'
 
 const AUTO_SAVE_DELAY_MS = 2000
 
@@ -282,16 +283,8 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
               <Typography.Title level={4} className="!mb-0">
                 {data.test.name}
               </Typography.Title>
-              {saveStatus === 'saving' && (
-                <Typography.Text type="secondary" className="text-xs">
-                  Saving...
-                </Typography.Text>
-              )}
-              {saveStatus === 'saved' && (
-                <Typography.Text type="secondary" className="text-xs">
-                  Saved
-                </Typography.Text>
-              )}
+              {saveStatus === 'saving' && <Spin size="small" />}
+              {saveStatus === 'saved' && <CheckCircleOutlined />}
             </div>
             <Progress percent={progressPercent} />
             <div className="flex w-full justify-between gap-4">

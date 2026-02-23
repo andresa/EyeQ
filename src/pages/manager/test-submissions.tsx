@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import PageHeading from '../../components/atoms/PageHeading'
 import { listEmployees, listTestInstances, listTests } from '../../services/manager'
 import type { Employee, TestInstance, TestTemplate } from '../../types'
 import { formatDateTime } from '../../utils/date'
@@ -165,9 +166,16 @@ const SubmissionsPage = () => {
   ]
 
   return (
-    <ManagerLayout>
+    <ManagerLayout
+      pageHeading={
+        <PageHeading>
+          <Typography.Title level={4} className="!m-0">
+            Submissions
+          </Typography.Title>
+        </PageHeading>
+      }
+    >
       <div className="flex flex-col gap-6 w-full">
-        <Typography.Title level={3}>Submissions</Typography.Title>
         <div className="flex flex-wrap gap-4">
           <Select
             value={testId || 'all'}

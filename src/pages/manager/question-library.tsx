@@ -15,6 +15,7 @@ import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import PageHeading from '../../components/atoms/PageHeading'
 import {
   deleteQuestionLibraryItem,
   createQuestionLibraryItems,
@@ -258,12 +259,42 @@ const QuestionLibraryPage = () => {
     editing?.type === 'single_choice' || editing?.type === 'multiple_choice'
 
   return (
-    <ManagerLayout>
-      <div className="flex flex-col gap-6 w-full">
-        <div className="flex items-center justify-between">
-          <Typography.Title level={3} className="m-0">
+    <ManagerLayout
+      pageHeading={
+        <PageHeading>
+          <Typography.Title level={4} className="!m-0">
             Question Library
           </Typography.Title>
+        </PageHeading>
+      }
+    >
+      <div className="flex flex-col gap-6 w-full">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-4">
+            <Input
+              placeholder="Filter by name"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              allowClear
+              className="max-w-xs"
+            />
+            <Select
+              value={typeFilter}
+              onChange={setTypeFilter}
+              options={[{ value: '', label: 'All types' }, ...questionTypeLabels]}
+              className="w-40"
+            />
+            <Select
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              options={[
+                { value: '', label: 'All categories' },
+                { value: 'uncategorised', label: 'Uncategorised' },
+                ...categories.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+              className="w-48"
+            />
+          </div>
           <Button
             type="primary"
             onClick={() => setEditing(defaultDraft())}
@@ -271,31 +302,6 @@ const QuestionLibraryPage = () => {
           >
             Create Question
           </Button>
-        </div>
-        <div className="flex gap-4">
-          <Input
-            placeholder="Filter by name"
-            value={nameFilter}
-            onChange={(e) => setNameFilter(e.target.value)}
-            allowClear
-            className="max-w-xs"
-          />
-          <Select
-            value={typeFilter}
-            onChange={setTypeFilter}
-            options={[{ value: '', label: 'All types' }, ...questionTypeLabels]}
-            className="w-40"
-          />
-          <Select
-            value={categoryFilter}
-            onChange={setCategoryFilter}
-            options={[
-              { value: '', label: 'All categories' },
-              { value: 'uncategorised', label: 'Uncategorised' },
-              ...categories.map((c) => ({ value: c.id, label: c.name })),
-            ]}
-            className="w-48"
-          />
         </div>
         <Table
           loading={isLoading}

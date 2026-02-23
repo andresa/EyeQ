@@ -2,6 +2,7 @@ import { Alert, Card, Spin, Statistic, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import PageHeading from '../../components/atoms/PageHeading'
 import { listEmployees, listTests, listTestInstances } from '../../services/manager'
 import type { TestInstance } from '../../types'
 import { useSession } from '../../hooks/useSession'
@@ -54,9 +55,17 @@ const ManagerDashboard = () => {
   const toMarkCount = instances?.filter((i) => i.status === 'completed').length ?? 0
 
   // Show error if user profile failed to load
+  const heading = (
+    <PageHeading>
+      <Typography.Title level={4} className="!m-0">
+        Dashboard
+      </Typography.Title>
+    </PageHeading>
+  )
+
   if (profileError) {
     return (
-      <ManagerLayout>
+      <ManagerLayout pageHeading={heading}>
         <Alert
           type="error"
           message="Account not found"
@@ -68,7 +77,7 @@ const ManagerDashboard = () => {
   }
 
   return (
-    <ManagerLayout>
+    <ManagerLayout pageHeading={heading}>
       <div className="flex flex-col gap-6 w-full">
         <div>
           <Typography.Title level={3}>

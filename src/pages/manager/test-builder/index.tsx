@@ -1,10 +1,11 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { Button, Card, Input, Spin, Typography, App } from 'antd'
-import { SettingOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, SettingOutlined } from '@ant-design/icons'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../../layouts/ManagerLayout'
+import PageHeading from '../../../components/atoms/PageHeading'
 import SectionList from '../../../components/test-builder/SectionList'
 import ComponentCard from '../../../components/test-builder/ComponentCard'
 import { createUUID } from '../../../utils/uuid'
@@ -270,8 +271,7 @@ const TestBuilderForm = ({
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full h-[calc(100dvh-112px)]">
-      <Typography.Title level={3}>Test builder</Typography.Title>
+    <div className="flex flex-col gap-6 w-full">
       <div className="builder-grid">
         <div className="flex flex-col gap-4 h-full">
           <Card className="shrink-0">
@@ -366,7 +366,7 @@ const TestBuilderForm = ({
           </div>
         </div>
       </div>
-      <div className="flex gap-4">
+      <div className="flex gap-4 justify-end">
         <Button onClick={() => navigate('/manager/tests')}>Cancel</Button>
         <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)}>
           Settings
@@ -405,6 +405,7 @@ const TestBuilderForm = ({
 
 const TestBuilderPage = () => {
   const { testId } = useParams()
+  const navigate = useNavigate()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
   const managerId = userProfile?.userType === 'manager' ? userProfile.id : undefined
@@ -426,10 +427,25 @@ const TestBuilderPage = () => {
     [testId, tests],
   )
 
-  // Show loading while fetching existing test
+  const heading = (
+    <PageHeading>
+      <div className="flex items-center gap-4">
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate('/manager/tests')}
+          aria-label="Back to tests"
+        />
+        <Typography.Title level={4} className="!m-0">
+          Test Builder
+        </Typography.Title>
+      </div>
+    </PageHeading>
+  )
+
   if (testId && isLoading) {
     return (
-      <ManagerLayout>
+      <ManagerLayout pageHeading={heading}>
         <div className="flex justify-center items-center h-full">
           <Spin />
         </div>
@@ -438,7 +454,7 @@ const TestBuilderPage = () => {
   }
 
   return (
-    <ManagerLayout>
+    <ManagerLayout pageHeading={heading}>
       <TestBuilderForm
         key={testId || 'new'}
         testId={testId}

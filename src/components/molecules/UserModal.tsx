@@ -340,8 +340,8 @@ const UserModal = ({
             extra="When checked, an invitation email will be sent so they can verify their email and log in."
           >
             <Switch
-              checkedChildren="Send invitation"
-              unCheckedChildren="No invitation"
+              checkedChildren="Send invite"
+              unCheckedChildren="No invite"
               defaultChecked
             />
           </Form.Item>
