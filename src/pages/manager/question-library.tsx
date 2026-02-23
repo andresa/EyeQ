@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import {
   deleteQuestionLibraryItem,
+  createQuestionLibraryItems,
   listQuestionCategories,
   listQuestionLibrary,
   updateQuestionLibraryItem,
@@ -30,16 +31,42 @@ import { questionTypeLabels } from '../../utils/questions'
 import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
 import CategoriesModal from '../../components/organisms/CategoriesModal'
 
+/** Draft for creating a new question (no server fields). */
+type QuestionDraft = Pick<
+  QuestionLibraryItem,
+  | 'type'
+  | 'title'
+  | 'description'
+  | 'required'
+  | 'options'
+  | 'correctAnswer'
+  | 'categoryId'
+>
+
+const defaultDraft = (): QuestionDraft => ({
+  type: 'single_choice',
+  title: '',
+  description: '',
+  required: true,
+  options: [
+    { id: createUUID(), label: 'Option 1' },
+    { id: createUUID(), label: 'Option 2' },
+  ],
+  correctAnswer: undefined,
+  categoryId: null,
+})
+
 const QuestionLibraryPage = () => {
   const { message, modal } = App.useApp()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
+  const managerId = userProfile?.userType === 'manager' ? userProfile.id : undefined
   const queryClient = useQueryClient()
 
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
-  const [editing, setEditing] = useState<QuestionLibraryItem | null>(null)
+  const [editing, setEditing] = useState<QuestionLibraryItem | QuestionDraft | null>(null)
   const [saving, setSaving] = useState(false)
   const [categoriesOpen, setCategoriesOpen] = useState(false)
 
@@ -119,27 +146,62 @@ const QuestionLibraryPage = () => {
 
   const handleSaveEdit = async () => {
     if (!editing) return
-    setSaving(true)
-    const res = await updateQuestionLibraryItem(editing.id, {
-      type: editing.type,
-      title: editing.title,
-      description: editing.description,
-      required: editing.required,
-      options: editing.options,
-      correctAnswer: editing.correctAnswer,
-      categoryId: editing.categoryId,
-    })
-    setSaving(false)
-    if (!res.success) {
-      message.error(res.error || 'Failed to save')
+    const trimmedTitle = editing.title?.trim() ?? ''
+    if (!trimmedTitle) {
+      message.error('Title is required')
       return
     }
-    message.success('Question updated')
+    setSaving(true)
+    const isCreate = !('id' in editing) || !editing.id
+    if (isCreate) {
+      if (!companyId || !managerId) {
+        message.error('Cannot create question: missing company or manager context')
+        setSaving(false)
+        return
+      }
+      const res = await createQuestionLibraryItems({
+        companyId,
+        managerId,
+        items: [
+          {
+            type: editing.type,
+            title: trimmedTitle,
+            description: editing.description,
+            required: editing.required,
+            options: editing.options,
+            correctAnswer: editing.correctAnswer,
+            categoryId: editing.categoryId,
+          },
+        ],
+      })
+      setSaving(false)
+      if (!res.success) {
+        message.error(res.error || 'Failed to create question')
+        return
+      }
+      message.success('Question created')
+    } else {
+      const res = await updateQuestionLibraryItem(editing.id, {
+        type: editing.type,
+        title: trimmedTitle,
+        description: editing.description,
+        required: editing.required,
+        options: editing.options,
+        correctAnswer: editing.correctAnswer,
+        categoryId: editing.categoryId,
+      })
+      setSaving(false)
+      if (!res.success) {
+        message.error(res.error || 'Failed to save')
+        return
+      }
+      message.success('Question updated')
+    }
     setEditing(null)
     queryClient.invalidateQueries({ queryKey: ['questionLibrary'] })
   }
 
-  const updateEditing = (updates: Partial<QuestionLibraryItem>) => {
+  const updateEditing = (updates: Partial<QuestionLibraryItem | QuestionDraft>) => {
     if (!editing) return
     setEditing({ ...editing, ...updates })
   }
@@ -200,7 +262,18 @@ const QuestionLibraryPage = () => {
   return (
     <ManagerLayout>
       <div className="flex flex-col gap-6 w-full">
-        <Typography.Title level={3}>Question Library</Typography.Title>
+        <div className="flex items-center justify-between">
+          <Typography.Title level={3} className="m-0">
+            Question Library
+          </Typography.Title>
+          <Button
+            type="primary"
+            onClick={() => setEditing(defaultDraft())}
+            disabled={!companyId || !managerId}
+          >
+            Create Question
+          </Button>
+        </div>
         <div className="flex gap-4">
           <Input
             placeholder="Filter by name"
@@ -283,7 +356,9 @@ const QuestionLibraryPage = () => {
       </div>
 
       <Modal
-        title="Edit Question"
+        title={
+          editing && 'id' in editing && editing.id ? 'Edit Question' : 'Create Question'
+        }
         open={!!editing}
         onCancel={() => setEditing(null)}
         onOk={handleSaveEdit}

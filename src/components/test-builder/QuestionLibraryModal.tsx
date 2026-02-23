@@ -107,7 +107,7 @@ const QuestionLibraryModal = ({
 
   return (
     <Modal
-      title="Select from library"
+      title="Copy from library"
       open={open}
       onCancel={onClose}
       afterOpenChange={handleAfterOpenChange}
