@@ -1,6 +1,6 @@
-import { App, Button, Card, Input, Radio, Spin, Tag, Tabs, Typography } from 'antd'
+import { App, Button, Card, Input, Modal, Radio, Spin, Tag, Tabs, Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, type ReactNode } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
@@ -37,6 +37,8 @@ const SubmissionDetailPage = () => {
   const activeTab: TabKey = tabFromUrl === TAB_MARK ? TAB_MARK : TAB_VIEW
 
   const [marksOverrides, setMarksOverrides] = useState<Record<string, MarkState>>({})
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
+  const [submitConfirmLoading, setSubmitConfirmLoading] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['manager', 'testInstanceResults', instanceId],
@@ -117,6 +119,14 @@ const SubmissionDetailPage = () => {
     [initialMarks, marksOverrides],
   )
 
+  const unmarkedCount = useMemo(
+    () =>
+      Object.values(marks).filter(
+        (m) => m.isCorrect === undefined || m.isCorrect === null,
+      ).length,
+    [marks],
+  )
+
   const updateMark = (questionId: string, updates: Partial<MarkState>) => {
     setMarksOverrides((prev) => ({
       ...prev,
@@ -128,49 +138,73 @@ const SubmissionDetailPage = () => {
     }))
   }
 
+  const scrollToTop = () => {
+    const mainScroll = document.querySelector('[data-main-scroll]')
+    if (mainScroll) {
+      mainScroll.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  useEffect(() => {
+    scrollToTop()
+  }, [activeTab])
+
   const handleTabChange = (key: string) => {
     setSearchParams({ tab: key })
   }
 
   const handleBack = () => {
-    if (data?.test.id) {
-      navigate(`/manager/test-submissions/${data.test.id}`)
-    } else {
-      navigate('/manager/test-submissions')
-    }
+    navigate('/manager/test-submissions')
   }
 
-  const handleSubmit = async () => {
+  const doSubmitMarks = async () => {
     if (!instanceId || !data) return
-    const marksPayload = Object.entries(marks).map(([questionId, mark]) => {
-      const component = componentMap.get(questionId)
-      const response = responseMap.get(questionId)
-      const correctAnswer = mark.correctAnswer ?? component?.correctAnswer ?? null
-      const isCorrect =
-        mark.isCorrect ??
-        (component && component.type !== 'text'
-          ? isAnswerCorrect(component, response, correctAnswer)
-          : null)
-      return {
-        questionId,
-        isCorrect,
-        note: mark.note?.trim() || null,
-        correctAnswer,
+    setSubmitConfirmLoading(true)
+    try {
+      const marksPayload = Object.entries(marks).map(([questionId, mark]) => {
+        const component = componentMap.get(questionId)
+        const response = responseMap.get(questionId)
+        const correctAnswer = mark.correctAnswer ?? component?.correctAnswer ?? null
+        const isCorrect =
+          mark.isCorrect ??
+          (component && component.type !== 'text'
+            ? isAnswerCorrect(component, response, correctAnswer)
+            : null)
+        return {
+          questionId,
+          isCorrect,
+          note: mark.note?.trim() || null,
+          correctAnswer,
+        }
+      })
+      const response = await markTestInstance(instanceId, {
+        marks: marksPayload,
+        markedByManagerId:
+          userProfile?.userType === 'manager' ? userProfile.id : undefined,
+      })
+      if (!response.success) {
+        message.error(response.error || 'Unable to submit marks')
+        return
       }
-    })
-    const response = await markTestInstance(instanceId, {
-      marks: marksPayload,
-      markedByManagerId: userProfile?.userType === 'manager' ? userProfile.id : undefined,
-    })
-    if (!response.success) {
-      message.error(response.error || 'Unable to submit marks')
-      return
+      setSubmitConfirmOpen(false)
+      message.success('Marks saved')
+      navigate('/manager/test-submissions')
+    } finally {
+      setSubmitConfirmLoading(false)
     }
-    message.success('Marks saved')
-    navigate(`/manager/test-submissions/${data.test.id}`)
   }
 
-  const heading = (
+  const handleSubmit = () => {
+    if (unmarkedCount > 0) {
+      setSubmitConfirmOpen(true)
+    } else {
+      doSubmitMarks()
+    }
+  }
+
+  const Heading = ({ title }: { title: string | ReactNode }) => (
     <PageHeading>
       <div className="flex items-center gap-4">
         <Button
@@ -180,7 +214,7 @@ const SubmissionDetailPage = () => {
           aria-label="Back to submissions"
         />
         <Typography.Title level={4} className="!m-0">
-          Submission
+          {title}
         </Typography.Title>
       </div>
     </PageHeading>
@@ -188,7 +222,17 @@ const SubmissionDetailPage = () => {
 
   if (isLoading || !data) {
     return (
-      <ManagerLayout pageHeading={heading}>
+      <ManagerLayout
+        pageHeading={
+          <Heading
+            title={
+              <Typography.Title type="secondary" level={4} className="!m-0">
+                Loading...
+              </Typography.Title>
+            }
+          />
+        }
+      >
         <div className="flex justify-center items-center h-full">
           <Spin />
         </div>
@@ -232,6 +276,11 @@ const SubmissionDetailPage = () => {
               </div>
             </Card>
           ))}
+          <div className="flex gap-4 justify-end">
+            <Button type="primary" onClick={() => handleTabChange(TAB_MARK)}>
+              Mark Answers
+            </Button>
+          </div>
         </div>
       ),
     },
@@ -314,7 +363,6 @@ const SubmissionDetailPage = () => {
             </Card>
           ))}
           <div className="flex gap-4 justify-end">
-            <Button onClick={handleBack}>Cancel</Button>
             <Button type="primary" onClick={handleSubmit}>
               Submit Marks
             </Button>
@@ -325,14 +373,10 @@ const SubmissionDetailPage = () => {
   ]
 
   return (
-    <ManagerLayout pageHeading={heading}>
+    <ManagerLayout pageHeading={<Heading title={data.test.name} />}>
       <div className="flex flex-col gap-6 w-full">
         <Card>
           <div className="flex justify-between">
-            <div className="flex items-center gap-1">
-              <Typography.Text strong>Test:</Typography.Text>
-              <Typography.Text>{data.test.name}</Typography.Text>
-            </div>
             <div className="flex items-center gap-1">
               <Typography.Text strong>Employee:</Typography.Text>
               <Typography.Text>
@@ -346,6 +390,20 @@ const SubmissionDetailPage = () => {
           </div>
         </Card>
         <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} />
+        <Modal
+          title="Unmarked questions"
+          open={submitConfirmOpen}
+          onOk={() => doSubmitMarks()}
+          onCancel={() => setSubmitConfirmOpen(false)}
+          okText="Submit anyway"
+          cancelText="Cancel"
+          confirmLoading={submitConfirmLoading}
+        >
+          <Typography.Paragraph>
+            {unmarkedCount} question{unmarkedCount === 1 ? '' : 's'} have not been marked
+            yet. Are you sure you want to submit?
+          </Typography.Paragraph>
+        </Modal>
       </div>
     </ManagerLayout>
   )

@@ -73,7 +73,10 @@ const AppLayout = ({
         )}
         <Layout className="flex-1 flex flex-col overflow-hidden">
           {pageHeading}
-          <Content className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full">
+          <Content
+            className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full"
+            data-main-scroll
+          >
             {children}
           </Content>
         </Layout>
