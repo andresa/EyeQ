@@ -23,7 +23,7 @@ const EyeQHeader = ({ menuButton }: EyeQHeaderProps) => {
         {menuButton}
         <Typography.Title
           level={4}
-          className="!m-0 shrink-0 cursor-pointer !text-white"
+          className="shrink-0 cursor-pointer !text-white"
           onClick={() => navigate('/')}
         >
           EyeQ

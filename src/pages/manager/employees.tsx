@@ -20,12 +20,10 @@ import {
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
-import PageHeading from '../../components/atoms/PageHeading'
 import { deleteEmployee, listEmployees, sendInvitation } from '../../services/manager'
 import type { Employee, InvitationStatus, UserRole } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import UserModal from '../../components/molecules/UserModal'
-import { Users } from 'lucide-react'
 
 const roleColors: Record<UserRole, string> = {
   admin: 'red',
@@ -189,16 +187,7 @@ const ManagerEmployeesPage = () => {
   }
 
   return (
-    <ManagerLayout
-      pageHeading={
-        <PageHeading>
-          <div className="flex items-center gap-2">
-            <Users />
-            <Typography.Title level={4}>Employees</Typography.Title>
-          </div>
-        </PageHeading>
-      }
-    >
+    <ManagerLayout>
       <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-between">
           <Input
@@ -245,13 +234,13 @@ const ManagerEmployeesPage = () => {
             {
               title: 'Role',
               dataIndex: 'role',
-              render: (role: UserRole) => (
-                <Tag color={roleColors[role] || 'green'}>{role || 'employee'}</Tag>
-              ),
+              width: 100,
+              render: (role: UserRole) => <Tag color={roleColors[role]}>{role}</Tag>,
             },
             {
               title: 'Invitation',
               dataIndex: 'invitationStatus',
+              width: 100,
               render: (status: InvitationStatus | undefined) => {
                 const s = status || 'none'
                 const config = invitationStatusConfig[s]
@@ -265,6 +254,7 @@ const ManagerEmployeesPage = () => {
             {
               title: 'Active',
               dataIndex: 'isActive',
+              width: 100,
               render: (value) => (value ? 'Yes' : 'No'),
             },
             {

@@ -436,9 +436,7 @@ const TestBuilderPage = () => {
           onClick={() => navigate('/manager/tests')}
           aria-label="Back to tests"
         />
-        <Typography.Title level={4} className="!m-0">
-          Test Builder
-        </Typography.Title>
+        <Typography.Title level={4}>Test Builder</Typography.Title>
       </div>
     </PageHeading>
   )

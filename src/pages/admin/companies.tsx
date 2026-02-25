@@ -1,4 +1,4 @@
-import { App, Button, Card, Dropdown, Form, Input, Modal, Switch, Table } from 'antd'
+import { App, Button, Dropdown, Form, Input, Modal, Switch, Table } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useState } from 'react'
@@ -17,14 +17,17 @@ const AdminCompaniesPage = () => {
   const [form] = Form.useForm()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Company | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, refetch } = useQuery({
     queryKey: ['admin', 'companies'],
     queryFn: async () => {
+      setLoading(true)
       const response = await listCompanies()
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
       }
+      setLoading(false)
       return response.data
     },
   })
@@ -107,19 +110,13 @@ const AdminCompaniesPage = () => {
   return (
     <AdminLayout>
       <div className="flex flex-col gap-6 w-full">
-        <div className="page-title">
-          <div className="flex flex-col gap-4">
-            <Card>
-              <div className="flex flex-col gap-4">
-                <Button type="primary" onClick={openCreate}>
-                  Add company
-                </Button>
-              </div>
-            </Card>
-          </div>
+        <div className="flex items-center justify-end">
+          <Button type="primary" onClick={openCreate}>
+            Add company
+          </Button>
         </div>
         <Table
-          loading={isLoading}
+          loading={loading}
           dataSource={data || []}
           rowKey="id"
           onRow={(record) => ({
@@ -171,8 +168,8 @@ const AdminCompaniesPage = () => {
           <Form.Item name="address" label="Address">
             <Input placeholder="123 Business Rd" aria-label="Company address" />
           </Form.Item>
-          <Form.Item name="isActive" label="Active" valuePropName="checked">
-            <Switch />
+          <Form.Item name="isActive" valuePropName="checked">
+            <Switch checkedChildren="Active" unCheckedChildren="Inactive" defaultValue />
           </Form.Item>
         </Form>
       </Modal>

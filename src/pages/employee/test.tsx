@@ -280,9 +280,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
         <Card>
           <div className="flex flex-col gap-4 w-full">
             <div className="flex items-center justify-between">
-              <Typography.Title level={4} className="!mb-0">
-                {data.test.name}
-              </Typography.Title>
+              <Typography.Title level={4}>{data.test.name}</Typography.Title>
               {saveStatus === 'saving' && <Spin size="small" />}
               {saveStatus === 'saved' && <CheckCircleOutlined />}
             </div>

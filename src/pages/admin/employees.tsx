@@ -1,4 +1,4 @@
-import { App, Button, Card, Dropdown, Select, Table, Tag, Tooltip } from 'antd'
+import { App, Button, Dropdown, Select, Table, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
@@ -33,10 +33,12 @@ const AdminEmployeesPage = () => {
   const [open, setOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
+  const [loading, setLoading] = useState(false)
 
   const { data: companies } = useQuery({
     queryKey: ['admin', 'companies'],
     queryFn: async () => {
+      setLoading(true)
       const response = await listCompanies()
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
@@ -44,22 +46,21 @@ const AdminEmployeesPage = () => {
       if (response.data.length === 1) {
         setCompanyId(response.data[0].id)
       }
+      setLoading(false)
       return response.data
     },
   })
 
-  const {
-    data: employees,
-    isLoading,
-    refetch,
-  } = useQuery({
+  const { data: employees, refetch } = useQuery({
     queryKey: ['admin', 'employees', companyId],
     queryFn: async () => {
+      setLoading(true)
       if (!companyId) return [] as Employee[]
       const response = await listEmployees(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load employees')
       }
+      setLoading(false)
       return response.data
     },
   })
@@ -158,8 +159,8 @@ const AdminEmployeesPage = () => {
   return (
     <AdminLayout>
       <div className="flex flex-col gap-6 w-full">
-        <Card>
-          <div className="flex flex-col gap-4 w-full">
+        <div className="flex items-center justify-between gap-4">
+          <div className="w-fit">
             <Select
               placeholder="Select company"
               value={companyId || undefined}
@@ -169,15 +170,14 @@ const AdminEmployeesPage = () => {
                 value: company.id,
               }))}
               aria-label="Select company"
-              className="w-full"
             />
-            <Button type="primary" onClick={openCreate} disabled={!companyId}>
-              Add Employee
-            </Button>
           </div>
-        </Card>
+          <Button type="primary" onClick={openCreate} disabled={!companyId}>
+            Add Employee
+          </Button>
+        </div>
         <Table
-          loading={isLoading}
+          loading={loading}
           dataSource={employees || []}
           rowKey="id"
           onRow={(record) => ({

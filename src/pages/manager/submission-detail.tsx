@@ -213,9 +213,7 @@ const SubmissionDetailPage = () => {
           onClick={handleBack}
           aria-label="Back to submissions"
         />
-        <Typography.Title level={4} className="!m-0">
-          {title}
-        </Typography.Title>
+        <Typography.Title level={4}>{title}</Typography.Title>
       </div>
     </PageHeading>
   )
@@ -226,7 +224,7 @@ const SubmissionDetailPage = () => {
         pageHeading={
           <Heading
             title={
-              <Typography.Title type="secondary" level={4} className="!m-0">
+              <Typography.Title type="secondary" level={4}>
                 Loading...
               </Typography.Title>
             }

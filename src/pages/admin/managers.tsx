@@ -1,4 +1,4 @@
-import { App, Button, Card, Dropdown, Select, Table, Tag, Tooltip } from 'antd'
+import { App, Button, Dropdown, Select, Table, Tag, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
@@ -37,10 +37,12 @@ const AdminManagersPage = () => {
   const [open, setOpen] = useState(false)
   const [editingManager, setEditingManager] = useState<Manager | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
+  const [loading, setLoading] = useState(false)
 
   const { data: companies } = useQuery({
     queryKey: ['admin', 'companies'],
     queryFn: async () => {
+      setLoading(true)
       const response = await listCompanies()
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
@@ -48,22 +50,21 @@ const AdminManagersPage = () => {
       if (response.data.length === 1) {
         setCompanyId(response.data[0].id)
       }
+      setLoading(false)
       return response.data
     },
   })
 
-  const {
-    data: managers,
-    isLoading,
-    refetch,
-  } = useQuery({
+  const { data: managers, refetch } = useQuery({
     queryKey: ['admin', 'managers', companyId],
     queryFn: async () => {
+      setLoading(true)
       if (!companyId) return [] as Manager[]
       const response = await listManagers(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load managers')
       }
+      setLoading(false)
       return response.data
     },
   })
@@ -162,8 +163,8 @@ const AdminManagersPage = () => {
   return (
     <AdminLayout>
       <div className="flex flex-col gap-6 w-full">
-        <Card>
-          <div className="flex flex-col gap-4 w-full">
+        <div className="flex items-center justify-between gap-4">
+          <div className="w-fit">
             <Select
               placeholder="Select company"
               value={companyId || undefined}
@@ -173,15 +174,14 @@ const AdminManagersPage = () => {
                 value: company.id,
               }))}
               aria-label="Select company"
-              className="w-full"
             />
-            <Button type="primary" onClick={openCreate} disabled={!companyId}>
-              Add manager
-            </Button>
           </div>
-        </Card>
+          <Button type="primary" onClick={openCreate} disabled={!companyId}>
+            Add manager
+          </Button>
+        </div>
         <Table
-          loading={isLoading}
+          loading={loading}
           dataSource={managers || []}
           rowKey="id"
           onRow={(record) => ({

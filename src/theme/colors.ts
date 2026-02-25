@@ -24,11 +24,13 @@ export const themeColors = {
   primaryBorder: palette.neutral['300'],
   accent: palette.accent['700'],
   accentLight: palette.accent['500'],
+  accentLighter: palette.accent['300'],
+  accentLightest: palette.accent['100'],
   accentDark: palette.accent['800'],
   accentBg: palette.accent['50'],
   accentBorder: palette.accent['200'],
   headerBg: palette.accent['700'],
-  headerText: '#FFFFFF',
+  white: '#FFFFFF',
   headerTextMuted: palette.accent['200'],
   success: '#22c55e',
   successBg: '#dcfce7',
@@ -76,7 +78,7 @@ export function getCssVariables(): string {
   --color-accent-bg: ${themeColors.accentBg};
   --color-accent-border: ${themeColors.accentBorder};
   --color-header-bg: ${themeColors.headerBg};
-  --color-header-text: ${themeColors.headerText};
+  --color-header-text: ${themeColors.white};
   --color-header-text-muted: ${themeColors.headerTextMuted};
   --color-success: ${themeColors.success};
   --color-success-bg: ${themeColors.successBg};

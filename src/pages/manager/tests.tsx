@@ -21,10 +21,9 @@ import {
   deleteTestTemplate,
   duplicateTestTemplate,
   listEmployees,
-  listTestInstances,
   listTests,
 } from '../../services/manager'
-import type { Employee, TestInstance, TestTemplate } from '../../types'
+import type { Employee, TestTemplate } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { formatDateTime } from '../../utils/date'
 import dayjs from 'dayjs'
@@ -42,15 +41,18 @@ const ManagerTestsPage = () => {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
   const [expiry, setExpiry] = useState<string | undefined>()
   const [nameFilter, setNameFilter] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const { data: tests } = useQuery({
     queryKey: ['manager', 'tests', companyId],
     queryFn: async () => {
+      setLoading(true)
       if (!companyId) return [] as TestTemplate[]
       const response = await listTests(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load tests')
       }
+      setLoading(false)
       return response.data
     },
   })
@@ -58,36 +60,16 @@ const ManagerTestsPage = () => {
   const { data: employees } = useQuery({
     queryKey: ['manager', 'employees', companyId],
     queryFn: async () => {
+      setLoading(true)
       if (!companyId) return [] as Employee[]
       const response = await listEmployees(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load employees')
       }
+      setLoading(false)
       return response.data
     },
   })
-
-  const { data: testInstances } = useQuery({
-    queryKey: ['manager', 'testInstances', companyId],
-    queryFn: async () => {
-      if (!companyId) return [] as TestInstance[]
-      const response = await listTestInstances({ companyId })
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load test instances')
-      }
-      return response.data
-    },
-    enabled: Boolean(companyId),
-  })
-
-  const completionMap = useMemo(() => {
-    return (testInstances || []).reduce<Record<string, number>>((map, instance) => {
-      if (instance.status === 'completed' || instance.status === 'marked') {
-        map[instance.testId] = (map[instance.testId] || 0) + 1
-      }
-      return map
-    }, {})
-  }, [testInstances])
 
   const sortedTests = useMemo(() => {
     return (tests || []).slice().sort((a, b) => {
@@ -236,40 +218,41 @@ const ManagerTestsPage = () => {
             </Button>
           </div>
         </div>
-
         <Table
           dataSource={filteredTests}
           rowKey="id"
+          loading={loading}
           onRow={(record) => ({
             onClick: () => navigate(`/manager/test-builder/${record.id}`),
             style: { cursor: 'pointer' },
           })}
           columns={[
             { title: 'Name', dataIndex: 'name' },
-            { title: 'Sections', render: (_, record) => record.sections.length },
+            {
+              title: 'Sections',
+              width: 100,
+              align: 'center',
+              render: (_, record) => record.sections.length,
+            },
             {
               title: 'Created on',
               dataIndex: 'createdAt',
+              width: 180,
               render: (value: string) => formatDateTime(value),
-            },
-            {
-              title: 'Completions',
-              render: (_, record) => completionMap[record.id] || 0,
             },
             {
               title: 'Actions',
               width: 100,
+              align: 'center',
               render: (_, record) => (
-                <div className="flex items-center justify-center">
-                  <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
-                    <Button
-                      type="text"
-                      icon={<EllipsisOutlined />}
-                      onClick={(event) => event.stopPropagation()}
-                      aria-label="Test actions"
-                    />
-                  </Dropdown>
-                </div>
+                <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
+                  <Button
+                    type="text"
+                    icon={<EllipsisOutlined />}
+                    onClick={(event) => event.stopPropagation()}
+                    aria-label="Test actions"
+                  />
+                </Dropdown>
               ),
             },
           ]}
@@ -323,18 +306,18 @@ const ManagerTestsPage = () => {
               value={selectedEmployees}
               onChange={(values) => setSelectedEmployees(values)}
               placeholder="Select employees"
-              showSearch
-              optionFilterProp="label"
+              showSearch={{
+                optionFilterProp: 'label',
+                filterOption: (input, option) =>
+                  (option?.label ?? '')
+                    .toString()
+                    .toLowerCase()
+                    .includes(input.toLowerCase()),
+              }}
               options={(employees || []).map((employee) => ({
                 label: `${employee.firstName} ${employee.lastName}`,
                 value: employee.id,
               }))}
-              filterOption={(input, option) =>
-                (option?.label ?? '')
-                  .toString()
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
               className="w-full"
               allowClear
             />
