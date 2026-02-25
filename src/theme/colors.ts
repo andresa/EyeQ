@@ -16,6 +16,8 @@ export const linkColors = {
 export const themeColors = {
   primary: palette.neutral['900'],
   primaryLight: palette.neutral['700'],
+  primaryLighter: palette.neutral['500'],
+  primaryLightest: palette.neutral['300'],
   primaryDark: '#000000',
   primaryBg: palette.neutral['50'],
   primaryBgDark: palette.neutral['200'],

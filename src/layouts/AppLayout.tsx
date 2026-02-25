@@ -1,4 +1,4 @@
-import { Layout, Menu, Grid, Drawer, Button } from 'antd'
+import { Layout, Menu, Grid, Drawer, Button, Typography } from 'antd'
 import { MenuOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useState, type ReactNode } from 'react'
@@ -10,6 +10,7 @@ interface AppLayoutProps {
   title: string
   pageHeading?: ReactNode
   items: MenuProps['items']
+  footerItems?: MenuProps['items']
   selectedKeys: string[]
   onNavigate: (path: string) => void
   children: ReactNode
@@ -19,6 +20,7 @@ const AppLayout = ({
   title,
   pageHeading,
   items,
+  footerItems,
   selectedKeys,
   onNavigate,
   children,
@@ -27,23 +29,34 @@ const AppLayout = ({
   const isMobile = !screens.md
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const navMenu = (
-    <Menu
-      mode="inline"
-      className="p-2"
-      items={items}
-      selectedKeys={selectedKeys}
-      onClick={({ key }) => {
-        onNavigate(String(key))
-        if (isMobile) setDrawerOpen(false)
-      }}
-    />
+  const menuProps = {
+    mode: 'inline' as const,
+    selectedKeys,
+    onClick: ({ key }: { key: React.Key }) => {
+      onNavigate(String(key))
+      if (isMobile) setDrawerOpen(false)
+    },
+  }
+
+  const navContent = (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center pl-[28px] pr-[20px] h-[60px] border-b border-r border-gray-200">
+        <Typography.Title level={5}>{title}</Typography.Title>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto font-medium border-r border-gray-200">
+        <Menu {...menuProps} items={items} />
+      </div>
+      {footerItems?.length ? (
+        <div className="mt-auto border-t border-r border-gray-200 font-medium">
+          <Menu {...menuProps} items={footerItems} />
+        </div>
+      ) : null}
+    </div>
   )
 
   return (
     <Layout className="h-screen flex flex-col">
       <EyeQHeader
-        title={title}
         menuButton={
           isMobile ? (
             <Button
@@ -64,11 +77,11 @@ const AppLayout = ({
             size={'70vw'}
             styles={{ body: { padding: 0 } }}
           >
-            {navMenu}
+            {navContent}
           </Drawer>
         ) : (
-          <Sider width={220} className="bg-white overflow-y-auto">
-            {navMenu}
+          <Sider width={220} className="bg-white flex flex-col overflow-hidden">
+            {navContent}
           </Sider>
         )}
         <Layout className="flex-1 flex flex-col overflow-hidden">

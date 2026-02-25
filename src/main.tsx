@@ -75,7 +75,12 @@ createRoot(document.getElementById('root')!).render(
                   borderRadiusLG: menuBorderRadius,
                   borderRadiusSM: menuBorderRadius,
                   borderRadiusXS: menuBorderRadius,
-                  itemSelectedBg: themeColors.primaryBgDark,
+                  itemBg: themeColors.headerText,
+                  itemSelectedBg: themeColors.accent,
+                  itemHoverBg: themeColors.primaryLightest,
+                  itemHoverColor: themeColors.primaryDark,
+                  itemColor: themeColors.primaryDark,
+                  itemSelectedColor: themeColors.headerText,
                 },
               },
             }}

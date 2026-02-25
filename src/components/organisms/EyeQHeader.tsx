@@ -5,11 +5,10 @@ import { useSession } from '../../hooks/useSession'
 import { LogOut } from 'lucide-react'
 
 interface EyeQHeaderProps {
-  title: string
   menuButton?: ReactNode
 }
 
-const EyeQHeader = ({ title, menuButton }: EyeQHeaderProps) => {
+const EyeQHeader = ({ menuButton }: EyeQHeaderProps) => {
   const navigate = useNavigate()
   const { userProfile, logout } = useSession()
 
@@ -19,7 +18,7 @@ const EyeQHeader = ({ title, menuButton }: EyeQHeaderProps) => {
   }
 
   return (
-    <Layout.Header className="flex items-center justify-between bg-[var(--color-header-bg)] px-3 md:px-5 lg:px-6">
+    <Layout.Header className="flex items-center justify-between px-3 md:px-5 lg:px-6 bg-accent-700">
       <div className="flex items-center gap-2 md:gap-3 min-w-0">
         {menuButton}
         <Typography.Title
@@ -29,9 +28,6 @@ const EyeQHeader = ({ title, menuButton }: EyeQHeaderProps) => {
         >
           EyeQ
         </Typography.Title>
-        <Typography.Text className="hidden text-white md:inline font-semibold">
-          {title}
-        </Typography.Text>
       </div>
       {userProfile && (
         <div className="flex min-w-0 items-center gap-4 md:gap-3">

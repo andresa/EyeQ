@@ -34,6 +34,8 @@ const ManagerLayout = ({ pageHeading, children }: ManagerLayoutProps) => {
       label: 'Submissions',
       icon: <ScrollText size={iconSize} />,
     },
+  ]
+  const footerItems: MenuProps['items'] = [
     { key: '/manager/settings', label: 'Settings', icon: <Settings size={iconSize} /> },
   ]
 
@@ -50,6 +52,7 @@ const ManagerLayout = ({ pageHeading, children }: ManagerLayoutProps) => {
       title="Manager Portal"
       pageHeading={pageHeading}
       items={items}
+      footerItems={footerItems}
       selectedKeys={[selectedPath]}
       onNavigate={navigate}
     >
