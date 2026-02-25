@@ -23,6 +23,7 @@ import {
   subMonths,
   subWeeks,
 } from 'date-fns'
+import { ScrollText } from 'lucide-react'
 
 const SubmissionsPage = () => {
   const { testId } = useParams()
@@ -169,9 +170,10 @@ const SubmissionsPage = () => {
     <ManagerLayout
       pageHeading={
         <PageHeading>
-          <Typography.Title level={4} className="!m-0">
-            Submissions
-          </Typography.Title>
+          <div className="flex items-center gap-2">
+            <ScrollText />
+            <Typography.Title level={4}>Submissions</Typography.Title>
+          </div>
         </PageHeading>
       }
     >

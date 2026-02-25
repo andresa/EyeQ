@@ -6,6 +6,7 @@ import PageHeading from '../../components/atoms/PageHeading'
 import { listEmployees, listTests, listTestInstances } from '../../services/manager'
 import type { TestInstance } from '../../types'
 import { useSession } from '../../hooks/useSession'
+import { Gauge } from 'lucide-react'
 
 const ManagerDashboard = () => {
   const navigate = useNavigate()
@@ -57,9 +58,10 @@ const ManagerDashboard = () => {
   // Show error if user profile failed to load
   const heading = (
     <PageHeading>
-      <Typography.Title level={4} className="!m-0">
-        Dashboard
-      </Typography.Title>
+      <div className="flex items-center gap-2">
+        <Gauge />
+        <Typography.Title level={4}>Dashboard</Typography.Title>
+      </div>
     </PageHeading>
   )
 
@@ -68,7 +70,7 @@ const ManagerDashboard = () => {
       <ManagerLayout pageHeading={heading}>
         <Alert
           type="error"
-          message="Account not found"
+          title="Account not found"
           description={profileError}
           showIcon
         />

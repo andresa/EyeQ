@@ -25,7 +25,7 @@ import {
   updateTestTemplate,
 } from '../../../services/manager'
 import { useSession } from '../../../hooks/useSession'
-import { Library } from 'lucide-react'
+import { LibraryBig } from 'lucide-react'
 import { getQuestionTypeIcon, questionTypeLabels } from '../../../utils/questions'
 
 const createComponent = (type: ComponentType): TestComponent => {
@@ -347,7 +347,7 @@ const TestBuilderForm = ({
                 <Typography.Text strong>Components</Typography.Text>
                 <Button
                   type="dashed"
-                  icon={<Library size={20} />}
+                  icon={<LibraryBig size={20} />}
                   onClick={() => setLibraryOpen(true)}
                 >
                   Copy from library

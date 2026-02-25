@@ -28,6 +28,7 @@ import type { Employee, TestInstance, TestTemplate } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { formatDateTime } from '../../utils/date'
 import dayjs from 'dayjs'
+import { FlaskConical } from 'lucide-react'
 
 const ManagerTestsPage = () => {
   const navigate = useNavigate()
@@ -212,9 +213,10 @@ const ManagerTestsPage = () => {
     <ManagerLayout
       pageHeading={
         <PageHeading>
-          <Typography.Title level={4} className="!m-0">
-            Tests
-          </Typography.Title>
+          <div className="flex items-center gap-2">
+            <FlaskConical />
+            <Typography.Title level={4}>Tests</Typography.Title>
+          </div>
         </PageHeading>
       }
     >

@@ -3,6 +3,7 @@ import PageHeading from '../../components/atoms/PageHeading'
 import { Typography } from 'antd'
 import { useSession } from '../../hooks/useSession'
 import CategoriesSection from '../../components/organisms/CategoriesSection'
+import { Settings } from 'lucide-react'
 
 const ManagerSettingsPage = () => {
   const { userProfile } = useSession()
@@ -12,9 +13,10 @@ const ManagerSettingsPage = () => {
     <ManagerLayout
       pageHeading={
         <PageHeading>
-          <Typography.Title level={4} className="!m-0">
-            Settings
-          </Typography.Title>
+          <div className="flex items-center gap-2">
+            <Settings />
+            <Typography.Title level={4}>Settings</Typography.Title>
+          </div>
         </PageHeading>
       }
     >

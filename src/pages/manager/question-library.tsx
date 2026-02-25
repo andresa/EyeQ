@@ -27,7 +27,7 @@ import type { ComponentType, QuestionLibraryItem, TestComponentOption } from '..
 import { useSession } from '../../hooks/useSession'
 import { formatDateTime } from '../../utils/date'
 import { createUUID } from '../../utils/uuid'
-import { Trash2 } from 'lucide-react'
+import { LibraryBig, Trash2 } from 'lucide-react'
 import { questionTypeLabels } from '../../utils/questions'
 import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
 
@@ -262,9 +262,10 @@ const QuestionLibraryPage = () => {
     <ManagerLayout
       pageHeading={
         <PageHeading>
-          <Typography.Title level={4} className="!m-0">
-            Question Library
-          </Typography.Title>
+          <div className="flex items-center gap-2">
+            <LibraryBig />
+            <Typography.Title level={4}>Question Library</Typography.Title>
+          </div>
         </PageHeading>
       }
     >
