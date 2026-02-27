@@ -2,7 +2,6 @@ import { Button, Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import PageHeading from '../atoms/PageHeading'
 
 interface StandardPageHeadingProps {
   title: ReactNode
@@ -23,14 +22,16 @@ const StandardPageHeading = ({
 
   const titleContent =
     typeof title === 'string' || typeof title === 'number' ? (
-      <Typography.Title level={4}>{title}</Typography.Title>
+      <Typography.Title level={4} className="truncate">
+        {title}
+      </Typography.Title>
     ) : (
       title
     )
 
   return (
-    <PageHeading>
-      <div className={`flex items-center ${leftGap}`}>
+    <div className="h-[60px] flex-shrink-0 flex items-center justify-between px-6 bg-white border-b border-neutral-200">
+      <div className={`flex min-w-0 flex-1 items-center overflow-hidden ${leftGap}`}>
         {hasBack && (
           <Button
             type="text"
@@ -40,10 +41,15 @@ const StandardPageHeading = ({
           />
         )}
         {icon}
-        {titleContent}
+        <div
+          className="min-w-0 flex-1 overflow-hidden"
+          title={typeof title === 'string' ? title : undefined}
+        >
+          {titleContent}
+        </div>
       </div>
       {actions ?? null}
-    </PageHeading>
+    </div>
   )
 }
 
