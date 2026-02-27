@@ -1,6 +1,8 @@
 import type {
   ApiResponse,
   Employee,
+  QuestionCategory,
+  QuestionLibraryItem,
   TestInstance,
   TestInstanceResults,
   TestTemplate,
@@ -141,4 +143,86 @@ export const markTestInstance = (
   apiRequest(`/manager/testInstances/${instanceId}/mark`, {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+
+// ============================================================================
+// Question Library
+// ============================================================================
+
+export const listQuestionLibrary = (
+  companyId: string,
+  filters?: { name?: string; type?: string },
+): Promise<ApiResponse<QuestionLibraryItem[]>> => {
+  const query = new URLSearchParams({ companyId })
+  if (filters?.name) query.set('name', filters.name)
+  if (filters?.type) query.set('type', filters.type)
+  return apiRequest(`/manager/question-library?${query.toString()}`)
+}
+
+export const createQuestionLibraryItems = (payload: {
+  companyId: string
+  managerId: string
+  items: {
+    type: string
+    title: string
+    description?: string
+    required?: boolean
+    options?: { id: string; label: string }[]
+    correctAnswer?: string | string[]
+    categoryId?: string | null
+  }[]
+}): Promise<ApiResponse<QuestionLibraryItem[]>> =>
+  apiRequest('/manager/question-library', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const updateQuestionLibraryItem = (
+  itemId: string,
+  payload: Partial<QuestionLibraryItem>,
+): Promise<ApiResponse<QuestionLibraryItem>> =>
+  apiRequest(`/manager/question-library/${itemId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+export const deleteQuestionLibraryItem = (
+  itemId: string,
+): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(`/manager/question-library/${itemId}`, {
+    method: 'DELETE',
+  })
+
+// ============================================================================
+// Question Categories
+// ============================================================================
+
+export const listQuestionCategories = (
+  companyId: string,
+): Promise<ApiResponse<QuestionCategory[]>> =>
+  apiRequest(`/manager/question-categories?companyId=${encodeURIComponent(companyId)}`)
+
+export const createQuestionCategory = (payload: {
+  companyId: string
+  name: string
+}): Promise<ApiResponse<QuestionCategory>> =>
+  apiRequest('/manager/question-categories', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const updateQuestionCategory = (
+  categoryId: string,
+  payload: { name: string },
+): Promise<ApiResponse<QuestionCategory>> =>
+  apiRequest(`/manager/question-categories/${categoryId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+export const deleteQuestionCategory = (
+  categoryId: string,
+): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(`/manager/question-categories/${categoryId}`, {
+    method: 'DELETE',
   })

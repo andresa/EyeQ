@@ -4,6 +4,7 @@ import LoginPage from './pages/shared/login'
 import VerifyPage from './pages/shared/verify'
 import AcceptInvitationPage from './pages/shared/accept-invitation'
 import EmployeeDashboard from './pages/employee'
+import EmployeeTestsPage from './pages/employee/tests'
 import EmployeeTestPage from './pages/employee/test'
 import EmployeeTestResultsPage from './pages/employee/test-results'
 import ManagerDashboard from './pages/manager'
@@ -11,8 +12,9 @@ import ManagerEmployeesPage from './pages/manager/employees'
 import ManagerTestsPage from './pages/manager/tests'
 import ManagerTestBuilderPage from './pages/manager/test-builder'
 import ManagerTestSubmissionsPage from './pages/manager/test-submissions'
-import ManagerMarkingPage from './pages/manager/marking'
-import ManagerAssignedTestsPage from './pages/manager/assigned-tests'
+import ManagerSubmissionDetailPage from './pages/manager/submission-detail'
+import ManagerQuestionLibraryPage from './pages/manager/question-library'
+import ManagerSettingsPage from './pages/manager/settings'
 import AdminDashboard from './pages/admin'
 import AdminCompaniesPage from './pages/admin/companies'
 import AdminManagersPage from './pages/admin/managers'
@@ -54,6 +56,14 @@ const App = () => {
         element={
           <RouteGuard allowedRoles={['employee']}>
             <EmployeeDashboard />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/employee/tests"
+        element={
+          <RouteGuard allowedRoles={['employee']}>
+            <EmployeeTestsPage />
           </RouteGuard>
         }
       />
@@ -108,6 +118,22 @@ const App = () => {
         }
       />
       <Route
+        path="/manager/question-library"
+        element={
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerQuestionLibraryPage />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/manager/settings"
+        element={
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerSettingsPage />
+          </RouteGuard>
+        }
+      />
+      <Route
         path="/manager/test-builder/:testId?"
         element={
           <RouteGuard allowedRoles={['manager']}>
@@ -124,18 +150,10 @@ const App = () => {
         }
       />
       <Route
-        path="/manager/assigned-tests"
+        path="/manager/submission/:instanceId"
         element={
           <RouteGuard allowedRoles={['manager']}>
-            <ManagerAssignedTestsPage />
-          </RouteGuard>
-        }
-      />
-      <Route
-        path="/manager/marking/:instanceId"
-        element={
-          <RouteGuard allowedRoles={['manager']}>
-            <ManagerMarkingPage />
+            <ManagerSubmissionDetailPage />
           </RouteGuard>
         }
       />

@@ -22,6 +22,9 @@ export const updateCompany = (
 export const listCompanies = (): Promise<ApiResponse<Company[]>> =>
   apiRequest('/management/companies')
 
+export const deleteCompany = (companyId: string): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(`/management/companies/${companyId}`, { method: 'DELETE' })
+
 export const createManager = (payload: {
   companyId: string
   firstName: string

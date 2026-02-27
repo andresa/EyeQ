@@ -1,19 +1,33 @@
-import { Checkbox, Input, Space, Typography } from 'antd'
+import { Checkbox, Input, Select, Switch } from 'antd'
+import { useQuery } from '@tanstack/react-query'
 import type { TestComponent } from '../../types'
+import { listQuestionCategories } from '../../services/manager'
 import OptionEditor from './OptionEditor'
 
 interface ComponentEditorProps {
   component: TestComponent
+  companyId?: string
   onChange: (component: TestComponent) => void
 }
 
-const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
+const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProps) => {
   const update = (updates: Partial<TestComponent>) => {
     onChange({ ...component, ...updates })
   }
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ['questionCategories', companyId],
+    queryFn: async () => {
+      if (!companyId) return []
+      const res = await listQuestionCategories(companyId)
+      if (!res.success || !res.data) return []
+      return res.data
+    },
+    enabled: !!companyId,
+  })
+
   return (
-    <Space orientation="vertical" className="w-full">
+    <div className="flex flex-col gap-4 w-full">
       <Input
         value={component.title}
         onChange={(event) => update({ title: event.target.value })}
@@ -27,18 +41,17 @@ const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
         rows={3}
         aria-label="Question description"
       />
-      {component.type !== 'info' ? (
-        <Checkbox
-          checked={component.required}
-          onChange={(event) => update({ required: event.target.checked })}
-        >
-          Required
-        </Checkbox>
-      ) : (
-        <Typography.Text type="secondary">
-          Info blocks are always optional.
-        </Typography.Text>
-      )}
+      <Select
+        value={component.categoryId ?? undefined}
+        onChange={(v) => update({ categoryId: v || null })}
+        options={[
+          { value: '', label: 'Uncategorised' },
+          ...categories.map((c) => ({ value: c.id, label: c.name })),
+        ]}
+        allowClear
+        placeholder="Select category"
+        className="w-full"
+      />
       {component.type === 'single_choice' || component.type === 'multiple_choice' ? (
         <OptionEditor
           options={component.options || []}
@@ -68,12 +81,26 @@ const ComponentEditor = ({ component, onChange }: ComponentEditorProps) => {
               correctAnswer: validSelections,
             })
           }}
-          onCorrectAnswerChange={(value) =>
-            update({ correctAnswer: value })
-          }
+          onCorrectAnswerChange={(value) => update({ correctAnswer: value })}
         />
       ) : null}
-    </Space>
+      <div className="flex justify-between">
+        <Checkbox
+          checked={component.saveToLibrary}
+          onChange={(event) => update({ saveToLibrary: event.target.checked })}
+        >
+          Save to library
+        </Checkbox>
+        {component.type !== 'info' && (
+          <Switch
+            checked={component.required}
+            onChange={(checked) => update({ required: checked })}
+            checkedChildren="Required"
+            unCheckedChildren="Optional"
+          />
+        )}
+      </div>
+    </div>
   )
 }
 

@@ -1,30 +1,32 @@
-import { Button, Card, Input, Space, Typography, message } from 'antd'
-import { useMemo, useState } from 'react'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
+import { Button, Card, Input, Spin, Typography, App } from 'antd'
+import { SettingOutlined } from '@ant-design/icons'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../../layouts/ManagerLayout'
+import StandardPageHeading from '../../../components/molecules/StandardPageHeading'
 import SectionList from '../../../components/test-builder/SectionList'
 import ComponentCard from '../../../components/test-builder/ComponentCard'
 import { createUUID } from '../../../utils/uuid'
+import TestSettingsModal from '../../../components/test-builder/TestSettingsModal'
+import QuestionLibraryModal from '../../../components/test-builder/QuestionLibraryModal'
 import type {
   ComponentType,
   TestComponent,
   TestSection,
+  TestSettings,
   TestTemplate,
 } from '../../../types'
 import {
+  createQuestionLibraryItems,
   createTestTemplate,
   listTests,
   updateTestTemplate,
 } from '../../../services/manager'
 import { useSession } from '../../../hooks/useSession'
-
-const componentPalette: { type: ComponentType; label: string }[] = [
-  { type: 'single_choice', label: 'Single choice' },
-  { type: 'multiple_choice', label: 'Multiple choice' },
-  { type: 'text', label: 'Text response' },
-  { type: 'info', label: 'Info block' },
-]
+import { LibraryBig } from 'lucide-react'
+import { getQuestionTypeIcon, questionTypeLabels } from '../../../utils/questions'
 
 const createComponent = (type: ComponentType): TestComponent => {
   const base = {
@@ -60,9 +62,16 @@ const TestBuilderForm = ({
   managerId,
 }: TestBuilderFormProps) => {
   const navigate = useNavigate()
+  const { message } = App.useApp()
 
   const [name, setName] = useState(existingTest?.name || '')
   const [sections, setSections] = useState<TestSection[]>(existingTest?.sections || [])
+  const [settings, setSettings] = useState<TestSettings>(
+    existingTest?.settings ?? { allowBackNavigation: false },
+  )
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [libraryOpen, setLibraryOpen] = useState(false)
+  const [componentsAnimateRef] = useAutoAnimate({ duration: 250 })
   const [selectedSectionId, setSelectedSectionId] = useState<string>(
     existingTest?.sections[0]?.id || '',
   )
@@ -177,6 +186,26 @@ const TestBuilderForm = ({
     )
   }
 
+  const addFromLibrary = useCallback(
+    (components: TestComponent[]) => {
+      if (!selectedSectionId) {
+        message.error('Select a section first.')
+        return
+      }
+      setSections((prev) =>
+        prev.map((section) =>
+          section.id === selectedSectionId
+            ? { ...section, components: [...section.components, ...components] }
+            : section,
+        ),
+      )
+      message.success(
+        `${components.length} question${components.length === 1 ? '' : 's'} added from library`,
+      )
+    },
+    [selectedSectionId, message],
+  )
+
   const handleSave = async () => {
     if (!companyId || !managerId) {
       message.error('Select a company and manager first.')
@@ -190,11 +219,26 @@ const TestBuilderForm = ({
       message.error('Add at least one section.')
       return
     }
+
+    const libraryItems = sections
+      .flatMap((s) => s.components)
+      .filter((c) => c.saveToLibrary && c.title)
+
+    const cleanedSections = sections.map((section) => ({
+      ...section,
+      components: section.components.map((c) => {
+        const { saveToLibrary, ...rest } = c
+        void saveToLibrary
+        return rest
+      }),
+    }))
+
     const payload = {
       companyId,
       managerId,
       name,
-      sections,
+      sections: cleanedSections,
+      settings,
     }
 
     const response = testId
@@ -205,38 +249,62 @@ const TestBuilderForm = ({
       message.error(response.error || 'Unable to save test')
       return
     }
+
+    if (libraryItems.length > 0) {
+      await createQuestionLibraryItems({
+        companyId,
+        managerId,
+        items: libraryItems.map((c) => ({
+          type: c.type,
+          title: c.title!,
+          description: c.description,
+          required: c.required,
+          options: c.options,
+          correctAnswer: c.correctAnswer,
+          categoryId: c.categoryId,
+        })),
+      })
+    }
+
     message.success('Test saved')
     navigate('/manager/tests')
   }
 
   return (
-    <Space orientation="vertical" size="large" className="w-full">
-      <Typography.Title level={3}>Test builder</Typography.Title>
-      <Card>
-        <Space orientation="vertical" className="w-full">
-          <Typography.Text strong>Test name</Typography.Text>
-          <Input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Safety Induction"
-            aria-label="Test name"
-          />
-        </Space>
-      </Card>
+    <div className="flex flex-col gap-6 w-full">
       <div className="builder-grid">
-        <SectionList
-          sections={sections}
-          selectedId={selectedSectionId}
-          onSelect={setSelectedSectionId}
-          onAdd={addSection}
-          onRename={renameSection}
-          onMove={moveSection}
-          onDelete={deleteSection}
-        />
-        <div>
+        <div className="flex flex-col gap-4 h-full">
+          <Card className="shrink-0">
+            <div className="flex flex-col gap-4 w-full">
+              <Typography.Text strong>Test name</Typography.Text>
+              <Input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Safety Induction"
+                aria-label="Test name"
+              />
+            </div>
+          </Card>
+          <div className="builder-grid-scroll flex-1 min-h-0">
+            <SectionList
+              sections={sections}
+              selectedId={selectedSectionId}
+              onSelect={setSelectedSectionId}
+              onAdd={addSection}
+              onRename={renameSection}
+              onMove={moveSection}
+              onDelete={deleteSection}
+            />
+          </div>
+        </div>
+        <div className="builder-grid-pane flex flex-col gap-4 min-h-0">
           {activeSection ? (
             <>
-              <Typography.Title level={4}>{activeSection.title}</Typography.Title>
+              <Card>
+                <Typography.Title level={4} className="shrink-0">
+                  {activeSection.title}
+                </Typography.Title>
+              </Card>
               {activeSection.components.length === 0 ? (
                 <Card>
                   <Typography.Text type="secondary">
@@ -244,16 +312,25 @@ const TestBuilderForm = ({
                   </Typography.Text>
                 </Card>
               ) : null}
-              {activeSection.components.map((component, index) => (
-                <ComponentCard
-                  key={component.id}
-                  component={component}
-                  index={index}
-                  onChange={(updated) => updateComponent(component.id, updated)}
-                  onMove={(direction) => moveComponent(component.id, direction)}
-                  onDelete={() => removeComponent(component.id)}
-                />
-              ))}
+              <div className="builder-grid-scroll flex-1 min-h-0">
+                <div
+                  ref={componentsAnimateRef}
+                  className="flex flex-col gap-4 overflow-visible"
+                >
+                  {activeSection.components.map((component, index) => (
+                    <ComponentCard
+                      key={component.id}
+                      component={component}
+                      index={index}
+                      componentsCount={activeSection.components.length}
+                      companyId={companyId}
+                      onChange={(updated) => updateComponent(component.id, updated)}
+                      onMove={(direction) => moveComponent(component.id, direction)}
+                      onDelete={() => removeComponent(component.id)}
+                    />
+                  ))}
+                </div>
+              </div>
             </>
           ) : (
             <Card>
@@ -263,24 +340,66 @@ const TestBuilderForm = ({
             </Card>
           )}
         </div>
-        <Card>
-          <Space orientation="vertical" className="w-full">
-            <Typography.Text strong>Component palette</Typography.Text>
-            {componentPalette.map((item) => (
-              <Button key={item.type} onClick={() => addComponentToSection(item.type)}>
-                {item.label}
-              </Button>
-            ))}
-          </Space>
-        </Card>
+        <div className="builder-grid-pane min-h-0">
+          <div className="builder-grid-scroll h-full">
+            <Card className="h-full">
+              <div className="flex flex-col gap-4 w-full">
+                <Typography.Text strong>Components</Typography.Text>
+                <Button
+                  type="dashed"
+                  icon={<LibraryBig size={20} />}
+                  onClick={() => setLibraryOpen(true)}
+                >
+                  Copy from library
+                </Button>
+                {questionTypeLabels.map((item) => (
+                  <Button
+                    key={item.value}
+                    icon={getQuestionTypeIcon(item.value, 20)}
+                    onClick={() => addComponentToSection(item.value)}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
-      <Space>
+      <div className="flex gap-4 justify-end">
         <Button onClick={() => navigate('/manager/tests')}>Cancel</Button>
+        <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)}>
+          Settings
+        </Button>
         <Button type="primary" onClick={handleSave}>
           Save test
         </Button>
-      </Space>
-    </Space>
+      </div>
+      <TestSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        onChange={async (updated) => {
+          setSettings(updated)
+          if (testId) {
+            const response = await updateTestTemplate(testId, { settings: updated })
+            if (!response.success) {
+              message.error(response.error || 'Unable to save settings')
+              return
+            }
+            message.success('Settings saved')
+          }
+        }}
+      />
+      {companyId && (
+        <QuestionLibraryModal
+          open={libraryOpen}
+          companyId={companyId}
+          onAdd={addFromLibrary}
+          onClose={() => setLibraryOpen(false)}
+        />
+      )}
+    </div>
   )
 }
 
@@ -307,17 +426,20 @@ const TestBuilderPage = () => {
     [testId, tests],
   )
 
-  // Show loading while fetching existing test
+  const heading = <StandardPageHeading title="Test Builder" backTo="/manager/tests" />
+
   if (testId && isLoading) {
     return (
-      <ManagerLayout>
-        <Typography.Text>Loading test...</Typography.Text>
+      <ManagerLayout pageHeading={heading}>
+        <div className="flex justify-center items-center h-full">
+          <Spin />
+        </div>
       </ManagerLayout>
     )
   }
 
   return (
-    <ManagerLayout>
+    <ManagerLayout pageHeading={heading}>
       <TestBuilderForm
         key={testId || 'new'}
         testId={testId}

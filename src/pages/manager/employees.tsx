@@ -1,22 +1,20 @@
 import {
+  App,
   Button,
+  Dropdown,
   Form,
   Input,
   Modal,
-  Popconfirm,
-  Space,
   Table,
   Tag,
   Tooltip,
   Typography,
-  message,
 } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  MailOutlined,
+  EllipsisOutlined,
   MinusCircleOutlined,
 } from '@ant-design/icons'
 import { useState } from 'react'
@@ -26,6 +24,8 @@ import { deleteEmployee, listEmployees, sendInvitation } from '../../services/ma
 import type { Employee, InvitationStatus, UserRole } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import UserModal from '../../components/molecules/UserModal'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
+import { Users } from 'lucide-react'
 
 const roleColors: Record<UserRole, string> = {
   admin: 'red',
@@ -43,6 +43,7 @@ const invitationStatusConfig: Record<
 }
 
 const ManagerEmployeesPage = () => {
+  const { message, modal } = App.useApp()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId || ''
 
@@ -51,8 +52,8 @@ const ManagerEmployeesPage = () => {
   const [invitingEmployee, setInvitingEmployee] = useState<Employee | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [inviteLoading, setInviteLoading] = useState(false)
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
   const [inviteForm] = Form.useForm()
+  const [nameFilter, setNameFilter] = useState('')
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['manager', 'employees', companyId],
@@ -65,6 +66,13 @@ const ManagerEmployeesPage = () => {
       return response.data
     },
     enabled: !!companyId,
+  })
+
+  const filteredEmployees = (data || []).filter((employee) => {
+    if (!nameFilter.trim()) return true
+    const q = nameFilter.trim().toLowerCase()
+    const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase()
+    return fullName.includes(q)
   })
 
   const openCreate = () => {
@@ -123,40 +131,88 @@ const ManagerEmployeesPage = () => {
     }
   }
 
-  const onDeleteEmployee = async (employee: Employee) => {
+  const onDeleteEmployee = (employee: Employee) => {
     if (!companyId) return
 
-    setDeleteLoading(employee.id)
-    try {
-      const response = await deleteEmployee(employee.id, companyId)
-      if (!response.success) {
-        message.error(response.error || 'Failed to delete employee')
-        return
-      }
-      message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
-      refetch()
-    } catch {
-      message.error('Failed to delete employee')
-    } finally {
-      setDeleteLoading(null)
+    modal.confirm({
+      title: 'Delete employee',
+      content: `Are you sure you want to delete ${employee.firstName} ${employee.lastName}? This action cannot be undone.`,
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const response = await deleteEmployee(employee.id, companyId)
+        if (!response.success) {
+          message.error(response.error || 'Failed to delete employee')
+          return
+        }
+        message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
+        refetch()
+      },
+    })
+  }
+
+  const getMenuItems = (record: Employee): MenuProps['items'] => {
+    const items: MenuProps['items'] = [
+      {
+        key: 'edit',
+        label: 'Edit',
+        onClick: (e) => {
+          e.domEvent.stopPropagation()
+          openEdit(record)
+        },
+      },
+    ]
+
+    if (record.invitationStatus !== 'accepted') {
+      items.push({
+        key: 'invite',
+        label:
+          record.invitationStatus === 'pending' ? 'Resend invitation' : 'Send invitation',
+        onClick: (e) => {
+          e.domEvent.stopPropagation()
+          openInviteModal(record)
+        },
+      })
     }
+
+    items.push({
+      key: 'delete',
+      danger: true,
+      label: 'Delete',
+      onClick: (e) => {
+        e.domEvent.stopPropagation()
+        onDeleteEmployee(record)
+      },
+    })
+
+    return items
   }
 
   return (
-    <ManagerLayout>
-      <Space orientation="vertical" size="large" className="w-full">
+    <ManagerLayout
+      pageHeading={<StandardPageHeading title="Employees" icon={<Users />} />}
+    >
+      <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-between">
-          <Typography.Title level={3} className="m-0">
-            Employees
-          </Typography.Title>
+          <Input
+            placeholder="Filter by name"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            allowClear
+            className="max-w-xs"
+          />
           <Button type="primary" onClick={openCreate}>
-            Add employee
+            Add Employee
           </Button>
         </div>
         <Table
           loading={isLoading}
-          dataSource={data || []}
+          dataSource={filteredEmployees}
           rowKey="id"
+          onRow={(record) => ({
+            onClick: () => openEdit(record),
+            style: { cursor: 'pointer' },
+          })}
           columns={[
             {
               title: 'Name',
@@ -179,18 +235,16 @@ const ManagerEmployeesPage = () => {
                 return email || <span className="text-gray-400 italic">No email</span>
               },
             },
-            { title: 'Phone', dataIndex: 'phone' },
-            { title: 'DOB', dataIndex: 'dob' },
             {
               title: 'Role',
               dataIndex: 'role',
-              render: (role: UserRole) => (
-                <Tag color={roleColors[role] || 'green'}>{role || 'employee'}</Tag>
-              ),
+              width: 100,
+              render: (role: UserRole) => <Tag color={roleColors[role]}>{role}</Tag>,
             },
             {
               title: 'Invitation',
               dataIndex: 'invitationStatus',
+              width: 100,
               render: (status: InvitationStatus | undefined) => {
                 const s = status || 'none'
                 const config = invitationStatusConfig[s]
@@ -204,59 +258,28 @@ const ManagerEmployeesPage = () => {
             {
               title: 'Active',
               dataIndex: 'isActive',
+              width: 100,
               render: (value) => (value ? 'Yes' : 'No'),
             },
             {
               title: 'Actions',
+              width: 100,
               render: (_, record) => (
-                <Space>
-                  <Button
-                    type="link"
-                    icon={<EditOutlined />}
-                    onClick={() => openEdit(record)}
-                  >
-                    Edit
-                  </Button>
-                  {record.invitationStatus !== 'accepted' && (
-                    <Tooltip
-                      title={
-                        record.invitationStatus === 'pending'
-                          ? 'Resend invitation'
-                          : 'Send invitation'
-                      }
-                    >
-                      <Button
-                        type="link"
-                        icon={<MailOutlined />}
-                        onClick={() => openInviteModal(record)}
-                      >
-                        {record.invitationStatus === 'pending' ? 'Resend' : 'Invite'}
-                      </Button>
-                    </Tooltip>
-                  )}
-                  <Popconfirm
-                    title="Delete employee"
-                    description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
-                    onConfirm={() => onDeleteEmployee(record)}
-                    okText="Delete"
-                    okType="danger"
-                    cancelText="Cancel"
-                  >
+                <div className="flex items-center justify-center">
+                  <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
                     <Button
-                      type="link"
-                      danger
-                      icon={<DeleteOutlined />}
-                      loading={deleteLoading === record.id}
-                    >
-                      Delete
-                    </Button>
-                  </Popconfirm>
-                </Space>
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Employee actions"
+                    />
+                  </Dropdown>
+                </div>
               ),
             },
           ]}
         />
-      </Space>
+      </div>
 
       <UserModal
         open={open}

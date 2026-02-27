@@ -1,4 +1,4 @@
-import { DatePicker, Form, Input, Modal, Select, Switch, message } from 'antd'
+import { App, DatePicker, Form, Input, Modal, Select, Switch } from 'antd'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import type { Company, Employee, Manager, UserRole } from '../../types'
@@ -73,6 +73,7 @@ const UserModal = ({
   isAdmin,
 }: UserModalProps) => {
   const [form] = Form.useForm<FormValues>()
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
 
   const isEditing = !!editingUser
@@ -339,8 +340,8 @@ const UserModal = ({
             extra="When checked, an invitation email will be sent so they can verify their email and log in."
           >
             <Switch
-              checkedChildren="Send invitation"
-              unCheckedChildren="No invitation"
+              checkedChildren="Send invite"
+              unCheckedChildren="No invite"
               defaultChecked
             />
           </Form.Item>

@@ -1,12 +1,14 @@
-import { Layout, Space, Typography } from 'antd'
+import { Button, Layout, Typography } from 'antd'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../hooks/useSession'
+import { LogOut } from 'lucide-react'
 
 interface EyeQHeaderProps {
-  title: string
+  menuButton?: ReactNode
 }
 
-const EyeQHeader = ({ title }: EyeQHeaderProps) => {
+const EyeQHeader = ({ menuButton }: EyeQHeaderProps) => {
   const navigate = useNavigate()
   const { userProfile, logout } = useSession()
 
@@ -15,30 +17,32 @@ const EyeQHeader = ({ title }: EyeQHeaderProps) => {
     navigate('/login', { replace: true })
   }
 
-  // Display user's name if available
-  const displayName = userProfile
-    ? `${userProfile.firstName} ${userProfile.lastName}`
-    : ''
-
   return (
-    <Layout.Header className="flex items-center justify-between bg-[#0b1f3a] px-6">
-      <Space>
+    <Layout.Header className="flex items-center justify-between px-3 md:px-5 lg:px-6 bg-accent-700">
+      <div className="flex items-center gap-2 md:gap-3 min-w-0">
+        {menuButton}
         <Typography.Title
           level={4}
-          className="m-0 cursor-pointer text-white"
+          className="shrink-0 cursor-pointer !text-white"
           onClick={() => navigate('/')}
         >
           EyeQ
         </Typography.Title>
-        <Typography.Text className="text-[#d6e4ff]">{title}</Typography.Text>
-      </Space>
+      </div>
       {userProfile && (
-        <Space size="middle">
-          <Typography.Text className="text-[#d6e4ff]">{displayName}</Typography.Text>
-          <Typography.Link className="text-white" onClick={handleSignOut}>
-            Sign out
-          </Typography.Link>
-        </Space>
+        <div className="flex min-w-0 items-center gap-4 md:gap-3">
+          {userProfile?.firstName && (
+            <Typography.Text className="truncate text-white font-semibold">
+              {userProfile.firstName}
+            </Typography.Text>
+          )}
+          <Button
+            type="text"
+            icon={<LogOut />}
+            onClick={handleSignOut}
+            className="text-white"
+          />
+        </div>
       )}
     </Layout.Header>
   )

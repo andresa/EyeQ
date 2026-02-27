@@ -1,20 +1,9 @@
-import {
-  Button,
-  Card,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  message,
-} from 'antd'
+import { App, Button, Dropdown, Select, Table, Tag, Tooltip } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  MailOutlined,
+  EllipsisOutlined,
   MinusCircleOutlined,
 } from '@ant-design/icons'
 import { useState } from 'react'
@@ -28,6 +17,8 @@ import {
 } from '../../services/admin'
 import type { Company, Manager, InvitationStatus, UserRole } from '../../types'
 import UserModal from '../../components/molecules/UserModal'
+import { UserStar } from 'lucide-react'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 
 const roleColors: Record<string, string> = {
   manager: 'blue',
@@ -44,15 +35,16 @@ const invitationStatusConfig: Record<
 }
 
 const AdminManagersPage = () => {
+  const { message, modal } = App.useApp()
   const [open, setOpen] = useState(false)
   const [editingManager, setEditingManager] = useState<Manager | null>(null)
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
-  const [inviteLoading, setInviteLoading] = useState<string | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
+  const [loading, setLoading] = useState(false)
 
   const { data: companies } = useQuery({
     queryKey: ['admin', 'companies'],
     queryFn: async () => {
+      setLoading(true)
       const response = await listCompanies()
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
@@ -60,22 +52,21 @@ const AdminManagersPage = () => {
       if (response.data.length === 1) {
         setCompanyId(response.data[0].id)
       }
+      setLoading(false)
       return response.data
     },
   })
 
-  const {
-    data: managers,
-    isLoading,
-    refetch,
-  } = useQuery({
+  const { data: managers, refetch } = useQuery({
     queryKey: ['admin', 'managers', companyId],
     queryFn: async () => {
+      setLoading(true)
       if (!companyId) return [] as Manager[]
       const response = await listManagers(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load managers')
       }
+      setLoading(false)
       return response.data
     },
   })
@@ -95,29 +86,66 @@ const AdminManagersPage = () => {
     setEditingManager(null)
   }
 
-  const onDeleteManager = async (manager: Manager) => {
+  const onDeleteManager = (manager: Manager) => {
     if (!companyId) return
 
-    setDeleteLoading(manager.id)
-    try {
-      const response = await deleteManager(manager.id, companyId)
-      if (!response.success) {
-        message.error(response.error || 'Failed to delete manager')
-        return
-      }
-      message.success(`${manager.firstName} ${manager.lastName} has been deleted`)
-      refetch()
-    } catch {
-      message.error('Failed to delete manager')
-    } finally {
-      setDeleteLoading(null)
+    modal.confirm({
+      title: 'Delete manager',
+      content: `Are you sure you want to delete ${manager.firstName} ${manager.lastName}? This action cannot be undone.`,
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const response = await deleteManager(manager.id, companyId)
+        if (!response.success) {
+          message.error(response.error || 'Failed to delete manager')
+          return
+        }
+        message.success(`${manager.firstName} ${manager.lastName} has been deleted`)
+        refetch()
+      },
+    })
+  }
+
+  const getMenuItems = (record: Manager): MenuProps['items'] => {
+    const items: MenuProps['items'] = [
+      {
+        key: 'edit',
+        label: 'Edit',
+        onClick: (e) => {
+          e.domEvent.stopPropagation()
+          openEdit(record)
+        },
+      },
+    ]
+
+    if (record.invitationStatus !== 'accepted' && record.email) {
+      items.push({
+        key: 'invite',
+        label:
+          record.invitationStatus === 'pending' ? 'Resend invitation' : 'Send invitation',
+        onClick: (e) => {
+          e.domEvent.stopPropagation()
+          onSendInvitation(record)
+        },
+      })
     }
+
+    items.push({
+      key: 'delete',
+      danger: true,
+      label: 'Delete',
+      onClick: (e) => {
+        e.domEvent.stopPropagation()
+        onDeleteManager(record)
+      },
+    })
+
+    return items
   }
 
   const onSendInvitation = async (manager: Manager) => {
     if (!companyId || !manager.email) return
 
-    setInviteLoading(manager.id)
     try {
       const response = await sendManagerInvitation(manager.id, {
         companyId,
@@ -131,16 +159,16 @@ const AdminManagersPage = () => {
       refetch()
     } catch {
       message.error('Failed to send invitation')
-    } finally {
-      setInviteLoading(null)
     }
   }
 
   return (
-    <AdminLayout>
-      <Space orientation="vertical" size="large" className="w-full">
-        <Card>
-          <Space orientation="vertical" className="w-full">
+    <AdminLayout
+      pageHeading={<StandardPageHeading title="Managers" icon={<UserStar />} />}
+    >
+      <div className="flex flex-col gap-6 w-full">
+        <div className="flex items-center justify-between gap-4">
+          <div className="w-fit">
             <Select
               placeholder="Select company"
               value={companyId || undefined}
@@ -150,17 +178,20 @@ const AdminManagersPage = () => {
                 value: company.id,
               }))}
               aria-label="Select company"
-              className="w-full"
             />
-            <Button type="primary" onClick={openCreate} disabled={!companyId}>
-              Add manager
-            </Button>
-          </Space>
-        </Card>
+          </div>
+          <Button type="primary" onClick={openCreate} disabled={!companyId}>
+            Add manager
+          </Button>
+        </div>
         <Table
-          loading={isLoading}
+          loading={loading}
           dataSource={managers || []}
           rowKey="id"
+          onRow={(record) => ({
+            onClick: () => openEdit(record),
+            style: { cursor: 'pointer' },
+          })}
           columns={[
             {
               title: 'Name',
@@ -211,56 +242,23 @@ const AdminManagersPage = () => {
             },
             {
               title: 'Actions',
+              width: 100,
               render: (_, record) => (
-                <Space>
-                  <Button
-                    type="link"
-                    icon={<EditOutlined />}
-                    onClick={() => openEdit(record)}
-                  >
-                    Edit
-                  </Button>
-                  {record.invitationStatus !== 'accepted' && record.email && (
-                    <Tooltip
-                      title={
-                        record.invitationStatus === 'pending'
-                          ? 'Resend invitation'
-                          : 'Send invitation'
-                      }
-                    >
-                      <Button
-                        type="link"
-                        icon={<MailOutlined />}
-                        onClick={() => onSendInvitation(record)}
-                        loading={inviteLoading === record.id}
-                      >
-                        {record.invitationStatus === 'pending' ? 'Resend' : 'Invite'}
-                      </Button>
-                    </Tooltip>
-                  )}
-                  <Popconfirm
-                    title="Delete manager"
-                    description={`Are you sure you want to delete ${record.firstName} ${record.lastName}? This action cannot be undone.`}
-                    onConfirm={() => onDeleteManager(record)}
-                    okText="Delete"
-                    okType="danger"
-                    cancelText="Cancel"
-                  >
+                <div className="flex items-center justify-center">
+                  <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
                     <Button
-                      type="link"
-                      danger
-                      icon={<DeleteOutlined />}
-                      loading={deleteLoading === record.id}
-                    >
-                      Delete
-                    </Button>
-                  </Popconfirm>
-                </Space>
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Manager actions"
+                    />
+                  </Dropdown>
+                </div>
               ),
             },
           ]}
         />
-      </Space>
+      </div>
 
       <UserModal
         open={open}

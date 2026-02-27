@@ -95,11 +95,36 @@ app.http('adminCompanies', {
   },
 })
 
-app.http('adminCompanyUpdate', {
-  methods: ['PUT'],
+export const deleteCompanyHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
+  const user = await getAuthenticatedUser(request)
+  const authError = requireAdmin(user)
+  if (authError) return authError
+
+  const companyId = request.params.companyId
+  if (!companyId) {
+    return jsonResponse(400, { success: false, error: 'Company ID is required.' })
+  }
+
+  const container = await getContainer('companies', '/id')
+  try {
+    await container.item(companyId, companyId).delete()
+  } catch {
+    return jsonResponse(404, { success: false, error: 'Company not found.' })
+  }
+
+  return jsonResponse(200, { success: true, data: { id: companyId } })
+}
+
+app.http('adminCompanyById', {
+  methods: ['PUT', 'DELETE'],
   authLevel: 'anonymous',
   route: 'management/companies/{companyId}',
-  handler: updateCompanyHandler,
+  handler: async (request) => {
+    if (request.method === 'DELETE') return deleteCompanyHandler(request)
+    return updateCompanyHandler(request)
+  },
 })
 
 // Shared read-only endpoint for all authenticated users

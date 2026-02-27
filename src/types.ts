@@ -109,12 +109,17 @@ export interface InvitationValidation {
 
 export type ComponentType = 'single_choice' | 'multiple_choice' | 'text' | 'info'
 
+export interface TestSettings {
+  allowBackNavigation: boolean
+}
+
 export interface TestTemplate {
   id: UUID
   companyId: UUID
   managerId: UUID
   name: string
   sections: TestSection[]
+  settings?: TestSettings
   createdAt: string
   updatedAt?: string
   isActive: boolean
@@ -139,9 +144,40 @@ export interface TestComponent {
   required?: boolean
   options?: TestComponentOption[]
   correctAnswer?: string | string[]
+  saveToLibrary?: boolean
+  categoryId?: string | null
 }
 
-export type TestInstanceStatus = 'pending' | 'completed' | 'expired' | 'marked'
+export interface QuestionLibraryItem {
+  id: string
+  companyId: string
+  createdBy: string
+  type: ComponentType
+  title: string
+  description?: string
+  required?: boolean
+  options?: TestComponentOption[]
+  correctAnswer?: string | string[]
+  categoryId?: string | null
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface QuestionCategory {
+  id: string
+  companyId: string
+  name: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export type TestInstanceStatus =
+  | 'assigned'
+  | 'opened'
+  | 'in-progress'
+  | 'completed'
+  | 'expired'
+  | 'marked'
 
 export interface TestInstance {
   id: UUID
@@ -151,6 +187,7 @@ export interface TestInstance {
   assignedByManagerId: UUID
   status: TestInstanceStatus
   assignedAt: string
+  openedAt?: string
   expiresAt?: string
   completedAt?: string
   markedAt?: string
@@ -160,6 +197,7 @@ export interface TestInstance {
 export interface TestInstanceDetails {
   instance: TestInstance
   test: TestTemplate
+  responses: ResponseRecord[]
 }
 
 export interface ResponseRecord {
