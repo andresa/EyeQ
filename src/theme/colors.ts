@@ -35,6 +35,18 @@ export const themeColors = {
   success: '#22c55e',
   successBg: '#dcfce7',
   successBorder: '#86efac',
+  tagDangerColor: palette.tags.danger.color,
+  tagDangerBg: palette.tags.danger.bg,
+  tagDangerBorder: palette.tags.danger.border,
+  tagSuccessColor: palette.tags.success.color,
+  tagSuccessBg: palette.tags.success.bg,
+  tagSuccessBorder: palette.tags.success.border,
+  tagWarningColor: palette.tags.warning.color,
+  tagWarningBg: palette.tags.warning.bg,
+  tagWarningBorder: palette.tags.warning.border,
+  tagInfoColor: palette.tags.info.color,
+  tagInfoBg: palette.tags.info.bg,
+  tagInfoBorder: palette.tags.info.border,
 } as const
 
 /** Ant Design theme config for ConfigProvider */

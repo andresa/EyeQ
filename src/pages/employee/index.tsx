@@ -1,53 +1,45 @@
-import { Alert, Input, Select, Spin, Typography } from 'antd'
-import { useMemo, useState } from 'react'
+import { Alert, Card, Spin, Statistic, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
-import TestCard from '../../components/molecules/TestCard'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { listEmployeeTestInstances } from '../../services/employee'
-import type { TestInstance, TestInstanceStatus } from '../../types'
+import type { TestInstance } from '../../types'
 import { useSession } from '../../hooks/useSession'
+import { Gauge } from 'lucide-react'
 
 const EmployeeDashboard = () => {
   const navigate = useNavigate()
   const { userProfile, profileError } = useSession()
   const employeeId = userProfile?.userType === 'employee' ? userProfile.id : undefined
-  const [query, setQuery] = useState('')
-  const [status, setStatus] = useState<TestInstanceStatus | 'all'>('all')
-  const [loading, setLoading] = useState(false)
 
-  const { data: instances } = useQuery({
+  const { data: instances, isLoading: instancesLoading } = useQuery({
     queryKey: ['employee', 'testInstances', employeeId],
     queryFn: async () => {
-      setLoading(true)
       if (!employeeId) return [] as TestInstance[]
       const response = await listEmployeeTestInstances(employeeId)
       if (!response.success || !response.data) {
-        setLoading(false)
         throw new Error(response.error || 'Unable to load tests')
       }
-      setLoading(false)
       return response.data
     },
     enabled: !!employeeId,
   })
 
-  const filtered = useMemo(() => {
-    const items = instances || []
-    return items
-      .filter((instance) => {
-        if (status !== 'all' && instance.status !== status) {
-          return false
-        }
-        if (!query) return true
-        const searchValue =
-          instance.testName?.toLowerCase() || instance.testId.toLowerCase()
-        return searchValue.includes(query.toLowerCase())
-      })
-      .sort((a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime())
-  }, [instances, query, status])
+  const notStartedCount =
+    instances?.filter((i) => i.status === 'assigned' || i.status === 'opened').length ?? 0
+  const inProgressCount = instances?.filter((i) => i.status === 'in-progress').length ?? 0
+  const markedCount = instances?.filter((i) => i.status === 'marked').length ?? 0
+  const markedWithScores =
+    instances?.filter((i) => i.status === 'marked' && i.score != null) ?? []
+  const averageScore =
+    markedWithScores.length > 0
+      ? markedWithScores.reduce((sum, i) => sum + (i.score ?? 0), 0) /
+        markedWithScores.length
+      : null
 
-  // Show error if user profile failed to load
+  const heading = <StandardPageHeading title="Dashboard" icon={<Gauge />} />
+
   if (profileError) {
     return (
       <EmployeeLayout>
@@ -62,7 +54,7 @@ const EmployeeDashboard = () => {
   }
 
   return (
-    <EmployeeLayout>
+    <EmployeeLayout pageHeading={heading}>
       <div className="flex flex-col gap-6 w-full">
         <div>
           <Typography.Title level={3}>
@@ -72,61 +64,67 @@ const EmployeeDashboard = () => {
             <Typography.Text type="secondary">{userProfile.companyName}</Typography.Text>
           )}
         </div>
-
-        <Typography.Title level={4}>Your assigned tests</Typography.Title>
-
-        <div className="flex gap-4 w-full">
-          <Input
-            placeholder="Search tests"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            aria-label="Search tests"
-            className="flex-1"
-          />
-          <Select
-            value={status}
-            onChange={(value) => setStatus(value)}
-            options={[
-              { label: 'All', value: 'all' },
-              { label: 'Assigned', value: 'assigned' },
-              { label: 'Opened', value: 'opened' },
-              { label: 'In Progress', value: 'in-progress' },
-              { label: 'Completed', value: 'completed' },
-              { label: 'Marked', value: 'marked' },
-              { label: 'Expired', value: 'expired' },
-            ]}
-            className="w-[9rem]"
-          />
-        </div>
-        {loading && (
-          <div className="flex justify-center items-center h-full">
-            <Spin />
+        <div className="flex flex-col w-full gap-4 max-w-[800px]">
+          <div className="flex w-full gap-4">
+            <Card
+              onClick={() => navigate('/employee/tests?status=assigned')}
+              style={{ cursor: 'pointer' }}
+              className="flex-1"
+            >
+              {instancesLoading ? (
+                <div className="flex justify-center py-4">
+                  <Spin />
+                </div>
+              ) : (
+                <Statistic title="Tests not started" value={notStartedCount} />
+              )}
+            </Card>
+            <Card
+              onClick={() => navigate('/employee/tests?status=in-progress')}
+              style={{ cursor: 'pointer' }}
+              className="flex-1"
+            >
+              {instancesLoading ? (
+                <div className="flex justify-center py-4">
+                  <Spin />
+                </div>
+              ) : (
+                <Statistic title="In progress" value={inProgressCount} />
+              )}
+            </Card>
           </div>
-        )}
-        {!loading && filtered.length === 0 && query && (
-          <Typography.Text type="secondary">
-            No tests found matching &quot;{query}&quot;.
-          </Typography.Text>
-        )}
-        {!loading && filtered.length === 0 && !query && (
-          <Typography.Text type="secondary">
-            No tests assigned to you yet.
-          </Typography.Text>
-        )}
-
-        {filtered.map((instance) => (
-          <TestCard
-            key={instance.id}
-            instance={instance}
-            onOpen={() =>
-              navigate(
-                instance.status === 'completed' || instance.status === 'marked'
-                  ? `/employee/test-results/${instance.id}`
-                  : `/employee/test/${instance.id}`,
-              )
-            }
-          />
-        ))}
+          <div className="flex w-full gap-4">
+            <Card
+              onClick={() => navigate('/employee/tests?status=marked')}
+              style={{ cursor: 'pointer' }}
+              className="flex-1"
+            >
+              {instancesLoading ? (
+                <div className="flex justify-center py-4">
+                  <Spin />
+                </div>
+              ) : (
+                <Statistic title="Marked" value={markedCount} />
+              )}
+            </Card>
+            <Card
+              onClick={() => navigate('/employee/tests')}
+              style={{ cursor: 'pointer' }}
+              className="flex-1"
+            >
+              {instancesLoading ? (
+                <div className="flex justify-center py-4">
+                  <Spin />
+                </div>
+              ) : (
+                <Statistic
+                  title="Average score"
+                  value={averageScore?.toFixed(1) ?? '-'}
+                />
+              )}
+            </Card>
+          </div>
+        </div>
       </div>
     </EmployeeLayout>
   )

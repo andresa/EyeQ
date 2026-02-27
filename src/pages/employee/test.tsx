@@ -266,7 +266,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
         return
       }
       message.success('Test submitted')
-      navigate('/employee')
+      navigate('/employee/tests')
     } catch (error) {
       if (error instanceof Error) {
         message.error(error.message)
@@ -413,7 +413,9 @@ const EmployeeTestPage = () => {
               >
                 View answers
               </Button>
-              <Button onClick={() => navigate('/employee')}>Back to dashboard</Button>
+              <Button onClick={() => navigate('/employee/tests')}>
+                Back to My tests
+              </Button>
             </div>
           </div>
         </Card>
@@ -430,7 +432,7 @@ const EmployeeTestPage = () => {
             <Typography.Text type="secondary">
               This test has expired and can no longer be completed.
             </Typography.Text>
-            <Button onClick={() => navigate('/employee')}>Back to dashboard</Button>
+            <Button onClick={() => navigate('/employee/tests')}>Back to My tests</Button>
           </div>
         </Card>
       </EmployeeLayout>

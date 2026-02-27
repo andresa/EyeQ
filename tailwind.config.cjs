@@ -8,6 +8,7 @@ module.exports = {
       colors: {
         primary: palette.neutral,
         accent: palette.accent,
+        tags: palette.tags,
       },
     },
   },

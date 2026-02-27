@@ -1,11 +1,12 @@
-import { Button, Card, Tag, Typography } from 'antd'
+import { Card, Spin, Tag, Typography } from 'antd'
 import { useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
 import { fetchEmployeeTestInstanceResults } from '../../services/employee'
 import type { ResponseRecord, TestComponent } from '../../types'
-import { formatDateTime } from '../../utils/date'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
+import { ClipboardList } from 'lucide-react'
 
 const buildResponseMap = (responses: ResponseRecord[]) =>
   responses.reduce((map, response) => {
@@ -37,7 +38,6 @@ const resolveAnswer = (component: TestComponent, response?: ResponseRecord) => {
 
 const EmployeeTestResultsPage = () => {
   const { instanceId } = useParams()
-  const navigate = useNavigate()
 
   const { data, isLoading } = useQuery({
     queryKey: ['employee', 'testInstanceResults', instanceId],
@@ -56,7 +56,9 @@ const EmployeeTestResultsPage = () => {
   if (isLoading || !data) {
     return (
       <EmployeeLayout>
-        <Typography.Text>Loading results...</Typography.Text>
+        <div className="flex justify-center items-center h-full">
+          <Spin />
+        </div>
       </EmployeeLayout>
     )
   }
@@ -64,26 +66,16 @@ const EmployeeTestResultsPage = () => {
   const isMarked = data.instance.status === 'marked'
 
   return (
-    <EmployeeLayout>
+    <EmployeeLayout
+      pageHeading={
+        <StandardPageHeading
+          title={data.test.name}
+          icon={<ClipboardList />}
+          backTo="/employee/tests"
+        />
+      }
+    >
       <div className="flex flex-col gap-6 w-full">
-        <Typography.Title level={3}>{data.test.name}</Typography.Title>
-        <Card>
-          <div className="flex flex-col gap-4">
-            <Typography.Text type="secondary">
-              Status: {data.instance.status}
-            </Typography.Text>
-            {!isMarked ? (
-              <Typography.Text type="secondary">
-                Awaiting manager marking.
-              </Typography.Text>
-            ) : null}
-            {data.instance.completedAt ? (
-              <Typography.Text type="secondary">
-                Completed {formatDateTime(data.instance.completedAt)}
-              </Typography.Text>
-            ) : null}
-          </div>
-        </Card>
         {data.test.sections.map((section) => (
           <Card key={section.id} title={section.title}>
             <div className="flex flex-col gap-4 w-full">
@@ -126,7 +118,6 @@ const EmployeeTestResultsPage = () => {
             </div>
           </Card>
         ))}
-        <Button onClick={() => navigate('/employee')}>Back to dashboard</Button>
       </div>
     </EmployeeLayout>
   )

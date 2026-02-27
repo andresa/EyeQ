@@ -22,5 +22,27 @@
     "700": "#1E3A5F",
     "800": "#152B47",
     "900": "#0C1C30"
+  },
+  "tags": {
+    "success": {
+      "color": "#389e0d",
+      "bg": "#f6ffed",
+      "border": "#86efac"
+    },
+    "warning": {
+      "color": "#d46b08",
+      "bg": "#fff7e6",
+      "border": "#faad14"
+    },
+    "danger": {
+      "color": "#cf1322",
+      "bg": "#fff1f0",
+      "border": "#f5222d"
+    },
+    "info": {
+      "color": "#0958d9",
+      "bg": "#e6f4ff",
+      "border": "#91caff"
+    }
   }
 }

@@ -4,6 +4,7 @@ import LoginPage from './pages/shared/login'
 import VerifyPage from './pages/shared/verify'
 import AcceptInvitationPage from './pages/shared/accept-invitation'
 import EmployeeDashboard from './pages/employee'
+import EmployeeTestsPage from './pages/employee/tests'
 import EmployeeTestPage from './pages/employee/test'
 import EmployeeTestResultsPage from './pages/employee/test-results'
 import ManagerDashboard from './pages/manager'
@@ -55,6 +56,14 @@ const App = () => {
         element={
           <RouteGuard allowedRoles={['employee']}>
             <EmployeeDashboard />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/employee/tests"
+        element={
+          <RouteGuard allowedRoles={['employee']}>
+            <EmployeeTestsPage />
           </RouteGuard>
         }
       />
