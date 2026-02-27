@@ -2,7 +2,7 @@ import { Alert, Card, Spin, Statistic, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import ManagerLayout from '../../layouts/ManagerLayout'
-import PageHeading from '../../components/atoms/PageHeading'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { listEmployees, listTests, listTestInstances } from '../../services/manager'
 import type { TestInstance } from '../../types'
 import { useSession } from '../../hooks/useSession'
@@ -55,15 +55,7 @@ const ManagerDashboard = () => {
   const submissionsTotal = instances?.length ?? 0
   const toMarkCount = instances?.filter((i) => i.status === 'completed').length ?? 0
 
-  // Show error if user profile failed to load
-  const heading = (
-    <PageHeading>
-      <div className="flex items-center gap-2">
-        <Gauge />
-        <Typography.Title level={4}>Dashboard</Typography.Title>
-      </div>
-    </PageHeading>
-  )
+  const heading = <StandardPageHeading title="Dashboard" icon={<Gauge />} />
 
   if (profileError) {
     return (

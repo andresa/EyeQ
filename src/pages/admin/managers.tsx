@@ -17,6 +17,8 @@ import {
 } from '../../services/admin'
 import type { Company, Manager, InvitationStatus, UserRole } from '../../types'
 import UserModal from '../../components/molecules/UserModal'
+import { UserStar } from 'lucide-react'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 
 const roleColors: Record<string, string> = {
   manager: 'blue',
@@ -161,7 +163,9 @@ const AdminManagersPage = () => {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout
+      pageHeading={<StandardPageHeading title="Managers" icon={<UserStar />} />}
+    >
       <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-between gap-4">
           <div className="w-fit">

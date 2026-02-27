@@ -15,7 +15,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
-import PageHeading from '../../components/atoms/PageHeading'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import {
   assignTest,
   deleteTestTemplate,
@@ -193,14 +193,7 @@ const ManagerTestsPage = () => {
 
   return (
     <ManagerLayout
-      pageHeading={
-        <PageHeading>
-          <div className="flex items-center gap-2">
-            <FlaskConical />
-            <Typography.Title level={4}>Tests</Typography.Title>
-          </div>
-        </PageHeading>
-      }
+      pageHeading={<StandardPageHeading title="Tests" icon={<FlaskConical />} />}
     >
       <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-between">

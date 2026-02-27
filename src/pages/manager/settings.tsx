@@ -1,5 +1,5 @@
 import ManagerLayout from '../../layouts/ManagerLayout'
-import PageHeading from '../../components/atoms/PageHeading'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { Typography } from 'antd'
 import { useSession } from '../../hooks/useSession'
 import CategoriesSection from '../../components/organisms/CategoriesSection'
@@ -11,14 +11,7 @@ const ManagerSettingsPage = () => {
 
   return (
     <ManagerLayout
-      pageHeading={
-        <PageHeading>
-          <div className="flex items-center gap-2">
-            <Settings />
-            <Typography.Title level={4}>Settings</Typography.Title>
-          </div>
-        </PageHeading>
-      }
+      pageHeading={<StandardPageHeading title="Settings" icon={<Settings />} />}
     >
       <div className="flex flex-col gap-6 w-full">
         {companyId ? (

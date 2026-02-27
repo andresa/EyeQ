@@ -1,11 +1,11 @@
-import { Button, Dropdown, Select, Table, Typography } from 'antd'
+import { Button, Dropdown, Select, Table } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
-import PageHeading from '../../components/atoms/PageHeading'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { listEmployees, listTestInstances, listTests } from '../../services/manager'
 import type { Employee, TestInstance, TestTemplate } from '../../types'
 import { formatDateTime } from '../../utils/date'
@@ -168,14 +168,7 @@ const SubmissionsPage = () => {
 
   return (
     <ManagerLayout
-      pageHeading={
-        <PageHeading>
-          <div className="flex items-center gap-2">
-            <ScrollText />
-            <Typography.Title level={4}>Submissions</Typography.Title>
-          </div>
-        </PageHeading>
-      }
+      pageHeading={<StandardPageHeading title="Submissions" icon={<ScrollText />} />}
     >
       <div className="flex flex-col gap-6 w-full">
         <div className="flex flex-wrap gap-4">

@@ -1,10 +1,9 @@
 import { App, Button, Card, Input, Modal, Radio, Spin, Tag, Tabs, Typography } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
-import { useMemo, useState, useEffect, type ReactNode } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
-import PageHeading from '../../components/atoms/PageHeading'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import {
   fetchTestInstanceResults,
   listEmployees,
@@ -155,10 +154,6 @@ const SubmissionDetailPage = () => {
     setSearchParams({ tab: key })
   }
 
-  const handleBack = () => {
-    navigate('/manager/test-submissions')
-  }
-
   const doSubmitMarks = async () => {
     if (!instanceId || !data) return
     setSubmitConfirmLoading(true)
@@ -204,30 +199,19 @@ const SubmissionDetailPage = () => {
     }
   }
 
-  const Heading = ({ title }: { title: string | ReactNode }) => (
-    <PageHeading>
-      <div className="flex items-center gap-4">
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
-          onClick={handleBack}
-          aria-label="Back to submissions"
-        />
-        <Typography.Title level={4}>{title}</Typography.Title>
-      </div>
-    </PageHeading>
-  )
+  const testSubmissionsPath = '/manager/test-submissions'
 
   if (isLoading || !data) {
     return (
       <ManagerLayout
         pageHeading={
-          <Heading
+          <StandardPageHeading
             title={
               <Typography.Title type="secondary" level={4}>
                 Loading...
               </Typography.Title>
             }
+            backTo={testSubmissionsPath}
           />
         }
       >
@@ -371,7 +355,11 @@ const SubmissionDetailPage = () => {
   ]
 
   return (
-    <ManagerLayout pageHeading={<Heading title={data.test.name} />}>
+    <ManagerLayout
+      pageHeading={
+        <StandardPageHeading title={data.test.name} backTo={testSubmissionsPath} />
+      }
+    >
       <div className="flex flex-col gap-6 w-full">
         <Card>
           <div className="flex justify-between">

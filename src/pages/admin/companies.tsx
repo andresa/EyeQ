@@ -11,6 +11,8 @@ import {
   updateCompany,
 } from '../../services/admin'
 import type { Company } from '../../types'
+import { Building } from 'lucide-react'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 
 const AdminCompaniesPage = () => {
   const { message, modal } = App.useApp()
@@ -108,7 +110,9 @@ const AdminCompaniesPage = () => {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout
+      pageHeading={<StandardPageHeading title="Companies" icon={<Building />} />}
+    >
       <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-end">
           <Button type="primary" onClick={openCreate}>

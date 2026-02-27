@@ -2,13 +2,15 @@ import { Button, Card, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../layouts/AdminLayout'
 import { useSession } from '../../hooks/useSession'
+import { Gauge } from 'lucide-react'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 
 const AdminDashboard = () => {
   const navigate = useNavigate()
   const { userProfile } = useSession()
 
   return (
-    <AdminLayout>
+    <AdminLayout pageHeading={<StandardPageHeading title="Dashboard" icon={<Gauge />} />}>
       <div className="flex flex-col gap-6 w-full">
         <div className="flex flex-col gap-2">
           <Typography.Title level={4}>

@@ -24,7 +24,7 @@ import { deleteEmployee, listEmployees, sendInvitation } from '../../services/ma
 import type { Employee, InvitationStatus, UserRole } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import UserModal from '../../components/molecules/UserModal'
-import PageHeading from '../../components/atoms/PageHeading'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { Users } from 'lucide-react'
 
 const roleColors: Record<UserRole, string> = {
@@ -190,14 +190,7 @@ const ManagerEmployeesPage = () => {
 
   return (
     <ManagerLayout
-      pageHeading={
-        <PageHeading>
-          <div className="flex items-center gap-2">
-            <Users />
-            <Typography.Title level={4}>Employees</Typography.Title>
-          </div>
-        </PageHeading>
-      }
+      pageHeading={<StandardPageHeading title="Employees" icon={<Users />} />}
     >
       <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-between">

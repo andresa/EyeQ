@@ -1,11 +1,11 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { Button, Card, Input, Spin, Typography, App } from 'antd'
-import { ArrowLeftOutlined, SettingOutlined } from '@ant-design/icons'
+import { SettingOutlined } from '@ant-design/icons'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../../layouts/ManagerLayout'
-import PageHeading from '../../../components/atoms/PageHeading'
+import StandardPageHeading from '../../../components/molecules/StandardPageHeading'
 import SectionList from '../../../components/test-builder/SectionList'
 import ComponentCard from '../../../components/test-builder/ComponentCard'
 import { createUUID } from '../../../utils/uuid'
@@ -405,7 +405,6 @@ const TestBuilderForm = ({
 
 const TestBuilderPage = () => {
   const { testId } = useParams()
-  const navigate = useNavigate()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
   const managerId = userProfile?.userType === 'manager' ? userProfile.id : undefined
@@ -427,19 +426,7 @@ const TestBuilderPage = () => {
     [testId, tests],
   )
 
-  const heading = (
-    <PageHeading>
-      <div className="flex items-center gap-4">
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/manager/tests')}
-          aria-label="Back to tests"
-        />
-        <Typography.Title level={4}>Test Builder</Typography.Title>
-      </div>
-    </PageHeading>
-  )
+  const heading = <StandardPageHeading title="Test Builder" backTo="/manager/tests" />
 
   if (testId && isLoading) {
     return (
