@@ -240,11 +240,16 @@ const LoginPage = () => {
                 <Input
                   size="large"
                   type="email"
+                  name="email"
+                  id="login-email"
                   placeholder="you@example.com"
                   prefix={<MailOutlined className="text-gray-400" />}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isSubmitting}
+                  autoComplete="email"
+                  inputMode="email"
+                  autoCapitalize="none"
                   // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus={!showDevLogin}
                 />
