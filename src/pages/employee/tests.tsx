@@ -1,4 +1,15 @@
-import { Alert, Card, Grid, Input, Select, Spin, Table, Tag, Typography } from 'antd'
+import {
+  Alert,
+  Card,
+  Grid,
+  Input,
+  Modal,
+  Select,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+} from 'antd'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -48,6 +59,9 @@ const EmployeeTestsPage = () => {
   const [loading, setLoading] = useState(false)
   const employeeId = userProfile?.userType === 'employee' ? userProfile.id : undefined
 
+  const [startTestModalRecord, setStartTestModalRecord] = useState<TestInstance | null>(
+    null,
+  )
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<TestInstanceStatus | 'all'>(() => {
     const s = searchParams.get('status')
@@ -90,12 +104,31 @@ const EmployeeTestsPage = () => {
 
   const heading = <StandardPageHeading title="My tests" icon={<ClipboardList />} />
 
-  const handleRowClick = (record: TestInstance) =>
-    navigate(
-      record.status === 'completed' || record.status === 'marked'
-        ? `/employee/test-results/${record.id}`
-        : `/employee/test/${record.id}`,
-    )
+  const handleRowClick = (record: TestInstance) => {
+    if (record.status === 'completed' || record.status === 'marked') {
+      navigate(`/employee/test-results/${record.id}`)
+      return
+    }
+    if (record.status === 'in-progress') {
+      navigate(`/employee/test/${record.id}`)
+      return
+    }
+    setStartTestModalRecord(record)
+  }
+
+  const handleStartTestConfirm = () => {
+    if (startTestModalRecord) {
+      navigate(`/employee/test/${startTestModalRecord.id}`)
+      setStartTestModalRecord(null)
+    }
+  }
+
+  const handleStartTestCancel = () => setStartTestModalRecord(null)
+
+  const estimateMinutes = (record: TestInstance) => {
+    const q = record.questionCount ?? 1
+    return [q, q * 2] as const
+  }
 
   const emptyMessage =
     instances?.length === 0
@@ -232,6 +265,35 @@ const EmployeeTestsPage = () => {
           />
         )}
       </div>
+      <Modal
+        title="Start test"
+        open={!!startTestModalRecord}
+        onOk={handleStartTestConfirm}
+        onCancel={handleStartTestCancel}
+        okText="Start test"
+        cancelText="Cancel"
+        destroyOnClose
+      >
+        {startTestModalRecord && (
+          <>
+            <Typography.Paragraph className="mb-0">
+              You&apos;re about to start{' '}
+              <strong>
+                {startTestModalRecord.testName || startTestModalRecord.testId}
+              </strong>
+              .
+            </Typography.Paragraph>
+            <Typography.Paragraph className="mb-0">
+              This test will take approximately{' '}
+              <strong>
+                {estimateMinutes(startTestModalRecord)[0]} to{' '}
+                {estimateMinutes(startTestModalRecord)[1]} minutes
+              </strong>{' '}
+              to complete.
+            </Typography.Paragraph>
+          </>
+        )}
+      </Modal>
     </EmployeeLayout>
   )
 }
