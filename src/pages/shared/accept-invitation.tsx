@@ -77,7 +77,7 @@ const AcceptInvitationPage = () => {
   // Loading state
   if (pageState === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700">
+      <div className="min-h-screen flex items-center justify-center bg-accent-700">
         <Card className="w-full max-w-md text-center shadow-2xl">
           <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
           <Title level={4} className="mt-4">
@@ -91,7 +91,7 @@ const AcceptInvitationPage = () => {
   // Invalid token
   if (pageState === 'invalid') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-accent-700 p-4">
         <Card className="w-full max-w-md shadow-2xl">
           <Result
             status="error"
@@ -112,7 +112,7 @@ const AcceptInvitationPage = () => {
   // Success state
   if (pageState === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-accent-700 p-4">
         <Card className="w-full max-w-md shadow-2xl">
           <Result
             status="success"
@@ -133,17 +133,17 @@ const AcceptInvitationPage = () => {
   // Error state (after attempting to accept)
   if (pageState === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-accent-700 p-4">
         <Card className="w-full max-w-md shadow-2xl">
           <Result
             status="error"
             title="Something went wrong"
             subTitle={error}
             extra={[
-              <Button key="retry" type="primary" onClick={handleAccept}>
+              <Button key="retry" onClick={handleAccept}>
                 Try Again
               </Button>,
-              <Button key="login" onClick={() => navigate('/login')}>
+              <Button key="login" type="primary" onClick={() => navigate('/login')}>
                 Go to Login
               </Button>,
             ]}
@@ -155,7 +155,7 @@ const AcceptInvitationPage = () => {
 
   // Valid invitation - show acceptance UI
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-accent-700 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <div className="text-center mb-6">
           <div className="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -188,7 +188,7 @@ const AcceptInvitationPage = () => {
               onClick={handleAccept}
               className="h-12"
             >
-              Accept Invitation & Join
+              Accept &amp; Join
             </Button>
           </>
         )}
