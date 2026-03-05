@@ -1,4 +1,5 @@
-import { Card, Select } from 'antd'
+import { Card } from 'antd'
+import Selection from '../atoms/Selection'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listCompaniesShared, listManagersShared } from '../../services/shared'
@@ -51,7 +52,7 @@ const CompanyManagerSelector = ({ onSelectionChange }: CompanyManagerSelectorPro
   return (
     <Card>
       <div className="flex flex-col gap-4 w-full">
-        <Select
+        <Selection
           placeholder="Select company"
           value={companyId || undefined}
           onChange={handleCompanyChange}
@@ -63,7 +64,7 @@ const CompanyManagerSelector = ({ onSelectionChange }: CompanyManagerSelectorPro
           aria-label="Select company"
           className="w-full"
         />
-        <Select
+        <Selection
           placeholder="Select manager"
           value={managerId || undefined}
           onChange={handleManagerChange}

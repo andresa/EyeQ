@@ -1,15 +1,5 @@
-import {
-  Alert,
-  Card,
-  Grid,
-  Input,
-  Modal,
-  Select,
-  Spin,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Card, Grid, Input, Modal, Spin, Table, Tag, Typography } from 'antd'
+import Selection from '../../components/atoms/Selection'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -159,7 +149,7 @@ const EmployeeTestsPage = () => {
             aria-label="Search by test name"
             className="flex-1 max-w-[320px]"
           />
-          <Select<TestInstanceStatus | 'all'>
+          <Selection<TestInstanceStatus | 'all'>
             value={status}
             onChange={setStatus}
             options={statusOptions}
@@ -272,7 +262,7 @@ const EmployeeTestsPage = () => {
         onCancel={handleStartTestCancel}
         okText="Start test"
         cancelText="Cancel"
-        destroyOnClose
+        destroyOnHidden
       >
         {startTestModalRecord && (
           <>

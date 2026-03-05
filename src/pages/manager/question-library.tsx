@@ -6,11 +6,11 @@ import {
   Dropdown,
   Input,
   Modal,
-  Select,
   Table,
   Tag,
   Typography,
 } from 'antd'
+import Selection from '../../components/atoms/Selection'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -272,13 +272,13 @@ const QuestionLibraryPage = () => {
               allowClear
               className="max-w-xs"
             />
-            <Select
+            <Selection
               value={typeFilter}
               onChange={setTypeFilter}
               options={[{ value: '', label: 'All types' }, ...questionTypeLabels]}
               className="w-40"
             />
-            <Select
+            <Selection
               value={categoryFilter}
               onChange={setCategoryFilter}
               options={[
@@ -374,7 +374,7 @@ const QuestionLibraryPage = () => {
             </div>
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Type</Typography.Text>
-              <Select
+              <Selection
                 value={editing.type}
                 onChange={handleTypeChange}
                 options={questionTypeLabels}
@@ -383,7 +383,7 @@ const QuestionLibraryPage = () => {
             </div>
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Category</Typography.Text>
-              <Select
+              <Selection
                 value={editing.categoryId ?? undefined}
                 onChange={(v) => updateEditing({ categoryId: v || null })}
                 options={[
@@ -442,7 +442,7 @@ const QuestionLibraryPage = () => {
                   Correct answer{editing.type === 'multiple_choice' ? 's' : ''}
                 </Typography.Text>
                 {editing.type === 'single_choice' ? (
-                  <Select
+                  <Selection
                     value={
                       typeof editing.correctAnswer === 'string'
                         ? editing.correctAnswer
@@ -458,7 +458,7 @@ const QuestionLibraryPage = () => {
                     className="w-full"
                   />
                 ) : (
-                  <Select
+                  <Selection
                     mode="multiple"
                     value={
                       Array.isArray(editing.correctAnswer) ? editing.correctAnswer : []

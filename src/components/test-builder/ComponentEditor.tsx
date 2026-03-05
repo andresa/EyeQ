@@ -1,4 +1,5 @@
-import { Checkbox, Input, Select, Switch } from 'antd'
+import { Checkbox, Input, Switch } from 'antd'
+import Selection from '../atoms/Selection'
 import { useQuery } from '@tanstack/react-query'
 import type { TestComponent } from '../../types'
 import { listQuestionCategories } from '../../services/manager'
@@ -41,7 +42,7 @@ const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProp
         rows={3}
         aria-label="Question description"
       />
-      <Select
+      <Selection
         value={component.categoryId ?? undefined}
         onChange={(v) => update({ categoryId: v || null })}
         options={[

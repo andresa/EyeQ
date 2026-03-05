@@ -1,4 +1,5 @@
-import { App, DatePicker, Form, Input, Modal, Select, Switch } from 'antd'
+import { App, DatePicker, Form, Input, Modal, Switch } from 'antd'
+import Selection from '../atoms/Selection'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import type { Company, Employee, Manager, UserRole } from '../../types'
@@ -284,7 +285,7 @@ const UserModal = ({
             label="Company"
             rules={[{ required: true, message: 'Select a company.' }]}
           >
-            <Select
+            <Selection
               options={companies.map((company) => ({
                 label: company.name,
                 value: company.id,
@@ -350,7 +351,7 @@ const UserModal = ({
         {/* Role selector - only when editing and user can edit roles */}
         {isEditing && (
           <Form.Item name="role" label="Role">
-            <Select options={roleOptions} aria-label="Role" disabled={!canEditRole} />
+            <Selection options={roleOptions} aria-label="Role" disabled={!canEditRole} />
           </Form.Item>
         )}
 
