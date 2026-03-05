@@ -1,5 +1,4 @@
 import {
-  Affix,
   App,
   Button,
   Card,
@@ -27,8 +26,8 @@ import type {
   TestComponent,
   TestInstanceDetails,
 } from '../../types'
-import { formatDistanceToNowStrict, parseISO } from 'date-fns'
 import { CheckCircleOutlined } from '@ant-design/icons'
+import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 
 const AUTO_SAVE_DELAY_MS = 2000
 
@@ -93,7 +92,6 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   const navigate = useNavigate()
   const { message } = App.useApp()
   const [form] = Form.useForm()
-  const [timeRemaining, setTimeRemaining] = useState('')
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -189,21 +187,6 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
     }
   }, [watchedValues, instanceId, buildResponses])
 
-  useEffect(() => {
-    const expiresAt = data.instance.expiresAt
-    if (!expiresAt) return undefined
-
-    const update = () => {
-      setTimeRemaining(
-        formatDistanceToNowStrict(parseISO(expiresAt), { addSuffix: true }),
-      )
-    }
-
-    update()
-    const interval = setInterval(update, 60000)
-    return () => clearInterval(interval)
-  }, [data.instance.expiresAt])
-
   const validateSectionRequired = async (sectionIndex: number) => {
     const section = sections[sectionIndex]
     if (!section) return true
@@ -275,99 +258,96 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
-      <Affix offsetTop={0}>
-        <Card>
-          <div className="flex flex-col gap-4 w-full">
-            <div className="flex items-center justify-between">
-              <Typography.Title level={4}>{data.test.name}</Typography.Title>
-              {saveStatus === 'saving' && <Spin size="small" />}
-              {saveStatus === 'saved' && <CheckCircleOutlined />}
-            </div>
-            <Progress percent={progressPercent} />
-            <div className="flex w-full justify-between gap-4">
-              {sections.length > 1 && (
-                <Typography.Text type="secondary">
-                  Section {currentSectionIndex + 1} of {sections.length}
-                </Typography.Text>
-              )}
-              {data.instance.expiresAt && timeRemaining ? (
-                <Typography.Text type="secondary">Due {timeRemaining}</Typography.Text>
-              ) : null}
-            </div>
-          </div>
-        </Card>
-      </Affix>
-      <Form form={form} layout="vertical">
-        <Card>
-          {sections.map((section, index) => (
-            <div
-              key={section.id}
-              className={`test-section ${index !== currentSectionIndex ? 'test-section-hidden' : ''}`}
-            >
-              <div className="flex flex-col w-full gap-4">
-                <Typography.Title level={5}>{section.title}</Typography.Title>
-                {section.components.map((component) => {
-                  if (component.type === 'info') {
-                    return (
-                      <Card key={component.id} styles={{ body: { padding: '16px' } }}>
-                        <div className="flex flex-col gap-2">
-                          <Typography.Text strong>{component.title}</Typography.Text>
-                          <Typography.Text>{component.description}</Typography.Text>
-                        </div>
-                      </Card>
-                    )
-                  }
-
-                  return (
-                    <Form.Item
-                      key={component.id}
-                      name={`q_${component.id}`}
-                      label={
-                        <div className="flex flex-col">
-                          <Typography.Text strong>{component.title}</Typography.Text>
-                          {component.description && (
-                            <Typography.Text
-                              type="secondary"
-                              className="block font-normal"
-                            >
-                              {component.description}
-                            </Typography.Text>
-                          )}
-                        </div>
-                      }
-                      rules={
-                        component.required
-                          ? [{ required: true, message: 'This question is required.' }]
-                          : []
-                      }
-                    >
-                      {renderComponentInput(component)}
-                    </Form.Item>
-                  )
-                })}
+    <EmployeeLayout
+      hideHeader
+      pageHeading={
+        <StandardPageHeading
+          title={
+            <div className="flex items-center gap-2">
+              <Progress percent={progressPercent} className="flex-1" />
+              <div className="w-5 h-5 flex items-center justify-center">
+                {saveStatus == 'saving' && <Spin size="small" />}
+                {(saveStatus === 'saved' || saveStatus === 'idle') && (
+                  <CheckCircleOutlined />
+                )}
               </div>
             </div>
-          ))}
-          <div className="flex w-full justify-between gap-4 mt-4">
-            {allowBack && currentSectionIndex > 0 ? (
-              <Button onClick={handlePrevious}>Previous</Button>
-            ) : (
-              <div />
-            )}
-            {isLastSection ? (
-              <Button type="primary" onClick={handleSubmit}>
-                Submit test
-              </Button>
-            ) : (
-              <Button type="primary" onClick={handleNext}>
-                Next
-              </Button>
-            )}
-          </div>
-        </Card>
-      </Form>
-    </div>
+          }
+        />
+      }
+    >
+      <div className="flex flex-col gap-6 w-full">
+        <Form form={form} layout="vertical">
+          <Card>
+            {sections.map((section, index) => (
+              <div
+                key={section.id}
+                className={`test-section ${index !== currentSectionIndex ? 'test-section-hidden' : ''}`}
+              >
+                <div className="flex flex-col w-full gap-4">
+                  <Typography.Title level={5}>{section.title}</Typography.Title>
+                  {section.components.map((component) => {
+                    if (component.type === 'info') {
+                      return (
+                        <Card key={component.id} styles={{ body: { padding: '16px' } }}>
+                          <div className="flex flex-col gap-2">
+                            <Typography.Text strong>{component.title}</Typography.Text>
+                            <Typography.Text>{component.description}</Typography.Text>
+                          </div>
+                        </Card>
+                      )
+                    }
+
+                    return (
+                      <Form.Item
+                        key={component.id}
+                        name={`q_${component.id}`}
+                        label={
+                          <div className="flex flex-col">
+                            <Typography.Text strong>{component.title}</Typography.Text>
+                            {component.description && (
+                              <Typography.Text
+                                type="secondary"
+                                className="block font-normal"
+                              >
+                                {component.description}
+                              </Typography.Text>
+                            )}
+                          </div>
+                        }
+                        rules={
+                          component.required
+                            ? [{ required: true, message: 'This question is required.' }]
+                            : []
+                        }
+                      >
+                        {renderComponentInput(component)}
+                      </Form.Item>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="flex w-full justify-between gap-4 mt-4">
+              {allowBack && currentSectionIndex > 0 ? (
+                <Button onClick={handlePrevious}>Previous</Button>
+              ) : (
+                <div />
+              )}
+              {isLastSection ? (
+                <Button type="primary" onClick={handleSubmit}>
+                  Submit test
+                </Button>
+              ) : (
+                <Button type="primary" onClick={handleNext}>
+                  Next
+                </Button>
+              )}
+            </div>
+          </Card>
+        </Form>
+      </div>
+    </EmployeeLayout>
   )
 }
 
@@ -432,18 +412,18 @@ const EmployeeTestPage = () => {
             <Typography.Text type="secondary">
               This test has expired and can no longer be completed.
             </Typography.Text>
-            <Button onClick={() => navigate('/employee/tests')}>Back to My tests</Button>
+            <div>
+              <Button onClick={() => navigate('/employee/tests')}>
+                Back to My tests
+              </Button>
+            </div>
           </div>
         </Card>
       </EmployeeLayout>
     )
   }
 
-  return (
-    <EmployeeLayout>
-      <TestForm key={instanceId} instanceId={instanceId!} data={data} />
-    </EmployeeLayout>
-  )
+  return <TestForm key={instanceId} instanceId={instanceId!} data={data} />
 }
 
 export default EmployeeTestPage

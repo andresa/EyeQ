@@ -6,8 +6,9 @@ import { ClipboardList, Gauge } from 'lucide-react'
 
 interface EmployeeLayoutProps extends PropsWithChildren {
   pageHeading?: ReactNode
+  hideHeader?: boolean
 }
-const EmployeeLayout = ({ pageHeading, children }: EmployeeLayoutProps) => {
+const EmployeeLayout = ({ pageHeading, children, hideHeader }: EmployeeLayoutProps) => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -37,6 +38,7 @@ const EmployeeLayout = ({ pageHeading, children }: EmployeeLayoutProps) => {
       pageHeading={pageHeading}
       selectedKeys={[selectedPath]}
       onNavigate={navigate}
+      hideHeader={hideHeader}
     >
       {children}
     </AppLayout>

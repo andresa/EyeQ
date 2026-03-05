@@ -14,6 +14,7 @@ interface AppLayoutProps {
   selectedKeys: string[]
   onNavigate: (path: string) => void
   children: ReactNode
+  hideHeader?: boolean
 }
 
 const AppLayout = ({
@@ -24,6 +25,7 @@ const AppLayout = ({
   selectedKeys,
   onNavigate,
   children,
+  hideHeader,
 }: AppLayoutProps) => {
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.md
@@ -55,19 +57,21 @@ const AppLayout = ({
   )
 
   return (
-    <Layout className="h-screen flex flex-col">
-      <EyeQHeader
-        menuButton={
-          isMobile ? (
-            <Button
-              type="text"
-              icon={<MenuOutlined />}
-              onClick={() => setDrawerOpen(true)}
-              className="!text-white"
-            />
-          ) : undefined
-        }
-      />
+    <Layout className="min-h-0 flex flex-col h-[100svh] sm:h-screen">
+      {!hideHeader && (
+        <EyeQHeader
+          menuButton={
+            isMobile ? (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setDrawerOpen(true)}
+                className="!text-white"
+              />
+            ) : undefined
+          }
+        />
+      )}
       <Layout className="flex-1 !flex-row overflow-hidden">
         {isMobile ? (
           <Drawer

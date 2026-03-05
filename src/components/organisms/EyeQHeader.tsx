@@ -18,7 +18,7 @@ const EyeQHeader = ({ menuButton }: EyeQHeaderProps) => {
   }
 
   return (
-    <Layout.Header className="flex items-center justify-between px-3 md:px-5 lg:px-6 bg-accent-700">
+    <Layout.Header className="flex h-[60px] items-center justify-between px-3 md:px-5 lg:px-6 bg-accent-700">
       <div className="flex items-center gap-2 md:gap-3 min-w-0">
         {menuButton}
         <Typography.Title

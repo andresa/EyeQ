@@ -167,12 +167,12 @@ const EmployeeTestsPage = () => {
                       <StatusBadge status={record.status} />
                       {getScoreTag(record)}
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0 text-sm">
+                    <div className="flex flex-wrap flex-col gap-x-3 gap-y-0 text-sm">
                       <Typography.Text type="secondary">
-                        Due {record.expiresAt ? formatDateTime(record.expiresAt) : '-'}
+                        Due: {record.expiresAt ? formatDateTime(record.expiresAt) : '-'}
                       </Typography.Text>
                       <Typography.Text type="secondary">
-                        Assigned {formatDateTime(record.assignedAt)}
+                        Assigned: {formatDateTime(record.assignedAt)}
                       </Typography.Text>
                     </div>
                   </div>
