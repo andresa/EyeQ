@@ -187,7 +187,7 @@ const ManagerTestsPage = () => {
       pageHeading={<StandardPageHeading title="Tests" icon={<FlaskConical />} />}
     >
       <div className="flex flex-col gap-6 w-full">
-        <div className="flex items-center justify-between">
+        <div className="flex gap-4 items-center justify-between">
           <Input
             placeholder="Filter by name"
             value={nameFilter}
