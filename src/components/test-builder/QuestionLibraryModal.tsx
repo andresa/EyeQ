@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Button, Input, Modal, Select, Table, Tag } from 'antd'
+import { Button, Input, Modal, Table, Tag } from 'antd'
+import Selection from '../atoms/Selection'
 import { useQuery } from '@tanstack/react-query'
 import type { QuestionLibraryItem, TestComponent } from '../../types'
 import { listQuestionCategories, listQuestionLibrary } from '../../services/manager'
@@ -134,13 +135,13 @@ const QuestionLibraryModal = ({
           allowClear
           className="flex-1"
         />
-        <Select
+        <Selection
           value={typeFilter}
           onChange={setTypeFilter}
           options={typeOptions}
           className="w-40"
         />
-        <Select
+        <Selection
           value={categoryFilter}
           onChange={setCategoryFilter}
           options={[

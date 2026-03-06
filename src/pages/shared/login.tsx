@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Alert, Button, Card, Divider, Form, Input, Select, Spin, Typography } from 'antd'
+import { Alert, Button, Card, Divider, Form, Input, Spin, Typography } from 'antd'
+import Selection from '../../components/atoms/Selection'
 import {
   MailOutlined,
   CheckCircleOutlined,
@@ -163,7 +164,7 @@ const LoginPage = () => {
                 ) : (
                   <div className="flex flex-col gap-2 w-full">
                     {devUsers.admins.length > 0 && (
-                      <Select
+                      <Selection<string>
                         placeholder={
                           <span>
                             <CrownOutlined /> Select Admin
@@ -177,7 +178,7 @@ const LoginPage = () => {
                     )}
 
                     {devUsers.managers.length > 0 && (
-                      <Select
+                      <Selection<string>
                         placeholder={
                           <span>
                             <TeamOutlined /> Select Manager
@@ -191,7 +192,7 @@ const LoginPage = () => {
                     )}
 
                     {devUsers.employees.length > 0 && (
-                      <Select
+                      <Selection<string>
                         placeholder={
                           <span>
                             <UserOutlined /> Select Employee
@@ -239,11 +240,16 @@ const LoginPage = () => {
                 <Input
                   size="large"
                   type="email"
+                  name="email"
+                  id="login-email"
                   placeholder="you@example.com"
                   prefix={<MailOutlined className="text-gray-400" />}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isSubmitting}
+                  autoComplete="email"
+                  inputMode="email"
+                  autoCapitalize="none"
                   // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus={!showDevLogin}
                 />

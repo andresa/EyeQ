@@ -60,19 +60,35 @@ export const listEmployeeTestInstancesHandler = async (
   const testContainer = await getContainer('tests', '/companyId')
   const { resources: tests } = await testContainer.items
     .query({
-      query: 'SELECT c.id, c.name FROM c WHERE ARRAY_CONTAINS(@ids, c.id)',
+      query: 'SELECT c.id, c.name, c.sections FROM c WHERE ARRAY_CONTAINS(@ids, c.id)',
       parameters: [{ name: '@ids', value: testIds }],
     })
     .fetchAll()
 
+  const countQuestions = (
+    sections: { components?: { type?: string }[] }[] | undefined,
+  ) => {
+    if (!Array.isArray(sections)) return 0
+    return sections.reduce(
+      (sum, section) =>
+        sum + (section.components || []).filter((c) => c.type !== 'info').length,
+      0,
+    )
+  }
+
   const nameMap = tests.reduce<Record<string, string>>((map, test) => {
     map[test.id] = test.name
+    return map
+  }, {})
+  const questionCountMap = tests.reduce<Record<string, number>>((map, test) => {
+    map[test.id] = countQuestions(test.sections)
     return map
   }, {})
 
   const enriched = updated.map((instance) => ({
     ...instance,
     testName: nameMap[instance.testId],
+    questionCount: questionCountMap[instance.testId],
   }))
 
   return jsonResponse(200, { success: true, data: enriched })

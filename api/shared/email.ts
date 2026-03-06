@@ -109,11 +109,11 @@ export async function sendInvitationEmail(params: {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+  <div style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to EyeQ!</h1>
   </div>
   
-  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
     <p style="font-size: 18px; margin-top: 0;">Hi ${userName},</p>
     
     <p>You've been invited to join <strong>${companyName}</strong> on EyeQ.</p>
@@ -122,11 +122,11 @@ export async function sendInvitationEmail(params: {
     
     <div style="text-align: center; margin: 30px 0;">
       <a href="${invitationUrl}" 
-         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+         style="background: #1E3A5F; 
                 color: white; 
                 padding: 14px 30px; 
                 text-decoration: none; 
-                border-radius: 6px; 
+                border-radius: 4px; 
                 font-weight: 600;
                 display: inline-block;">
         Accept Invitation
@@ -135,10 +135,10 @@ export async function sendInvitationEmail(params: {
     
     <p style="color: #666; font-size: 14px;">
       Or copy and paste this link into your browser:<br>
-      <a href="${invitationUrl}" style="color: #667eea; word-break: break-all;">${invitationUrl}</a>
+      <span style="color: #1E3A5F; word-break: break-all;">${invitationUrl}</span>
     </p>
     
-    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 25px 0;">
+    <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 25px 0;">
     
     <p style="color: #999; font-size: 13px; margin-bottom: 0;">
       This invitation link will expire in ${expiresInDays} days.<br>
@@ -173,34 +173,34 @@ export async function sendMagicLinkEmail(params: {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+  <div style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 24px;">EyeQ Login</h1>
   </div>
   
-  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
     <p style="font-size: 18px; margin-top: 0;">Hi ${userName},</p>
     
     <p>Click the button below to log in to your EyeQ account:</p>
     
     <div style="text-align: center; margin: 30px 0;">
       <a href="${magicLinkUrl}" 
-         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+         style="background: #1E3A5F; 
                 color: white; 
                 padding: 14px 30px; 
                 text-decoration: none; 
-                border-radius: 6px; 
+                border-radius: 4px; 
                 font-weight: 600;
                 display: inline-block;">
-        Log In to EyeQ
+        Log in to EyeQ
       </a>
     </div>
     
     <p style="color: #666; font-size: 14px;">
       Or copy and paste this link into your browser:<br>
-      <a href="${magicLinkUrl}" style="color: #667eea; word-break: break-all;">${magicLinkUrl}</a>
+      <span style="color: #1E3A5F; word-break: break-all;">${magicLinkUrl}</span>
     </p>
     
-    <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 25px 0;">
+    <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 25px 0;">
     
     <p style="color: #999; font-size: 13px; margin-bottom: 0;">
       This login link will expire in ${expiresInMinutes} minutes.<br>

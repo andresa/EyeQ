@@ -1,4 +1,5 @@
-import { App, Button, Dropdown, Select, Table, Tag, Tooltip } from 'antd'
+import { App, Button, Dropdown, Table, Tag, Tooltip } from 'antd'
+import Selection from '../../components/atoms/Selection'
 import type { MenuProps } from 'antd'
 import {
   CheckCircleOutlined,
@@ -163,7 +164,7 @@ const AdminEmployeesPage = () => {
       <div className="flex flex-col gap-6 w-full">
         <div className="flex items-center justify-between gap-4">
           <div className="w-fit">
-            <Select
+            <Selection
               placeholder="Select company"
               value={companyId || undefined}
               onChange={(value) => setCompanyId(value)}

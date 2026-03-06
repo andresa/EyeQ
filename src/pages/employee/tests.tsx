@@ -1,4 +1,5 @@
-import { Alert, Card, Grid, Input, Select, Spin, Table, Tag, Typography } from 'antd'
+import { Alert, Card, Grid, Input, Modal, Spin, Table, Tag, Typography } from 'antd'
+import Selection from '../../components/atoms/Selection'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -48,6 +49,9 @@ const EmployeeTestsPage = () => {
   const [loading, setLoading] = useState(false)
   const employeeId = userProfile?.userType === 'employee' ? userProfile.id : undefined
 
+  const [startTestModalRecord, setStartTestModalRecord] = useState<TestInstance | null>(
+    null,
+  )
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<TestInstanceStatus | 'all'>(() => {
     const s = searchParams.get('status')
@@ -90,12 +94,31 @@ const EmployeeTestsPage = () => {
 
   const heading = <StandardPageHeading title="My tests" icon={<ClipboardList />} />
 
-  const handleRowClick = (record: TestInstance) =>
-    navigate(
-      record.status === 'completed' || record.status === 'marked'
-        ? `/employee/test-results/${record.id}`
-        : `/employee/test/${record.id}`,
-    )
+  const handleRowClick = (record: TestInstance) => {
+    if (record.status === 'completed' || record.status === 'marked') {
+      navigate(`/employee/test-results/${record.id}`)
+      return
+    }
+    if (record.status === 'in-progress') {
+      navigate(`/employee/test/${record.id}`)
+      return
+    }
+    setStartTestModalRecord(record)
+  }
+
+  const handleStartTestConfirm = () => {
+    if (startTestModalRecord) {
+      navigate(`/employee/test/${startTestModalRecord.id}`)
+      setStartTestModalRecord(null)
+    }
+  }
+
+  const handleStartTestCancel = () => setStartTestModalRecord(null)
+
+  const estimateMinutes = (record: TestInstance) => {
+    const q = record.questionCount ?? 1
+    return [q, q * 2] as const
+  }
 
   const emptyMessage =
     instances?.length === 0
@@ -126,7 +149,7 @@ const EmployeeTestsPage = () => {
             aria-label="Search by test name"
             className="flex-1 max-w-[320px]"
           />
-          <Select<TestInstanceStatus | 'all'>
+          <Selection<TestInstanceStatus | 'all'>
             value={status}
             onChange={setStatus}
             options={statusOptions}
@@ -167,12 +190,12 @@ const EmployeeTestsPage = () => {
                       <StatusBadge status={record.status} />
                       {getScoreTag(record)}
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0 text-sm">
+                    <div className="flex flex-wrap flex-col gap-x-3 gap-y-0 text-sm">
                       <Typography.Text type="secondary">
-                        Due {record.expiresAt ? formatDateTime(record.expiresAt) : '-'}
+                        Due: {record.expiresAt ? formatDateTime(record.expiresAt) : '-'}
                       </Typography.Text>
                       <Typography.Text type="secondary">
-                        Assigned {formatDateTime(record.assignedAt)}
+                        Assigned: {formatDateTime(record.assignedAt)}
                       </Typography.Text>
                     </div>
                   </div>
@@ -232,6 +255,35 @@ const EmployeeTestsPage = () => {
           />
         )}
       </div>
+      <Modal
+        title="Start test"
+        open={!!startTestModalRecord}
+        onOk={handleStartTestConfirm}
+        onCancel={handleStartTestCancel}
+        okText="Start test"
+        cancelText="Cancel"
+        destroyOnHidden
+      >
+        {startTestModalRecord && (
+          <>
+            <Typography.Paragraph className="mb-0">
+              You&apos;re about to start{' '}
+              <strong>
+                {startTestModalRecord.testName || startTestModalRecord.testId}
+              </strong>
+              .
+            </Typography.Paragraph>
+            <Typography.Paragraph className="mb-0">
+              This test will take approximately{' '}
+              <strong>
+                {estimateMinutes(startTestModalRecord)[0]} to{' '}
+                {estimateMinutes(startTestModalRecord)[1]} minutes
+              </strong>{' '}
+              to complete.
+            </Typography.Paragraph>
+          </>
+        )}
+      </Modal>
     </EmployeeLayout>
   )
 }

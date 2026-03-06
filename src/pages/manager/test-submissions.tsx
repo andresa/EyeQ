@@ -1,4 +1,5 @@
-import { Button, Dropdown, Select, Table } from 'antd'
+import { Button, Dropdown, Table } from 'antd'
+import Selection from '../../components/atoms/Selection'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
@@ -172,7 +173,7 @@ const SubmissionsPage = () => {
     >
       <div className="flex flex-col gap-6 w-full">
         <div className="flex flex-wrap gap-4">
-          <Select
+          <Selection
             value={testId || 'all'}
             onChange={(value) =>
               value === 'all'
@@ -189,7 +190,7 @@ const SubmissionsPage = () => {
             className="min-w-[220px]"
             aria-label="Filter by test"
           />
-          <Select
+          <Selection
             mode="multiple"
             value={employeeFilter}
             onChange={setEmployeeFilter}
@@ -202,7 +203,7 @@ const SubmissionsPage = () => {
             className="min-w-[260px]"
             aria-label="Filter by employee"
           />
-          <Select
+          <Selection
             mode="multiple"
             value={statusFilter}
             onChange={setStatusFilter}
@@ -219,7 +220,7 @@ const SubmissionsPage = () => {
             className="min-w-[220px]"
             aria-label="Filter by status"
           />
-          <Select
+          <Selection
             value={assignedFilter}
             onChange={setAssignedFilter}
             options={[

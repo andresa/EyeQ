@@ -26,8 +26,7 @@ const EmployeeDashboard = () => {
     enabled: !!employeeId,
   })
 
-  const notStartedCount =
-    instances?.filter((i) => i.status === 'assigned' || i.status === 'opened').length ?? 0
+  const notStartedCount = instances?.filter((i) => i.status === 'assigned').length ?? 0
   const inProgressCount = instances?.filter((i) => i.status === 'in-progress').length ?? 0
   const markedCount = instances?.filter((i) => i.status === 'marked').length ?? 0
   const markedWithScores =

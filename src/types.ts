@@ -183,6 +183,8 @@ export interface TestInstance {
   id: UUID
   testId: UUID
   testName?: string
+  /** Number of questions (excluding info components). Used for time estimate. */
+  questionCount?: number
   employeeId: UUID
   assignedByManagerId: UUID
   status: TestInstanceStatus

@@ -1,4 +1,5 @@
-import { Button, Input, Select, Tooltip, Typography } from 'antd'
+import { Button, Input, Tooltip, Typography } from 'antd'
+import Selection from '../atoms/Selection'
 import { createUUID } from '../../utils/uuid'
 import { Info, X } from 'lucide-react'
 import type { TestComponentOption } from '../../types'
@@ -73,7 +74,7 @@ const OptionEditor = ({
           </Tooltip>
         </div>
         {type === 'single_choice' ? (
-          <Select
+          <Selection
             value={typeof correctAnswer === 'string' ? correctAnswer : undefined}
             onChange={(v) => onCorrectAnswerChange(v)}
             options={selectOptions}
@@ -82,7 +83,7 @@ const OptionEditor = ({
             className="w-full"
           />
         ) : (
-          <Select
+          <Selection
             mode="multiple"
             value={Array.isArray(correctAnswer) ? correctAnswer : []}
             onChange={(v) => onCorrectAnswerChange(v)}

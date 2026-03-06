@@ -1,14 +1,5 @@
-import {
-  App,
-  Button,
-  DatePicker,
-  Dropdown,
-  Input,
-  Modal,
-  Select,
-  Table,
-  Typography,
-} from 'antd'
+import { App, Button, DatePicker, Dropdown, Input, Modal, Table, Typography } from 'antd'
+import Selection from '../../components/atoms/Selection'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
@@ -196,7 +187,7 @@ const ManagerTestsPage = () => {
       pageHeading={<StandardPageHeading title="Tests" icon={<FlaskConical />} />}
     >
       <div className="flex flex-col gap-6 w-full">
-        <div className="flex items-center justify-between">
+        <div className="flex gap-4 items-center justify-between">
           <Input
             placeholder="Filter by name"
             value={nameFilter}
@@ -261,7 +252,7 @@ const ManagerTestsPage = () => {
         <div className="flex w-full flex-col gap-4">
           <div className="flex flex-col gap-1">
             <Typography.Text strong>Test</Typography.Text>
-            <Select
+            <Selection
               value={assignTestId || undefined}
               onChange={(id) => setAssignTestId(id || '')}
               placeholder="Select test"
@@ -294,7 +285,7 @@ const ManagerTestsPage = () => {
                 Select all
               </Button>
             </div>
-            <Select
+            <Selection
               mode="multiple"
               value={selectedEmployees}
               onChange={(values) => setSelectedEmployees(values)}
