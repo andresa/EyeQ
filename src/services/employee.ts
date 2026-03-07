@@ -44,3 +44,8 @@ export const fetchEmployeeTestInstanceResults = (
   instanceId: string,
 ): Promise<ApiResponse<TestInstanceResults>> =>
   apiRequest(`/employee/testInstances/${instanceId}/results`)
+
+export const timeoutTestInstance = (
+  instanceId: string,
+): Promise<ApiResponse<TestInstance>> =>
+  apiRequest(`/employee/testInstances/${instanceId}/timeout`, { method: 'POST' })

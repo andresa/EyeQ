@@ -4,6 +4,7 @@ import {
   Card,
   Form,
   Input,
+  Modal,
   Progress,
   Radio,
   Checkbox,
@@ -19,6 +20,7 @@ import {
   openTestInstance,
   saveTestResponses,
   submitTestInstance,
+  timeoutTestInstance,
 } from '../../services/employee'
 import type {
   ResponsePayload,
@@ -30,6 +32,15 @@ import { SaveOutlined } from '@ant-design/icons'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 
 const AUTO_SAVE_DELAY_MS = 2000
+
+const formatTimeRemaining = (ms: number): string => {
+  const totalSeconds = Math.ceil(ms / 1000)
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = totalSeconds % 60
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+}
 
 const renderComponentInput = (component: TestComponent) => {
   switch (component.type) {
@@ -101,6 +112,39 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   const sections = data.test.sections
   const isLastSection = currentSectionIndex === sections.length - 1
   const allowBack = data.test.settings?.allowBackNavigation ?? false
+  const timeLimitMinutes = data.test.settings?.timeLimitMinutes
+  const [openedAt, setOpenedAt] = useState<string | undefined>(data.instance.openedAt)
+
+  const deadline = useMemo(() => {
+    if (!timeLimitMinutes || !openedAt) return null
+    return new Date(openedAt).getTime() + timeLimitMinutes * 60 * 1000
+  }, [timeLimitMinutes, openedAt])
+
+  const [timeRemainingMs, setTimeRemainingMs] = useState<number | null>(() => {
+    if (!deadline) return null
+    return Math.max(0, deadline - Date.now())
+  })
+  const [timedOut, setTimedOut] = useState(false)
+
+  useEffect(() => {
+    if (deadline === null) return
+    const tick = () => {
+      const remaining = Math.max(0, deadline - Date.now())
+      setTimeRemainingMs(remaining)
+      if (remaining === 0) setTimedOut(true)
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [deadline])
+
+  const isTimerActive = deadline !== null && timeRemainingMs !== null
+  const isLowTime = isTimerActive && timeRemainingMs < 5 * 60 * 1000
+
+  const handleTimeoutOk = async () => {
+    await timeoutTestInstance(instanceId)
+    navigate('/employee/tests')
+  }
 
   const components = useMemo(() => {
     return sections.flatMap((section) => section.components)
@@ -154,7 +198,9 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
 
   // Call open on mount
   useEffect(() => {
-    openTestInstance(instanceId)
+    openTestInstance(instanceId).then((res) => {
+      if (res.success && res.data?.openedAt) setOpenedAt(res.data.openedAt)
+    })
   }, [instanceId])
 
   // Auto-save on value changes
@@ -264,6 +310,15 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
         <StandardPageHeading
           title={
             <div className="flex items-center gap-2">
+              {isTimerActive && (
+                <Typography.Text
+                  type={isLowTime ? 'danger' : undefined}
+                  strong
+                  className="min-w-[50px]"
+                >
+                  {formatTimeRemaining(timeRemainingMs)}
+                </Typography.Text>
+              )}
               <Progress percent={progressPercent} className="flex-1" />
               <div className="w-5 h-5 flex items-center justify-center">
                 {saveStatus == 'saving' && <Spin size="small" />}
@@ -328,16 +383,18 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
             ))}
             <div className="flex w-full justify-between gap-4 mt-4">
               {allowBack && currentSectionIndex > 0 ? (
-                <Button onClick={handlePrevious}>Previous</Button>
+                <Button onClick={handlePrevious} disabled={timedOut}>
+                  Previous
+                </Button>
               ) : (
                 <div />
               )}
               {isLastSection ? (
-                <Button type="primary" onClick={handleSubmit}>
+                <Button type="primary" onClick={handleSubmit} disabled={timedOut}>
                   Submit test
                 </Button>
               ) : (
-                <Button type="primary" onClick={handleNext}>
+                <Button type="primary" onClick={handleNext} disabled={timedOut}>
                   Next
                 </Button>
               )}
@@ -345,6 +402,22 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
           </Card>
         </Form>
       </div>
+      <Modal
+        title="Time limit reached"
+        open={timedOut}
+        closable={false}
+        maskClosable={false}
+        footer={
+          <Button type="primary" onClick={handleTimeoutOk}>
+            Ok
+          </Button>
+        }
+      >
+        <Typography.Paragraph className="mb-0">
+          The time limit for this test has elapsed. Your answers have been saved
+          automatically.
+        </Typography.Paragraph>
+      </Modal>
     </EmployeeLayout>
   )
 }
@@ -409,6 +482,26 @@ const EmployeeTestPage = () => {
             <Typography.Title level={4}>{data.test.name}</Typography.Title>
             <Typography.Text type="secondary">
               This test has expired and can no longer be completed.
+            </Typography.Text>
+            <div>
+              <Button onClick={() => navigate('/employee/tests')}>
+                Back to My tests
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </EmployeeLayout>
+    )
+  }
+
+  if (data.instance.status === 'timed-out') {
+    return (
+      <EmployeeLayout>
+        <Card>
+          <div className="flex flex-col gap-4 w-full">
+            <Typography.Title level={4}>{data.test.name}</Typography.Title>
+            <Typography.Text type="secondary">
+              The time limit for this test has elapsed and it can no longer be completed.
             </Typography.Text>
             <div>
               <Button onClick={() => navigate('/employee/tests')}>

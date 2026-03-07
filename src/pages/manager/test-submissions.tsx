@@ -214,6 +214,7 @@ const SubmissionsPage = () => {
               { label: 'Completed', value: 'completed' },
               { label: 'Marked', value: 'marked' },
               { label: 'Expired', value: 'expired' },
+              { label: 'Timed Out', value: 'timed-out' },
             ]}
             placeholder="All statuses"
             allowClear

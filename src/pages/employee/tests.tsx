@@ -51,6 +51,7 @@ const statusOptions: { label: string; value: TestInstanceStatus | 'all' }[] = [
   { label: 'Completed', value: 'completed' },
   { label: 'Marked', value: 'marked' },
   { label: 'Expired', value: 'expired' },
+  { label: 'Timed Out', value: 'timed-out' },
 ]
 
 const EmployeeTestsPage = () => {
@@ -65,6 +66,9 @@ const EmployeeTestsPage = () => {
   )
   const [expiredTestModalRecord, setExpiredTestModalRecord] =
     useState<TestInstance | null>(null)
+  const [timedOutModalRecord, setTimedOutModalRecord] = useState<TestInstance | null>(
+    null,
+  )
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<TestInstanceStatus | 'all'>(() => {
     const s = searchParams.get('status')
@@ -112,12 +116,16 @@ const EmployeeTestsPage = () => {
       navigate(`/employee/test-results/${record.id}`)
       return
     }
-    if (record.status === 'in-progress') {
+    if (record.status === 'in-progress' || record.status === 'opened') {
       navigate(`/employee/test/${record.id}`)
       return
     }
     if (record.status === 'expired') {
       setExpiredTestModalRecord(record)
+      return
+    }
+    if (record.status === 'timed-out') {
+      setTimedOutModalRecord(record)
       return
     }
 
@@ -133,9 +141,13 @@ const EmployeeTestsPage = () => {
 
   const handleStartTestCancel = () => setStartTestModalRecord(null)
 
-  const estimateMinutes = (record: TestInstance) => {
-    const q = record.questionCount ?? 1
-    return [q, q * 2] as const
+  const formatDuration = (minutes: number): string => {
+    const h = Math.floor(minutes / 60)
+    const m = minutes % 60
+    if (h > 0 && m > 0)
+      return `${h} hour${h !== 1 ? 's' : ''} and ${m} minute${m !== 1 ? 's' : ''}`
+    if (h > 0) return `${h} hour${h !== 1 ? 's' : ''}`
+    return `${m} minute${m !== 1 ? 's' : ''}`
   }
 
   const emptyMessage =
@@ -291,14 +303,18 @@ const EmployeeTestsPage = () => {
               </strong>
               .
             </Typography.Paragraph>
-            <Typography.Paragraph className="mb-0">
-              This test will take approximately{' '}
-              <strong>
-                {estimateMinutes(startTestModalRecord)[0]} to{' '}
-                {estimateMinutes(startTestModalRecord)[1]} minutes
-              </strong>{' '}
-              to complete.
-            </Typography.Paragraph>
+            {startTestModalRecord.timeLimitMinutes ? (
+              <Typography.Paragraph className="mb-0">
+                You will have{' '}
+                <strong>{formatDuration(startTestModalRecord.timeLimitMinutes)}</strong>{' '}
+                to complete this test from the moment you start. Are you sure you want to
+                start now?
+              </Typography.Paragraph>
+            ) : (
+              <Typography.Paragraph className="mb-0">
+                There is no time restriction for this test.
+              </Typography.Paragraph>
+            )}
           </>
         )}
       </Modal>
@@ -315,6 +331,21 @@ const EmployeeTestsPage = () => {
       >
         <Typography.Paragraph className="mb-0">
           This test has expired and can no longer be completed.
+        </Typography.Paragraph>
+      </Modal>
+      <Modal
+        title="Time limit reached"
+        open={!!timedOutModalRecord}
+        onCancel={() => setTimedOutModalRecord(null)}
+        footer={
+          <Button type="primary" onClick={() => setTimedOutModalRecord(null)}>
+            Ok
+          </Button>
+        }
+        destroyOnHidden
+      >
+        <Typography.Paragraph className="mb-0">
+          The time limit for this test has elapsed and it can no longer be completed.
         </Typography.Paragraph>
       </Modal>
     </EmployeeLayout>

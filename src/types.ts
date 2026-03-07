@@ -111,6 +111,7 @@ export type ComponentType = 'single_choice' | 'multiple_choice' | 'text' | 'info
 
 export interface TestSettings {
   allowBackNavigation: boolean
+  timeLimitMinutes?: number | null
 }
 
 export interface TestTemplate {
@@ -178,6 +179,7 @@ export type TestInstanceStatus =
   | 'completed'
   | 'expired'
   | 'marked'
+  | 'timed-out'
 
 export interface TestInstance {
   id: UUID
@@ -185,6 +187,7 @@ export interface TestInstance {
   testName?: string
   /** Number of questions (excluding info components). Used for time estimate. */
   questionCount?: number
+  timeLimitMinutes?: number | null
   employeeId: UUID
   assignedByManagerId: UUID
   status: TestInstanceStatus
@@ -192,6 +195,7 @@ export interface TestInstance {
   openedAt?: string
   expiresAt?: string
   completedAt?: string
+  timedOutAt?: string
   markedAt?: string
   score?: number | null
 }

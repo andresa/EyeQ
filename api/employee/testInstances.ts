@@ -60,7 +60,8 @@ export const listEmployeeTestInstancesHandler = async (
   const testContainer = await getContainer('tests', '/companyId')
   const { resources: tests } = await testContainer.items
     .query({
-      query: 'SELECT c.id, c.name, c.sections FROM c WHERE ARRAY_CONTAINS(@ids, c.id)',
+      query:
+        'SELECT c.id, c.name, c.sections, c.settings FROM c WHERE ARRAY_CONTAINS(@ids, c.id)',
       parameters: [{ name: '@ids', value: testIds }],
     })
     .fetchAll()
@@ -84,11 +85,16 @@ export const listEmployeeTestInstancesHandler = async (
     map[test.id] = countQuestions(test.sections)
     return map
   }, {})
+  const timeLimitMap = tests.reduce<Record<string, number | null>>((map, test) => {
+    map[test.id] = test.settings?.timeLimitMinutes ?? null
+    return map
+  }, {})
 
   const enriched = updated.map((instance) => ({
     ...instance,
     testName: nameMap[instance.testId],
     questionCount: questionCountMap[instance.testId],
+    timeLimitMinutes: timeLimitMap[instance.testId] ?? null,
   }))
 
   return jsonResponse(200, { success: true, data: enriched })
@@ -263,7 +269,8 @@ export const saveTestResponsesHandler = async (
   if (
     instance.status === 'completed' ||
     instance.status === 'marked' ||
-    instance.status === 'expired'
+    instance.status === 'expired' ||
+    instance.status === 'timed-out'
   ) {
     return jsonResponse(409, {
       success: false,
@@ -323,7 +330,11 @@ export const submitTestInstanceHandler = async (
     })
   }
 
-  if (instance.status === 'completed' || instance.status === 'marked') {
+  if (
+    instance.status === 'completed' ||
+    instance.status === 'marked' ||
+    instance.status === 'timed-out'
+  ) {
     return jsonResponse(409, {
       success: false,
       error: 'This test has already been completed.',
@@ -339,6 +350,50 @@ export const submitTestInstanceHandler = async (
   }
   await instanceContainer.item(instance.id, instance.employeeId).replace(updated)
 
+  return jsonResponse(200, { success: true, data: updated })
+}
+
+export const timeoutTestInstanceHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployee(user)
+  if (authError) return authError
+
+  const instanceId = request.params.instanceId
+  if (!instanceId) {
+    return jsonResponse(400, { success: false, error: 'instanceId is required.' })
+  }
+
+  const instanceContainer = await getContainer('testInstances', '/employeeId')
+  const { resources } = await instanceContainer.items
+    .query({
+      query: 'SELECT * FROM c WHERE c.id = @id',
+      parameters: [{ name: '@id', value: instanceId }],
+    })
+    .fetchAll()
+
+  const instance = resources[0]
+  if (!instance) {
+    return jsonResponse(404, { success: false, error: 'Test instance not found.' })
+  }
+
+  if (user!.role !== 'admin' && user!.id !== instance.employeeId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only modify your own test instances.',
+    })
+  }
+
+  if (instance.status !== 'opened' && instance.status !== 'in-progress') {
+    return jsonResponse(409, {
+      success: false,
+      error: 'This test cannot be timed out in its current state.',
+    })
+  }
+
+  const updated = { ...instance, status: 'timed-out', timedOutAt: nowIso() }
+  await instanceContainer.item(instance.id, instance.employeeId).replace(updated)
   return jsonResponse(200, { success: true, data: updated })
 }
 
@@ -442,6 +497,13 @@ app.http('employeeTestInstanceSubmit', {
   authLevel: 'anonymous',
   route: 'employee/testInstances/{instanceId}/submit',
   handler: submitTestInstanceHandler,
+})
+
+app.http('employeeTestInstanceTimeout', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'employee/testInstances/{instanceId}/timeout',
+  handler: timeoutTestInstanceHandler,
 })
 
 app.http('employeeTestInstanceResults', {
