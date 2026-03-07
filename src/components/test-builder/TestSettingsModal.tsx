@@ -1,12 +1,12 @@
-import { Checkbox, Form, InputNumber, Modal, Typography } from 'antd'
-import { useEffect } from 'react'
+import { App, Checkbox, Form, InputNumber, Modal, Typography } from 'antd'
+import { useEffect, useState } from 'react'
 import type { TestSettings } from '../../types'
 
 interface TestSettingsModalProps {
   open: boolean
   onClose: () => void
   settings: TestSettings
-  onChange: (settings: TestSettings) => void
+  onChange: (settings: TestSettings) => Promise<void>
 }
 
 interface SettingsFormValues {
@@ -22,6 +22,8 @@ const TestSettingsModal = ({
   onChange,
 }: TestSettingsModalProps) => {
   const [form] = Form.useForm<SettingsFormValues>()
+  const [isSaving, setIsSaving] = useState(false)
+  const { message } = App.useApp()
 
   useEffect(() => {
     if (open) {
@@ -35,13 +37,21 @@ const TestSettingsModal = ({
   }, [open, settings, form])
 
   const handleOk = async () => {
-    const values = await form.validateFields()
-    const totalMinutes = (values._hours || 0) * 60 + (values._minutes || 0)
-    onChange({
-      allowBackNavigation: values.allowBackNavigation,
-      timeLimitMinutes: totalMinutes > 0 ? totalMinutes : null,
-    })
-    onClose()
+    try {
+      setIsSaving(true)
+      const values = await form.validateFields()
+      const totalMinutes = (values._hours || 0) * 60 + (values._minutes || 0)
+      await onChange({
+        allowBackNavigation: values.allowBackNavigation,
+        timeLimitMinutes: totalMinutes > 0 ? totalMinutes : null,
+      })
+      onClose()
+    } catch (error) {
+      console.error(error)
+      message.error('Unable to save settings')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -51,6 +61,7 @@ const TestSettingsModal = ({
       onOk={handleOk}
       onCancel={onClose}
       okText="Save"
+      okButtonProps={{ loading: isSaving }}
     >
       <Form form={form} layout="vertical">
         <Form.Item

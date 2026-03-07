@@ -1,6 +1,6 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { Button, Card, Input, Spin, Typography, App } from 'antd'
-import { SettingOutlined } from '@ant-design/icons'
+import { SaveOutlined, SettingOutlined } from '@ant-design/icons'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -50,31 +50,31 @@ const createComponent = (type: ComponentType): TestComponent => {
 
 interface TestBuilderFormProps {
   testId?: string
-  existingTest?: TestTemplate
   companyId?: string
-  managerId?: string
-  name: string
+  sections: TestSection[]
+  onSectionsChange: React.Dispatch<React.SetStateAction<TestSection[]>>
+  settings: TestSettings
+  onSettingsChange: React.Dispatch<React.SetStateAction<TestSettings>>
+  settingsOpen: boolean
+  onSettingsOpenChange: (open: boolean) => void
 }
 
 const TestBuilderForm = ({
   testId,
-  existingTest,
   companyId,
-  managerId,
-  name,
+  sections,
+  onSectionsChange: setSections,
+  settings,
+  onSettingsChange: setSettings,
+  settingsOpen,
+  onSettingsOpenChange: setSettingsOpen,
 }: TestBuilderFormProps) => {
-  const navigate = useNavigate()
   const { message } = App.useApp()
 
-  const [sections, setSections] = useState<TestSection[]>(existingTest?.sections || [])
-  const [settings, setSettings] = useState<TestSettings>(
-    existingTest?.settings ?? { allowBackNavigation: false },
-  )
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [componentsAnimateRef] = useAutoAnimate({ duration: 250 })
   const [selectedSectionId, setSelectedSectionId] = useState<string>(
-    existingTest?.sections[0]?.id || '',
+    sections[0]?.id || '',
   )
 
   const activeSection = useMemo(
@@ -204,72 +204,8 @@ const TestBuilderForm = ({
         `${components.length} question${components.length === 1 ? '' : 's'} added from library`,
       )
     },
-    [selectedSectionId, message],
+    [selectedSectionId, message, setSections],
   )
-
-  const handleSave = async () => {
-    if (!companyId || !managerId) {
-      message.error('Select a company and manager first.')
-      return
-    }
-    if (!name) {
-      message.error('Enter a test name.')
-      return
-    }
-    if (sections.length === 0) {
-      message.error('Add at least one section.')
-      return
-    }
-
-    const libraryItems = sections
-      .flatMap((s) => s.components)
-      .filter((c) => c.saveToLibrary && c.title)
-
-    const cleanedSections = sections.map((section) => ({
-      ...section,
-      components: section.components.map((c) => {
-        const { saveToLibrary, ...rest } = c
-        void saveToLibrary
-        return rest
-      }),
-    }))
-
-    const payload = {
-      companyId,
-      managerId,
-      name,
-      sections: cleanedSections,
-      settings,
-    }
-
-    const response = testId
-      ? await updateTestTemplate(testId, payload)
-      : await createTestTemplate(payload)
-
-    if (!response.success) {
-      message.error(response.error || 'Unable to save test')
-      return
-    }
-
-    if (libraryItems.length > 0) {
-      await createQuestionLibraryItems({
-        companyId,
-        managerId,
-        items: libraryItems.map((c) => ({
-          type: c.type,
-          title: c.title!,
-          description: c.description,
-          required: c.required,
-          options: c.options,
-          correctAnswer: c.correctAnswer,
-          categoryId: c.categoryId,
-        })),
-      })
-    }
-
-    message.success('Test saved')
-    navigate('/manager/tests')
-  }
 
   return (
     <div className="flex flex-col gap-6 w-full flex-1 min-h-0 overflow-hidden">
@@ -348,15 +284,6 @@ const TestBuilderForm = ({
               ))}
             </div>
           </Card>
-          <div className="flex gap-2 flex-wrap">
-            <Button onClick={() => navigate('/manager/tests')}>Cancel</Button>
-            <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)}>
-              Settings
-            </Button>
-            <Button type="primary" onClick={handleSave}>
-              Save
-            </Button>
-          </div>
         </div>
       </div>
       <TestSettingsModal
@@ -389,11 +316,18 @@ const TestBuilderForm = ({
 
 const TestBuilderPage = () => {
   const { testId } = useParams()
+  const navigate = useNavigate()
+  const { message } = App.useApp()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
   const managerId = userProfile?.userType === 'manager' ? userProfile.id : undefined
   const [name, setName] = useState('')
   const [nameInitialized, setNameInitialized] = useState(!testId)
+  const [sections, setSections] = useState<TestSection[]>([])
+  const [settings, setSettings] = useState<TestSettings>({ allowBackNavigation: false })
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [stateInitialized, setStateInitialized] = useState(!testId)
+  const [isSaving, setIsSaving] = useState(false)
 
   const { data: tests, isLoading } = useQuery({
     queryKey: ['manager', 'tests', companyId],
@@ -417,6 +351,84 @@ const TestBuilderPage = () => {
     setNameInitialized(true)
   }
 
+  if (existingTest && !stateInitialized) {
+    setSections(existingTest.sections || [])
+    setSettings(existingTest.settings ?? { allowBackNavigation: false })
+    setStateInitialized(true)
+  }
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      if (!companyId || !managerId) {
+        message.error('Select a company and manager first.')
+        return
+      }
+      if (!name) {
+        message.error('Enter a test name.')
+        return
+      }
+      if (sections.length === 0) {
+        message.error('Add at least one section.')
+        return
+      }
+
+      const libraryItems = sections
+        .flatMap((s) => s.components)
+        .filter((c) => c.saveToLibrary && c.title)
+
+      const cleanedSections = sections.map((section) => ({
+        ...section,
+        components: section.components.map((c) => {
+          const { saveToLibrary, ...rest } = c
+          void saveToLibrary
+          return rest
+        }),
+      }))
+
+      const payload = {
+        companyId,
+        managerId,
+        name,
+        sections: cleanedSections,
+        settings,
+      }
+
+      const response = testId
+        ? await updateTestTemplate(testId, payload)
+        : await createTestTemplate(payload)
+
+      if (!response.success) {
+        message.error(response.error || 'Unable to save test')
+        return
+      }
+
+      if (libraryItems.length > 0) {
+        await createQuestionLibraryItems({
+          companyId,
+          managerId,
+          items: libraryItems.map((c) => ({
+            type: c.type,
+            title: c.title!,
+            description: c.description,
+            required: c.required,
+            options: c.options,
+            correctAnswer: c.correctAnswer,
+            categoryId: c.categoryId,
+          })),
+        })
+      }
+
+      message.success('Test saved')
+      navigate('/manager/tests')
+      setIsSaving(false)
+    } catch (error) {
+      console.error(error)
+      message.error('Unable to save test')
+      setIsSaving(false)
+    }
+  }
+
   const heading = (
     <StandardPageHeading
       backTo="/manager/tests"
@@ -428,8 +440,22 @@ const TestBuilderPage = () => {
           variant="underlined"
           className="font-semibold text-xl"
           aria-label="Test name"
-          classNames={{ input: 'w-fit' }}
         />
+      }
+      actions={
+        <div className="flex gap-2 shrink-0 ml-4">
+          <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)}>
+            Settings
+          </Button>
+          <Button
+            icon={<SaveOutlined />}
+            type="primary"
+            onClick={handleSave}
+            loading={isSaving}
+          >
+            Save
+          </Button>
+        </div>
       }
     />
   )
@@ -449,10 +475,13 @@ const TestBuilderPage = () => {
       <TestBuilderForm
         key={testId || 'new'}
         testId={testId}
-        existingTest={existingTest}
         companyId={companyId}
-        managerId={managerId}
-        name={name}
+        sections={sections}
+        onSectionsChange={setSections}
+        settings={settings}
+        onSettingsChange={setSettings}
+        settingsOpen={settingsOpen}
+        onSettingsOpenChange={setSettingsOpen}
       />
     </ManagerLayout>
   )
