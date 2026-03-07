@@ -26,7 +26,7 @@ import type {
   TestComponent,
   TestInstanceDetails,
 } from '../../types'
-import { CheckCircleOutlined } from '@ant-design/icons'
+import { SaveOutlined } from '@ant-design/icons'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 
 const AUTO_SAVE_DELAY_MS = 2000
@@ -267,9 +267,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
               <Progress percent={progressPercent} className="flex-1" />
               <div className="w-5 h-5 flex items-center justify-center">
                 {saveStatus == 'saving' && <Spin size="small" />}
-                {(saveStatus === 'saved' || saveStatus === 'idle') && (
-                  <CheckCircleOutlined />
-                )}
+                {(saveStatus === 'saved' || saveStatus === 'idle') && <SaveOutlined />}
               </div>
             </div>
           }

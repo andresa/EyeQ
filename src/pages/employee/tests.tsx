@@ -1,4 +1,15 @@
-import { Alert, Card, Grid, Input, Modal, Spin, Table, Tag, Typography } from 'antd'
+import {
+  Alert,
+  Button,
+  Card,
+  Grid,
+  Input,
+  Modal,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+} from 'antd'
 import Selection from '../../components/atoms/Selection'
 import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -52,6 +63,8 @@ const EmployeeTestsPage = () => {
   const [startTestModalRecord, setStartTestModalRecord] = useState<TestInstance | null>(
     null,
   )
+  const [expiredTestModalRecord, setExpiredTestModalRecord] =
+    useState<TestInstance | null>(null)
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<TestInstanceStatus | 'all'>(() => {
     const s = searchParams.get('status')
@@ -103,6 +116,11 @@ const EmployeeTestsPage = () => {
       navigate(`/employee/test/${record.id}`)
       return
     }
+    if (record.status === 'expired') {
+      setExpiredTestModalRecord(record)
+      return
+    }
+
     setStartTestModalRecord(record)
   }
 
@@ -283,6 +301,21 @@ const EmployeeTestsPage = () => {
             </Typography.Paragraph>
           </>
         )}
+      </Modal>
+      <Modal
+        title="Test expired"
+        open={!!expiredTestModalRecord}
+        onCancel={() => setExpiredTestModalRecord(null)}
+        footer={
+          <Button type="primary" onClick={() => setExpiredTestModalRecord(null)}>
+            Ok
+          </Button>
+        }
+        destroyOnHidden
+      >
+        <Typography.Paragraph className="mb-0">
+          This test has expired and can no longer be completed.
+        </Typography.Paragraph>
       </Modal>
     </EmployeeLayout>
   )
