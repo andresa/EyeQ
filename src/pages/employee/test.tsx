@@ -30,6 +30,7 @@ import type {
 } from '../../types'
 import { SaveOutlined } from '@ant-design/icons'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
+import QuestionImage from '../../components/atoms/QuestionImage'
 
 const AUTO_SAVE_DELAY_MS = 2000
 
@@ -342,10 +343,11 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                   {section.components.map((component) => {
                     if (component.type === 'info') {
                       return (
-                        <Card key={component.id} styles={{ body: { padding: '16px' } }}>
+                        <Card key={component.id}>
                           <div className="flex flex-col gap-2">
                             <Typography.Text strong>{component.title}</Typography.Text>
                             <Typography.Text>{component.description}</Typography.Text>
+                            <QuestionImage imageId={component.imageId} />
                           </div>
                         </Card>
                       )
@@ -374,7 +376,14 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                             : []
                         }
                       >
-                        {renderComponentInput(component)}
+                        <div className="flex flex-col gap-2">
+                          <div className="max-w-[400px]">
+                            {component.imageId && (
+                              <QuestionImage imageId={component.imageId} />
+                            )}
+                          </div>
+                          {renderComponentInput(component)}
+                        </div>
                       </Form.Item>
                     )
                   })}

@@ -15,6 +15,7 @@ interface LibraryItemInput {
   options?: { id: string; label: string }[]
   correctAnswer?: string | string[]
   categoryId?: string
+  imageId?: string | null
 }
 
 interface CreateBody {
@@ -31,6 +32,7 @@ interface UpdateBody {
   options?: { id: string; label: string }[]
   correctAnswer?: string | string[]
   categoryId?: string | null
+  imageId?: string | null
 }
 
 const getItemById = async (itemId: string) => {
@@ -120,6 +122,7 @@ const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
       options: item.options ?? [],
       correctAnswer: item.correctAnswer,
       categoryId: item.categoryId ?? null,
+      imageId: item.imageId ?? null,
       createdAt: nowIso(),
     }
     await container.items.create(doc)
@@ -188,6 +191,7 @@ const updateHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
     correctAnswer:
       body?.correctAnswer !== undefined ? body.correctAnswer : existing.correctAnswer,
     categoryId: body?.categoryId !== undefined ? body.categoryId : existing.categoryId,
+    imageId: body?.imageId !== undefined ? body.imageId : existing.imageId,
     updatedAt: nowIso(),
   }
 

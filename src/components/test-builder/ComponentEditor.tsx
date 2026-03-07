@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { TestComponent } from '../../types'
 import { listQuestionCategories } from '../../services/manager'
 import OptionEditor from './OptionEditor'
+import ImageUpload from './ImageUpload'
 
 interface ComponentEditorProps {
   component: TestComponent
@@ -41,6 +42,11 @@ const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProp
         placeholder="Description"
         rows={3}
         aria-label="Question description"
+      />
+      <ImageUpload
+        imageId={component.imageId}
+        companyId={companyId}
+        onChange={(imageId) => update({ imageId })}
       />
       <Selection
         value={component.categoryId ?? undefined}

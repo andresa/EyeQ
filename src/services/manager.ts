@@ -170,6 +170,7 @@ export const createQuestionLibraryItems = (payload: {
     options?: { id: string; label: string }[]
     correctAnswer?: string | string[]
     categoryId?: string | null
+    imageId?: string | null
   }[]
 }): Promise<ApiResponse<QuestionLibraryItem[]>> =>
   apiRequest('/manager/question-library', {
@@ -226,3 +227,34 @@ export const deleteQuestionCategory = (
   apiRequest(`/manager/question-categories/${categoryId}`, {
     method: 'DELETE',
   })
+
+// ============================================================================
+// Image Upload
+// ============================================================================
+
+export const getImageUploadUrl = (payload: {
+  companyId: string
+  contentType: string
+}): Promise<ApiResponse<{ imageId: string; uploadUrl: string }>> =>
+  apiRequest('/manager/images/upload-url', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const uploadImageToBlob = async (
+  uploadUrl: string,
+  file: Blob,
+  contentType: string,
+): Promise<void> => {
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'x-ms-blob-type': 'BlockBlob',
+      'Content-Type': contentType,
+    },
+    body: file,
+  })
+  if (!response.ok) {
+    throw new Error(`Upload failed with status ${response.status}`)
+  }
+}

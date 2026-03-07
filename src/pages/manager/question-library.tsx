@@ -30,6 +30,7 @@ import { createUUID } from '../../utils/uuid'
 import { LibraryBig, Trash2 } from 'lucide-react'
 import { questionTypeLabels } from '../../utils/questions'
 import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
+import ImageUpload from '../../components/test-builder/ImageUpload'
 
 /** Draft for creating a new question (no server fields). */
 type QuestionDraft = Pick<
@@ -41,6 +42,7 @@ type QuestionDraft = Pick<
   | 'options'
   | 'correctAnswer'
   | 'categoryId'
+  | 'imageId'
 >
 
 const defaultDraft = (): QuestionDraft => ({
@@ -54,6 +56,7 @@ const defaultDraft = (): QuestionDraft => ({
   ],
   correctAnswer: undefined,
   categoryId: null,
+  imageId: null,
 })
 
 const QuestionLibraryPage = () => {
@@ -170,6 +173,7 @@ const QuestionLibraryPage = () => {
             options: editing.options,
             correctAnswer: editing.correctAnswer,
             categoryId: editing.categoryId,
+            imageId: editing.imageId,
           },
         ],
       })
@@ -188,6 +192,7 @@ const QuestionLibraryPage = () => {
         options: editing.options,
         correctAnswer: editing.correctAnswer,
         categoryId: editing.categoryId,
+        imageId: editing.imageId,
       })
       setSaving(false)
       if (!res.success) {
@@ -403,6 +408,11 @@ const QuestionLibraryPage = () => {
                 rows={3}
               />
             </div>
+            <ImageUpload
+              imageId={editing.imageId}
+              companyId={companyId}
+              onChange={(imageId) => updateEditing({ imageId })}
+            />
             {editing.type !== 'info' && (
               <Checkbox
                 checked={editing.required}

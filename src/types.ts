@@ -147,6 +147,7 @@ export interface TestComponent {
   correctAnswer?: string | string[]
   saveToLibrary?: boolean
   categoryId?: string | null
+  imageId?: string | null
 }
 
 export interface QuestionLibraryItem {
@@ -160,6 +161,7 @@ export interface QuestionLibraryItem {
   options?: TestComponentOption[]
   correctAnswer?: string | string[]
   categoryId?: string | null
+  imageId?: string | null
   createdAt: string
   updatedAt?: string
 }

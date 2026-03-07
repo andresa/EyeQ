@@ -7,6 +7,7 @@ import { fetchEmployeeTestInstanceResults } from '../../services/employee'
 import type { ResponseRecord, TestComponent } from '../../types'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { ClipboardList } from 'lucide-react'
+import QuestionImage from '../../components/atoms/QuestionImage'
 
 const buildResponseMap = (responses: ResponseRecord[]) =>
   responses.reduce((map, response) => {
@@ -85,6 +86,7 @@ const EmployeeTestResultsPage = () => {
                     <Card key={component.id} type="inner">
                       <Typography.Text strong>{component.title}</Typography.Text>
                       <Typography.Paragraph>{component.description}</Typography.Paragraph>
+                      <QuestionImage imageId={component.imageId} />
                     </Card>
                   )
                 }
@@ -95,6 +97,7 @@ const EmployeeTestResultsPage = () => {
                     <Typography.Paragraph type="secondary">
                       {component.description}
                     </Typography.Paragraph>
+                    <QuestionImage imageId={component.imageId} />
                     <Typography.Text>
                       {resolveAnswer(component, response)}
                     </Typography.Text>

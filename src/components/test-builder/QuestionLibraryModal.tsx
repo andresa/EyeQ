@@ -37,6 +37,7 @@ const toComponent = (item: QuestionLibraryItem): TestComponent => ({
   options: item.options?.map((opt) => ({ id: createUUID(), label: opt.label })),
   correctAnswer: undefined,
   categoryId: item.categoryId,
+  imageId: item.imageId,
 })
 
 const QuestionLibraryModal = ({

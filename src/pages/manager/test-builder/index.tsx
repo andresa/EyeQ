@@ -415,6 +415,7 @@ const TestBuilderPage = () => {
             options: c.options,
             correctAnswer: c.correctAnswer,
             categoryId: c.categoryId,
+            imageId: c.imageId,
           })),
         })
       }
