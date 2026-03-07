@@ -13,9 +13,10 @@ import {
 
 interface ManagerLayoutProps extends PropsWithChildren {
   pageHeading?: ReactNode
+  maxWidth?: 'default' | 'wide'
 }
 
-const ManagerLayout = ({ pageHeading, children }: ManagerLayoutProps) => {
+const ManagerLayout = ({ pageHeading, children, maxWidth }: ManagerLayoutProps) => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -55,6 +56,7 @@ const ManagerLayout = ({ pageHeading, children }: ManagerLayoutProps) => {
       footerItems={footerItems}
       selectedKeys={[selectedPath]}
       onNavigate={navigate}
+      maxWidth={maxWidth}
     >
       {children}
     </AppLayout>

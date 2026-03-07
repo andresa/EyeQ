@@ -3,6 +3,7 @@ import { MenuOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useState, type ReactNode } from 'react'
 import EyeQHeader from '../components/organisms/EyeQHeader'
+import clsx from 'clsx'
 
 const { Content, Sider } = Layout
 
@@ -15,6 +16,7 @@ interface AppLayoutProps {
   onNavigate: (path: string) => void
   children: ReactNode
   hideHeader?: boolean
+  maxWidth?: 'default' | 'wide'
 }
 
 const AppLayout = ({
@@ -26,6 +28,7 @@ const AppLayout = ({
   onNavigate,
   children,
   hideHeader,
+  maxWidth = 'default',
 }: AppLayoutProps) => {
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.md
@@ -40,6 +43,10 @@ const AppLayout = ({
     },
   }
 
+  const maxWidthClass: Record<'default' | 'wide', string> = {
+    default: 'max-w-7xl',
+    wide: 'max-w-[1400px]',
+  }
   const navContent = (
     <div className="flex flex-col h-full">
       <div className="flex items-center pl-[28px] pr-[20px] h-[60px] border-b border-r border-gray-200">
@@ -91,7 +98,10 @@ const AppLayout = ({
         <Layout className="flex-1 flex flex-col overflow-hidden">
           {pageHeading}
           <Content
-            className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full"
+            className={clsx(
+              'flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full flex flex-col',
+              maxWidthClass[maxWidth],
+            )}
             data-main-scroll
           >
             {children}
