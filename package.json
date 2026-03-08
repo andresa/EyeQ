@@ -10,7 +10,8 @@
     "dev:swa": "npm run build && swa start dist --api-location ./api",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "jest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview",
     "prepare": "husky install"
   },
@@ -40,13 +41,13 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
-    "@types/jest": "^30.0.0",
     "@types/node": "^24.10.9",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
     "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
@@ -56,15 +57,14 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
-    "identity-obj-proxy": "^3.0.0",
-    "jest": "^30.2.0",
+    "jsdom": "^28.1.0",
     "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
     "prettier": "^3.8.0",
     "tailwindcss": "^3.4.17",
-    "ts-jest": "^29.4.6",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^4.0.18"
   }
 }
