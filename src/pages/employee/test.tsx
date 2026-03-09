@@ -250,6 +250,14 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
     }
   }
 
+  // Scroll main content to top when section changes so each section starts at the top
+  useEffect(() => {
+    const scrollEl = document.querySelector('[data-main-scroll]') as HTMLElement | null
+    if (scrollEl) {
+      scrollEl.scrollTo(0, 0)
+    }
+  }, [currentSectionIndex])
+
   const handleNext = async () => {
     const isValid = await validateSectionRequired(currentSectionIndex)
     if (!isValid) return
