@@ -27,7 +27,7 @@ const LeaderboardPage = () => {
 
   const content = isLoading ? (
     <div className="flex justify-center py-12">
-      <Spin size="large" />
+      <Spin />
     </div>
   ) : boards.length === 0 ? (
     <Typography.Text type="secondary">No leaderboards configured.</Typography.Text>

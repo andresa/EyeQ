@@ -128,8 +128,7 @@ const LeaderboardSettingsForm = ({
           </Card>
         )
       })}
-
-      <div>
+      <div className="flex justify-end">
         <Button type="primary" onClick={handleSave} loading={isSaving}>
           Save
         </Button>
@@ -183,7 +182,7 @@ const LeaderboardSettingsSection = ({ companyId }: LeaderboardSettingsSectionPro
     : [null, null]
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full max-w-2xl">
       <Typography.Text type="secondary">
         Configure up to two leaderboards visible to all employees in your organization.
       </Typography.Text>
