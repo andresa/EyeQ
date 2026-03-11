@@ -8,6 +8,7 @@ import {
   LibraryBig,
   ScrollText,
   Settings,
+  Trophy,
   Users,
 } from 'lucide-react'
 
@@ -35,6 +36,7 @@ const ManagerLayout = ({ pageHeading, children, maxWidth }: ManagerLayoutProps) 
       label: 'Submissions',
       icon: <ScrollText size={iconSize} />,
     },
+    { key: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
   ]
   const footerItems: MenuProps['items'] = [
     { key: '/manager/settings', label: 'Settings', icon: <Settings size={iconSize} /> },

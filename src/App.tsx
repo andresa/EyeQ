@@ -15,6 +15,7 @@ import ManagerTestSubmissionsPage from './pages/manager/test-submissions'
 import ManagerSubmissionDetailPage from './pages/manager/submission-detail'
 import ManagerQuestionLibraryPage from './pages/manager/question-library'
 import ManagerSettingsPage from './pages/manager/settings'
+import LeaderboardPage from './pages/shared/leaderboard'
 import AdminDashboard from './pages/admin'
 import AdminCompaniesPage from './pages/admin/companies'
 import AdminManagersPage from './pages/admin/managers'
@@ -80,6 +81,16 @@ const App = () => {
         element={
           <RouteGuard allowedRoles={['employee']}>
             <EmployeeTestResultsPage />
+          </RouteGuard>
+        }
+      />
+
+      {/* Leaderboard - accessible by employee and manager */}
+      <Route
+        path="/leaderboard"
+        element={
+          <RouteGuard allowedRoles={['employee', 'manager']}>
+            <LeaderboardPage />
           </RouteGuard>
         }
       />

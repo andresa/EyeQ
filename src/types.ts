@@ -233,3 +233,40 @@ export interface ResponsePayload {
   answer: string | string[] | null
   textAnswer?: string | null
 }
+
+// ============================================================================
+// Leaderboard
+// ============================================================================
+
+export type LeaderboardType = 'top_average_score' | 'top_single_test_score'
+export type LeaderboardPeriod = 'week' | 'month'
+export type LeaderboardDisplayLimit = 'top5' | 'full'
+
+export interface LeaderboardBoardConfig {
+  type: LeaderboardType
+  period: LeaderboardPeriod
+  displayLimit: LeaderboardDisplayLimit
+}
+
+export interface LeaderboardSettings {
+  boards: LeaderboardBoardConfig[]
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  employeeId: string
+  employeeName: string
+  score: number
+  testCount: number
+}
+
+export interface LeaderboardData {
+  board: LeaderboardBoardConfig
+  periodLabel: string
+  periodStart: string
+  periodEnd: string
+  entries: LeaderboardEntry[]
+  total: number
+  offset: number
+  limit: number
+}
