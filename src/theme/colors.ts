@@ -52,6 +52,8 @@ export const themeColors = {
 /** Ant Design theme config for ConfigProvider */
 export const antdColourTheme: ThemeConfig = {
   token: {
+    fontFamily:
+      '"Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     colorPrimary: themeColors.primary,
     colorPrimaryBg: themeColors.primaryBg,
     colorPrimaryBgHover: palette.neutral['100'],
