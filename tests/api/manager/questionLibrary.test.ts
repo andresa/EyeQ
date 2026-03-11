@@ -7,9 +7,3 @@ describe('manager/questionLibrary (module structure)', () => {
     expect(true).toBe(true)
   })
 })
-
-describe('manager/questionCategories (module structure)', () => {
-  it('exports the module without errors', async () => {
-    expect(true).toBe(true)
-  })
-})

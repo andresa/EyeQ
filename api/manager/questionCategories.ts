@@ -27,7 +27,9 @@ const getCategoryById = async (categoryId: string) => {
   return resources[0]
 }
 
-const listHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const listQuestionCategoriesHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
@@ -43,7 +45,9 @@ const listHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   return jsonResponse(200, { success: true, data: resources })
 }
 
-const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const createQuestionCategoryHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -75,7 +79,9 @@ const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
   return jsonResponse(201, { success: true, data: doc })
 }
 
-const updateHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const updateQuestionCategoryHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -113,7 +119,9 @@ const updateHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
   return jsonResponse(200, { success: true, data: updated })
 }
 
-const deleteHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const deleteQuestionCategoryHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -157,9 +165,9 @@ app.http('managerQuestionCategories', {
           error: 'You can only view your own company categories.',
         })
       }
-      return listHandler(request)
+      return listQuestionCategoriesHandler(request)
     }
-    return createHandler(request)
+    return createQuestionCategoryHandler(request)
   },
 })
 
@@ -168,7 +176,7 @@ app.http('managerQuestionCategoryItem', {
   authLevel: 'anonymous',
   route: 'manager/question-categories/{categoryId}',
   handler: async (request) => {
-    if (request.method === 'PUT') return updateHandler(request)
-    return deleteHandler(request)
+    if (request.method === 'PUT') return updateQuestionCategoryHandler(request)
+    return deleteQuestionCategoryHandler(request)
   },
 })
