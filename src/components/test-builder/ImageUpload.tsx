@@ -112,7 +112,7 @@ const ImageUpload = ({ imageId, companyId, onChange, disabled }: ImageUploadProp
         <div className="flex items-center justify-center min-h-[120px]">
           {uploading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
-              <Spin tip="Uploading..." />
+              <Spin description="Uploading..." />
             </div>
           )}
           {!imageLoaded && !previewUrl && (

@@ -358,8 +358,8 @@ const TestBuilderPage = () => {
   }
 
   const handleSave = async () => {
-    setIsSaving(true)
     try {
+      setIsSaving(true)
       if (!companyId || !managerId) {
         message.error('Select a company and manager first.')
         return
@@ -422,10 +422,10 @@ const TestBuilderPage = () => {
 
       message.success('Test saved')
       navigate('/manager/tests')
-      setIsSaving(false)
     } catch (error) {
       console.error(error)
       message.error('Unable to save test')
+    } finally {
       setIsSaving(false)
     }
   }

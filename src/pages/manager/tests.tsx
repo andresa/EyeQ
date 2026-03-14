@@ -33,6 +33,7 @@ const ManagerTestsPage = () => {
   const [expiry, setExpiry] = useState<string | undefined>()
   const [nameFilter, setNameFilter] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const { data: tests } = useQuery({
     queryKey: ['manager', 'tests', companyId],
@@ -89,23 +90,31 @@ const ManagerTestsPage = () => {
   }
 
   const handleAssign = async () => {
-    if (!assignTestId) {
-      message.error('Select a test.')
-      return
+    try {
+      setIsSaving(true)
+      if (!assignTestId) {
+        message.error('Select a test.')
+        return
+      }
+      if (selectedEmployees.length === 0) {
+        message.error('Select at least one employee.')
+        return
+      }
+      const response = await assignTest(assignTestId, {
+        employeeIds: selectedEmployees,
+        expiresAt: expiry,
+      })
+      if (!response.success) {
+        message.error(response.error || 'Unable to assign test')
+        return
+      }
+      message.success('Test assigned')
+    } catch (error) {
+      console.error(error)
+      message.error('Unable to assign test')
+    } finally {
+      setIsSaving(false)
     }
-    if (selectedEmployees.length === 0) {
-      message.error('Select at least one employee.')
-      return
-    }
-    const response = await assignTest(assignTestId, {
-      employeeIds: selectedEmployees,
-      expiresAt: expiry,
-    })
-    if (!response.success) {
-      message.error(response.error || 'Unable to assign test')
-      return
-    }
-    message.success('Test assigned')
     closeAssign()
   }
 
@@ -248,6 +257,7 @@ const ManagerTestsPage = () => {
         onOk={handleAssign}
         onCancel={closeAssign}
         okText="Assign"
+        okButtonProps={{ loading: isSaving }}
       >
         <div className="flex w-full flex-col gap-4">
           <div className="flex flex-col gap-1">
@@ -257,18 +267,18 @@ const ManagerTestsPage = () => {
               onChange={(id) => setAssignTestId(id || '')}
               placeholder="Select test"
               allowClear
-              showSearch
-              optionFilterProp="label"
+              showSearch={{
+                optionFilterProp: 'label',
+                filterOption: (input, option) =>
+                  (option?.label ?? '')
+                    .toString()
+                    .toLowerCase()
+                    .includes(input.toLowerCase()),
+              }}
               options={sortedTests.map((test) => ({
                 label: test.name,
                 value: test.id,
               }))}
-              filterOption={(input, option) =>
-                (option?.label ?? '')
-                  .toString()
-                  .toLowerCase()
-                  .includes(input.toLowerCase())
-              }
               className="w-full"
             />
           </div>

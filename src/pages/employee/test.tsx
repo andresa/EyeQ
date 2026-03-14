@@ -126,6 +126,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
     return Math.max(0, deadline - Date.now())
   })
   const [timedOut, setTimedOut] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (deadline === null) return
@@ -143,8 +144,16 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   const isLowTime = isTimerActive && timeRemainingMs < 5 * 60 * 1000
 
   const handleTimeoutOk = async () => {
-    await timeoutTestInstance(instanceId)
-    navigate('/employee/tests')
+    try {
+      setIsSubmitting(true)
+      await timeoutTestInstance(instanceId)
+      navigate('/employee/tests')
+    } catch (error) {
+      console.error(error)
+      message.error('Unable to timeout test')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const components = useMemo(() => {
@@ -270,6 +279,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
 
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true)
       if (data.instance.status === 'completed' || data.instance.status === 'marked') {
         message.warning('This test has already been completed.')
         return
@@ -309,6 +319,8 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
       if (error instanceof Error) {
         message.error(error.message)
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -409,7 +421,12 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                 <div />
               )}
               {isLastSection ? (
-                <Button type="primary" onClick={handleSubmit} disabled={timedOut}>
+                <Button
+                  type="primary"
+                  onClick={handleSubmit}
+                  disabled={timedOut}
+                  loading={isSubmitting}
+                >
                   Submit test
                 </Button>
               ) : (
@@ -425,9 +442,9 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
         title="Time limit reached"
         open={timedOut}
         closable={false}
-        maskClosable={false}
+        mask={{ closable: false }}
         footer={
-          <Button type="primary" onClick={handleTimeoutOk}>
+          <Button type="primary" onClick={handleTimeoutOk} loading={isSubmitting}>
             Ok
           </Button>
         }
