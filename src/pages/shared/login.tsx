@@ -122,12 +122,10 @@ const LoginPage = () => {
 
   if (isLoading) {
     return (
-      <div className="page-center">
-        <Card className="w-full max-w-md">
-          <div className="flex justify-center py-8">
-            <Typography.Text type="secondary">Loading...</Typography.Text>
-          </div>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="flex justify-center py-8">
+          <Spin />
+        </div>
       </div>
     )
   }
@@ -135,7 +133,7 @@ const LoginPage = () => {
   const showDevLogin = devModeEnabled && devUsers
 
   return (
-    <div className="page-center">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <div className="flex flex-col gap-6 w-full">
           <div className="text-center">

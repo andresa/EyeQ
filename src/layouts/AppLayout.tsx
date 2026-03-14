@@ -17,6 +17,7 @@ interface AppLayoutProps {
   children: ReactNode
   hideHeader?: boolean
   maxWidth?: 'default' | 'wide'
+  disableSideMenu?: boolean
 }
 
 const AppLayout = ({
@@ -29,6 +30,7 @@ const AppLayout = ({
   children,
   hideHeader,
   maxWidth = 'default',
+  disableSideMenu,
 }: AppLayoutProps) => {
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.md
@@ -80,26 +82,27 @@ const AppLayout = ({
         />
       )}
       <Layout className="flex-1 !flex-row overflow-hidden">
-        {isMobile ? (
-          <Drawer
-            placement="left"
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            size={'70vw'}
-            styles={{ body: { padding: 0 } }}
-          >
-            {navContent}
-          </Drawer>
-        ) : (
-          <Sider width={220} className="bg-white flex flex-col overflow-hidden">
-            {navContent}
-          </Sider>
-        )}
+        {!disableSideMenu &&
+          (isMobile ? (
+            <Drawer
+              placement="left"
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+              size={'70vw'}
+              styles={{ body: { padding: 0 } }}
+            >
+              {navContent}
+            </Drawer>
+          ) : (
+            <Sider width={220} className="bg-white flex flex-col overflow-hidden">
+              {navContent}
+            </Sider>
+          ))}
         <Layout className="flex-1 flex flex-col overflow-hidden">
           {pageHeading}
           <Content
             className={clsx(
-              'flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full flex flex-col',
+              'flex-1 overflow-y-auto p-6 mx-auto w-full flex flex-col',
               maxWidthClass[maxWidth],
             )}
             data-main-scroll

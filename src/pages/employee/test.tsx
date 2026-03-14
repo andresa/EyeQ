@@ -315,8 +315,10 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   return (
     <EmployeeLayout
       hideHeader
+      disableSideMenu
       pageHeading={
         <StandardPageHeading
+          className="sticky top-0"
           title={
             <div className="flex items-center gap-2">
               {isTimerActive && (
@@ -457,7 +459,7 @@ const EmployeeTestPage = () => {
 
   if (isLoading || !data) {
     return (
-      <EmployeeLayout>
+      <EmployeeLayout hideHeader disableSideMenu>
         <div className="flex justify-center items-center h-full">
           <Spin />
         </div>

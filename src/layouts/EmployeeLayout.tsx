@@ -10,8 +10,14 @@ import { fetchLeaderboardSettings } from '../services/shared'
 interface EmployeeLayoutProps extends PropsWithChildren {
   pageHeading?: ReactNode
   hideHeader?: boolean
+  disableSideMenu?: boolean
 }
-const EmployeeLayout = ({ pageHeading, children, hideHeader }: EmployeeLayoutProps) => {
+const EmployeeLayout = ({
+  pageHeading,
+  children,
+  hideHeader,
+  disableSideMenu,
+}: EmployeeLayoutProps) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { userProfile } = useSession()
@@ -60,6 +66,7 @@ const EmployeeLayout = ({ pageHeading, children, hideHeader }: EmployeeLayoutPro
       selectedKeys={[selectedPath]}
       onNavigate={navigate}
       hideHeader={hideHeader}
+      disableSideMenu={disableSideMenu}
     >
       {children}
     </AppLayout>

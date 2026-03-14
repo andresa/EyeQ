@@ -95,26 +95,12 @@ body {
   scrollbar-width: none;
 }
 
-.page-center {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+main {
+  @media (pointer: coarse) and (orientation: landscape) {
+    padding-bottom: 10rem !important;
+    padding-left: 5rem !important;
+    padding-right: 5rem !important;
+  }
 }
 
 .test-section {
