@@ -47,6 +47,7 @@ export const themeColors = {
   tagInfoColor: palette.tags.info.color,
   tagInfoBg: palette.tags.info.bg,
   tagInfoBorder: palette.tags.info.border,
+  bodyBg: '#f5f7fb',
 } as const
 
 /** Ant Design theme config for ConfigProvider */

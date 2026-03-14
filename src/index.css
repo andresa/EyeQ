@@ -86,6 +86,15 @@ body {
   overflow: hidden;
 }
 
+/* Hide scrollbar for Chrome, Safari, Edge, Opera */
+*::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for Firefox */
+* {
+  scrollbar-width: none;
+}
+
 .page-center {
   min-height: 100vh;
   display: flex;
