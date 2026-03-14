@@ -18,6 +18,7 @@ import {
   type DevUser,
   type DevUsersResponse,
 } from '../../services/shared'
+import { EyeQLogo } from '../../components/molecules/EyeQLogo'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -137,8 +138,8 @@ const LoginPage = () => {
       <Card className="w-full max-w-md">
         <div className="flex flex-col gap-6 w-full">
           <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl text-white font-bold">EyeQ</span>
+            <div className="flex justify-center">
+              <EyeQLogo size="large" />
             </div>
             <Typography.Title level={3} className="mb-1">
               Welcome to EyeQ
