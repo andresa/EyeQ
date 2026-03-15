@@ -141,7 +141,7 @@ const LoginPage = () => {
             <div className="flex justify-center">
               <EyeQLogo size="large" />
             </div>
-            <Typography.Title level={3} className="mb-1">
+            <Typography.Title level={3} className="mt-4">
               Welcome to EyeQ
             </Typography.Title>
             <Typography.Text type="secondary">

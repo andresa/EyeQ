@@ -2,7 +2,10 @@ import { Layout, Menu, Grid, Drawer, Button, Typography } from 'antd'
 import { MenuOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { LogOut } from 'lucide-react'
 import EyeQHeader from '../components/organisms/EyeQHeader'
+import { useSession } from '../hooks/useSession'
 import clsx from 'clsx'
 
 const { Content, Sider } = Layout
@@ -35,11 +38,32 @@ const AppLayout = ({
   const screens = Grid.useBreakpoint()
   const isMobile = !screens.md
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const navigate = useNavigate()
+  const { logout } = useSession()
+
+  const handleSignOut = async () => {
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
+  const logoutItem: MenuProps['items'] = [
+    {
+      key: 'logout',
+      label: 'Log out',
+      icon: <LogOut size={18} />,
+    },
+  ]
+
+  const allFooterItems = [...(footerItems ?? []), ...logoutItem]
 
   const menuProps = {
     mode: 'inline' as const,
     selectedKeys,
     onClick: ({ key }: { key: React.Key }) => {
+      if (key === 'logout') {
+        handleSignOut()
+        return
+      }
       onNavigate(String(key))
       if (isMobile) setDrawerOpen(false)
     },
@@ -57,11 +81,9 @@ const AppLayout = ({
       <div className="flex-1 min-h-0 overflow-y-auto font-medium border-r border-gray-200">
         <Menu {...menuProps} items={items} />
       </div>
-      {footerItems?.length ? (
-        <div className="mt-auto border-t border-r border-gray-200 font-medium">
-          <Menu {...menuProps} items={footerItems} />
-        </div>
-      ) : null}
+      <div className="mt-auto border-t border-r border-gray-200 font-medium">
+        <Menu {...menuProps} items={allFooterItems} />
+      </div>
     </div>
   )
 
