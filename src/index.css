@@ -116,3 +116,25 @@ main {
   overflow: hidden;
   transform: translateY(8px);
 }
+
+/* Tiptap editor */
+.ProseMirror p {
+  margin: 0;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #a3a3a3;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror a {
+  color: var(--color-accent, #1e3a5f);
+  text-decoration: underline;
+}
+
+.ProseMirror a:hover {
+  color: var(--color-accent-light, #4178aa);
+}

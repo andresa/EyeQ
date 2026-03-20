@@ -3,6 +3,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import RichText from '../../components/atoms/RichText'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import {
   fetchTestInstanceResults,
@@ -237,9 +238,11 @@ const SubmissionDetailPage = () => {
                     return (
                       <Card key={component.id} type="inner">
                         <div className="flex flex-col gap-1">
-                          <Typography.Text strong>{component.title}</Typography.Text>
+                          <Typography.Text strong>
+                            <RichText content={component.title} />
+                          </Typography.Text>
                           <Typography.Paragraph>
-                            {component.description}
+                            <RichText content={component.description} />
                           </Typography.Paragraph>
                         </div>
                         <div className="max-w-[400px]">
@@ -253,9 +256,11 @@ const SubmissionDetailPage = () => {
                     <Card key={component.id} type="inner">
                       <div className="flex flex-col gap-4 w-full">
                         <div className="flex flex-col gap-1">
-                          <Typography.Text strong>{component.title}</Typography.Text>
+                          <Typography.Text strong>
+                            <RichText content={component.title} />
+                          </Typography.Text>
                           <Typography.Paragraph type="secondary">
-                            {component.description}
+                            <RichText content={component.description} />
                           </Typography.Paragraph>
                         </div>
                         <div className="max-w-[400px]">
@@ -296,9 +301,11 @@ const SubmissionDetailPage = () => {
                       <Card key={component.id} type="inner">
                         <div className="flex flex-col gap-4 w-full">
                           <div className="flex flex-col gap-1">
-                            <Typography.Text strong>{component.title}</Typography.Text>
+                            <Typography.Text strong>
+                              <RichText content={component.title} />
+                            </Typography.Text>
                             <Typography.Paragraph>
-                              {component.description}
+                              <RichText content={component.description} />
                             </Typography.Paragraph>
                           </div>
                           <div className="max-w-[400px]">
@@ -319,9 +326,11 @@ const SubmissionDetailPage = () => {
                     <Card key={component.id} type="inner">
                       <div className="flex flex-col gap-4 w-full">
                         <div className="flex flex-col gap-1">
-                          <Typography.Text strong>{component.title}</Typography.Text>
+                          <Typography.Text strong>
+                            <RichText content={component.title} />
+                          </Typography.Text>
                           <Typography.Paragraph type="secondary">
-                            {component.description}
+                            <RichText content={component.description} />
                           </Typography.Paragraph>
                         </div>
                         <div className="max-w-[400px]">

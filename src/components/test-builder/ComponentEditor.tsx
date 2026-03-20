@@ -1,5 +1,6 @@
-import { Checkbox, Input, Switch } from 'antd'
+import { Checkbox, Switch } from 'antd'
 import Selection from '../atoms/Selection'
+import RichTextEditor from '../atoms/RichTextEditor'
 import { useQuery } from '@tanstack/react-query'
 import type { TestComponent } from '../../types'
 import { listQuestionCategories } from '../../services/manager'
@@ -30,18 +31,20 @@ const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProp
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <Input
-        value={component.title}
-        onChange={(event) => update({ title: event.target.value })}
+      <RichTextEditor
+        key={component.id + '-title'}
+        value={component.title ?? ''}
+        onChange={(md) => update({ title: md })}
         placeholder="Question title"
-        aria-label="Question title"
+        singleLine
+        ariaLabel="Question title"
       />
-      <Input.TextArea
-        value={component.description}
-        onChange={(event) => update({ description: event.target.value })}
+      <RichTextEditor
+        key={component.id + '-desc'}
+        value={component.description ?? ''}
+        onChange={(md) => update({ description: md })}
         placeholder="Description"
-        rows={3}
-        aria-label="Question description"
+        ariaLabel="Question description"
       />
       <ImageUpload
         imageId={component.imageId}

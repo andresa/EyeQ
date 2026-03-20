@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
+import RichText from '../../components/atoms/RichText'
 import {
   fetchTestInstanceDetails,
   openTestInstance,
@@ -367,8 +368,12 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                       return (
                         <Card key={component.id}>
                           <div className="flex flex-col gap-2">
-                            <Typography.Text strong>{component.title}</Typography.Text>
-                            <Typography.Text>{component.description}</Typography.Text>
+                            <Typography.Text strong>
+                              <RichText content={component.title} />
+                            </Typography.Text>
+                            <Typography.Text>
+                              <RichText content={component.description} />
+                            </Typography.Text>
                             <QuestionImage imageId={component.imageId} />
                           </div>
                         </Card>
@@ -381,13 +386,15 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                         name={`q_${component.id}`}
                         label={
                           <div className="flex flex-col">
-                            <Typography.Text strong>{component.title}</Typography.Text>
+                            <Typography.Text strong>
+                              <RichText content={component.title} />
+                            </Typography.Text>
                             {component.description && (
                               <Typography.Text
                                 type="secondary"
                                 className="block font-normal"
                               >
-                                {component.description}
+                                <RichText content={component.description} />
                               </Typography.Text>
                             )}
                           </div>

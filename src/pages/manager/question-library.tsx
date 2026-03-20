@@ -11,6 +11,7 @@ import {
   Typography,
 } from 'antd'
 import Selection from '../../components/atoms/Selection'
+import RichTextEditor from '../../components/atoms/RichTextEditor'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -146,10 +147,16 @@ const QuestionLibraryPage = () => {
     },
   ]
 
+  const stripMarkdown = (md: string) =>
+    md
+      .replace(/\*+/g, '')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .trim()
+
   const handleSaveEdit = async () => {
     if (!editing) return
     const trimmedTitle = editing.title?.trim() ?? ''
-    if (!trimmedTitle) {
+    if (!stripMarkdown(trimmedTitle)) {
       message.error('Title is required')
       return
     }
@@ -372,9 +379,13 @@ const QuestionLibraryPage = () => {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Title</Typography.Text>
-              <Input
+              <RichTextEditor
+                key={('id' in editing ? editing.id : 'new') + '-title'}
                 value={editing.title}
-                onChange={(e) => updateEditing({ title: e.target.value })}
+                onChange={(title) => updateEditing({ title })}
+                placeholder="Question title"
+                singleLine
+                ariaLabel="Question title"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -402,10 +413,12 @@ const QuestionLibraryPage = () => {
             </div>
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Description</Typography.Text>
-              <Input.TextArea
-                value={editing.description}
-                onChange={(e) => updateEditing({ description: e.target.value })}
-                rows={3}
+              <RichTextEditor
+                key={('id' in editing ? editing.id : 'new') + '-desc'}
+                value={editing.description ?? ''}
+                onChange={(description) => updateEditing({ description })}
+                placeholder="Description"
+                ariaLabel="Question description"
               />
             </div>
             <ImageUpload
