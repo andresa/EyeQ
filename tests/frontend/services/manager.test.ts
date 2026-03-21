@@ -73,6 +73,21 @@ describe('services/manager', () => {
     )
   })
 
+  it('listEmployees includes pagination and name filters when provided', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listEmployees({
+      companyId: 'c1',
+      name: 'alice',
+      limit: 10,
+      cursor: 'cursor_1',
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/manager/employees?companyId=c1&name=alice&limit=10&cursor=cursor_1',
+      ),
+    )
+  })
+
   it('deleteEmployee calls DELETE', async () => {
     mockApiRequest.mockResolvedValue({ success: true })
     await deleteEmployee('e1', 'c1')
@@ -131,6 +146,16 @@ describe('services/manager', () => {
     )
   })
 
+  it('listTests includes name and pagination params', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listTests({ companyId: 'c1', name: 'safety', limit: 10, cursor: 'cursor_2' })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/manager/tests?companyId=c1&name=safety&limit=10&cursor=cursor_2',
+      ),
+    )
+  })
+
   it('assignTest calls POST /manager/tests/:id/assign', async () => {
     mockApiRequest.mockResolvedValue({ success: true })
     await assignTest('t1', { employeeIds: ['e1'] })
@@ -148,6 +173,24 @@ describe('services/manager', () => {
     )
   })
 
+  it('listTestInstances includes filters and pagination params', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listTestInstances({
+      companyId: 'c1',
+      employeeIds: ['e1', 'e2'],
+      statuses: ['completed', 'marked'],
+      assignedAfter: '2025-01-01T00:00:00.000Z',
+      assignedBefore: '2025-01-31T23:59:59.999Z',
+      limit: 10,
+      cursor: 'cursor_3',
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/manager/testInstances?companyId=c1&employeeIds=e1%2Ce2&statuses=completed%2Cmarked&assignedAfter=2025-01-01T00%3A00%3A00.000Z&assignedBefore=2025-01-31T23%3A59%3A59.999Z&limit=10&cursor=cursor_3',
+      ),
+    )
+  })
+
   it('markTestInstance calls POST /manager/testInstances/:id/mark', async () => {
     mockApiRequest.mockResolvedValue({ success: true })
     await markTestInstance('i1', { marks: [{ questionId: 'q1', isCorrect: true }] })
@@ -162,6 +205,23 @@ describe('services/manager', () => {
     await listQuestionLibrary('c1')
     expect(mockApiRequest).toHaveBeenCalledWith(
       expect.stringContaining('/manager/question-library?companyId=c1'),
+    )
+  })
+
+  it('listQuestionLibrary includes server-side filters and pagination params', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listQuestionLibrary({
+      companyId: 'c1',
+      name: 'forklift',
+      type: 'single_choice',
+      categoryId: 'cat_1',
+      limit: 8,
+      cursor: 'cursor_4',
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/manager/question-library?companyId=c1&name=forklift&type=single_choice&categoryId=cat_1&limit=8&cursor=cursor_4',
+      ),
     )
   })
 

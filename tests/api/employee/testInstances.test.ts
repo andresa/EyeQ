@@ -88,11 +88,9 @@ describe('employee/testInstances', () => {
         fetchAll: vi.fn().mockResolvedValue({ resources: instances }),
       })
       testsContainer.items.query.mockReturnValue({
-        fetchAll: vi
-          .fn()
-          .mockResolvedValue({
-            resources: [{ id: 't1', name: 'Test A', sections: [], settings: {} }],
-          }),
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [{ id: 't1', name: 'Test A', sections: [], settings: {} }],
+        }),
       })
 
       const request = mockRequest({ query: { employeeId: 'emp_1' } })
@@ -108,6 +106,56 @@ describe('employee/testInstances', () => {
       const response = await listEmployeeTestInstancesHandler(request)
 
       expect(response.status).toBe(400)
+    })
+
+    it('returns paginated test instances with filters when limit is provided', async () => {
+      setup()
+      const instance = {
+        id: 'i1',
+        testId: 't1',
+        employeeId: 'emp_1',
+        status: 'assigned',
+        assignedAt: '2025-01-10T00:00:00.000Z',
+        expiresAt: '2099-01-01T00:00:00Z',
+      }
+
+      instancesContainer.items.query
+        .mockReturnValueOnce({ fetchAll: vi.fn().mockResolvedValue({ resources: [] }) })
+        .mockReturnValueOnce({
+          fetchNext: vi.fn().mockResolvedValue({
+            resources: [instance],
+            continuationToken: 'cursor_3',
+          }),
+        })
+        .mockReturnValueOnce({ fetchAll: vi.fn().mockResolvedValue({ resources: [5] }) })
+
+      testsContainer.items.query
+        .mockReturnValueOnce({
+          fetchAll: vi.fn().mockResolvedValue({ resources: [{ id: 't1' }] }),
+        })
+        .mockReturnValueOnce({
+          fetchAll: vi.fn().mockResolvedValue({
+            resources: [{ id: 't1', name: 'Test A', sections: [], settings: {} }],
+          }),
+        })
+
+      const request = mockRequest({
+        query: {
+          employeeId: 'emp_1',
+          status: 'assigned',
+          name: 'test',
+          limit: '10',
+        },
+      })
+      const response = await listEmployeeTestInstancesHandler(request, 'c1')
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody).toMatchObject({
+        success: true,
+        data: [{ id: 'i1', testId: 't1', testName: 'Test A' }],
+        total: 5,
+        nextCursor: Buffer.from('cursor_3', 'utf8').toString('base64url'),
+      })
     })
   })
 

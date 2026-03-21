@@ -1,10 +1,11 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
-import { jsonResponse, parseJsonBody } from '../shared/http.js'
+import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 import { createInvitationRecord } from '../shared/invitations.js'
 import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
+import { paginatedQuery } from '../shared/pagination.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
 
@@ -42,15 +43,44 @@ export const listEmployeesHandler = async (
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
+
+  const nameFilter = request.query.get('name')
+  const limit = request.query.get('limit')
+  const cursor = request.query.get('cursor')
+
+  let whereClause = 'FROM c WHERE c.companyId = @companyId AND c.role = @role'
+  const parameters: { name: string; value: string }[] = [
+    { name: '@companyId', value: companyId },
+    { name: '@role', value: 'employee' },
+  ]
+
+  if (nameFilter) {
+    whereClause +=
+      " AND (CONTAINS(LOWER(c.firstName), LOWER(@name)) OR CONTAINS(LOWER(c.lastName), LOWER(@name)) OR CONTAINS(LOWER(CONCAT(c.firstName, ' ', c.lastName)), LOWER(@name)))"
+    parameters.push({ name: '@name', value: nameFilter })
+  }
+
+  const query = `SELECT * ${whereClause} ORDER BY c.createdAt DESC`
+  const countQuery = `SELECT VALUE COUNT(1) ${whereClause}`
+
   const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
+
+  if (limit) {
+    const page = await paginatedQuery(
+      container,
+      { query, parameters },
+      {
+        limit,
+        cursor,
+        countQuery: { query: countQuery, parameters },
+        partitionKey: companyId,
+      },
+    )
+    return paginatedJsonResponse(200, page)
+  }
+
   const { resources } = await container.items
-    .query({
-      query: 'SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role',
-      parameters: [
-        { name: '@companyId', value: companyId },
-        { name: '@role', value: 'employee' },
-      ],
-    })
+    .query({ query, parameters }, { partitionKey: companyId })
     .fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }

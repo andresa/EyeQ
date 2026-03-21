@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { jsonResponse, parseJsonBody } from '../../../api/shared/http'
+import {
+  jsonResponse,
+  paginatedJsonResponse,
+  parseJsonBody,
+} from '../../../api/shared/http'
 import type { HttpRequest } from '@azure/functions'
 
 describe('shared/http', () => {
@@ -24,6 +28,22 @@ describe('shared/http', () => {
 
       expect(response.status).toBe(201)
       expect(response.jsonBody?.data).toEqual([1, 2, 3])
+    })
+
+    it('builds a paginated response with cursor metadata', () => {
+      const response = paginatedJsonResponse(200, {
+        items: [{ id: '1' }],
+        nextCursor: 'cursor_1',
+        total: 25,
+      })
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody).toEqual({
+        success: true,
+        data: [{ id: '1' }],
+        nextCursor: 'cursor_1',
+        total: 25,
+      })
     })
   })
 

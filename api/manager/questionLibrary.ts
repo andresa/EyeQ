@@ -1,6 +1,7 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
-import { jsonResponse, parseJsonBody } from '../shared/http.js'
+import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
+import { paginatedQuery } from '../shared/pagination.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 
@@ -55,33 +56,52 @@ const listHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   const nameFilter = request.query.get('name')
   const typeFilter = request.query.get('type')
   const categoryFilter = request.query.get('categoryId')
+  const limit = request.query.get('limit')
+  const cursor = request.query.get('cursor')
 
-  let query = 'SELECT * FROM c WHERE c.companyId = @companyId'
+  let whereClause = 'FROM c WHERE c.companyId = @companyId'
   const parameters: { name: string; value: string }[] = [
     { name: '@companyId', value: companyId },
   ]
 
   if (nameFilter) {
-    query += ' AND CONTAINS(LOWER(c.title), LOWER(@name))'
+    whereClause += ' AND CONTAINS(LOWER(c.title), LOWER(@name))'
     parameters.push({ name: '@name', value: nameFilter })
   }
   if (typeFilter) {
-    query += ' AND c.type = @type'
+    whereClause += ' AND c.type = @type'
     parameters.push({ name: '@type', value: typeFilter })
   }
   if (categoryFilter) {
     if (categoryFilter === 'uncategorised') {
-      query += ' AND (NOT IS_DEFINED(c.categoryId) OR IS_NULL(c.categoryId))'
+      whereClause += ' AND (NOT IS_DEFINED(c.categoryId) OR IS_NULL(c.categoryId))'
     } else {
-      query += ' AND c.categoryId = @categoryId'
+      whereClause += ' AND c.categoryId = @categoryId'
       parameters.push({ name: '@categoryId', value: categoryFilter })
     }
   }
 
-  query += ' ORDER BY c.createdAt DESC'
+  const query = `SELECT * ${whereClause} ORDER BY c.createdAt DESC`
+  const countQuery = `SELECT VALUE COUNT(1) ${whereClause}`
 
   const container = await getContainer(CONTAINER, PARTITION_KEY)
-  const { resources } = await container.items.query({ query, parameters }).fetchAll()
+  if (limit) {
+    const page = await paginatedQuery(
+      container,
+      { query, parameters },
+      {
+        limit,
+        cursor,
+        countQuery: { query: countQuery, parameters },
+        partitionKey: companyId,
+      },
+    )
+    return paginatedJsonResponse(200, page)
+  }
+
+  const { resources } = await container.items
+    .query({ query, parameters }, { partitionKey: companyId })
+    .fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }
 

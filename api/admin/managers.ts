@@ -1,9 +1,10 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
-import { jsonResponse, parseJsonBody } from '../shared/http.js'
+import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
 import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
+import { paginatedQuery } from '../shared/pagination.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
 
@@ -24,15 +25,36 @@ export const listManagersHandler = async (
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
+  const limit = request.query.get('limit')
+  const cursor = request.query.get('cursor')
+
+  const parameters = [
+    { name: '@companyId', value: companyId },
+    { name: '@role', value: 'manager' },
+  ]
+  const query =
+    'SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role ORDER BY c.createdAt DESC'
+  const countQuery =
+    'SELECT VALUE COUNT(1) FROM c WHERE c.companyId = @companyId AND c.role = @role'
+
   const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
+
+  if (limit) {
+    const page = await paginatedQuery(
+      container,
+      { query, parameters },
+      {
+        limit,
+        cursor,
+        countQuery: { query: countQuery, parameters },
+        partitionKey: companyId,
+      },
+    )
+    return paginatedJsonResponse(200, page)
+  }
+
   const { resources } = await container.items
-    .query({
-      query: 'SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role',
-      parameters: [
-        { name: '@companyId', value: companyId },
-        { name: '@role', value: 'manager' },
-      ],
-    })
+    .query({ query, parameters }, { partitionKey: companyId })
     .fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }

@@ -18,11 +18,11 @@ import {
   MinusCircleOutlined,
 } from '@ant-design/icons'
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import { deleteEmployee, listEmployees, sendInvitation } from '../../services/manager'
 import type { Employee, InvitationStatus, UserRole } from '../../types'
 import { useSession } from '../../hooks/useSession'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import UserModal from '../../components/molecules/UserModal'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { Users } from 'lucide-react'
@@ -55,24 +55,31 @@ const ManagerEmployeesPage = () => {
   const [inviteForm] = Form.useForm()
   const [nameFilter, setNameFilter] = useState('')
 
-  const { data, isLoading, refetch } = useQuery({
+  const {
+    data: employees,
+    isLoading,
+    pagination,
+    refetch,
+  } = usePaginatedQuery({
     queryKey: ['manager', 'employees', companyId],
-    queryFn: async () => {
-      if (!companyId) return [] as Employee[]
-      const response = await listEmployees(companyId)
+    enabled: !!companyId,
+    filters: { name: nameFilter.trim() || undefined },
+    fetchPage: async ({ limit, cursor }) => {
+      if (!companyId) {
+        return { success: true, data: [], nextCursor: null, total: 0 }
+      }
+
+      const response = await listEmployees({
+        companyId,
+        name: nameFilter.trim() || undefined,
+        limit,
+        cursor,
+      })
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load employees')
       }
-      return response.data
+      return response
     },
-    enabled: !!companyId,
-  })
-
-  const filteredEmployees = (data || []).filter((employee) => {
-    if (!nameFilter.trim()) return true
-    const q = nameFilter.trim().toLowerCase()
-    const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase()
-    return fullName.includes(q)
   })
 
   const openCreate = () => {
@@ -207,8 +214,9 @@ const ManagerEmployeesPage = () => {
         </div>
         <Table
           loading={isLoading}
-          dataSource={filteredEmployees}
+          dataSource={employees}
           rowKey="id"
+          pagination={pagination}
           onRow={(record) => ({
             onClick: () => openEdit(record),
             style: { cursor: 'pointer' },

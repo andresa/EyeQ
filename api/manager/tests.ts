@@ -1,8 +1,9 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
-import { jsonResponse, parseJsonBody } from '../shared/http.js'
+import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
+import { paginatedQuery } from '../shared/pagination.js'
 
 interface TestSettings {
   allowBackNavigation: boolean
@@ -40,13 +41,42 @@ export const listTestsHandler = async (
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
   }
+  const nameFilter = request.query.get('name')
+  const limit = request.query.get('limit')
+  const cursor = request.query.get('cursor')
+
+  let whereClause =
+    'FROM c WHERE c.companyId = @companyId AND (c.isActive = true OR NOT IS_DEFINED(c.isActive))'
+  const parameters: { name: string; value: string }[] = [
+    { name: '@companyId', value: companyId },
+  ]
+
+  if (nameFilter) {
+    whereClause += ' AND CONTAINS(LOWER(c.name), LOWER(@name))'
+    parameters.push({ name: '@name', value: nameFilter })
+  }
+
+  const query = `SELECT * ${whereClause} ORDER BY c.createdAt DESC`
+  const countQuery = `SELECT VALUE COUNT(1) ${whereClause}`
+
   const container = await getContainer('tests', '/companyId')
+
+  if (limit) {
+    const page = await paginatedQuery(
+      container,
+      { query, parameters },
+      {
+        limit,
+        cursor,
+        countQuery: { query: countQuery, parameters },
+        partitionKey: companyId,
+      },
+    )
+    return paginatedJsonResponse(200, page)
+  }
+
   const { resources } = await container.items
-    .query({
-      query:
-        'SELECT * FROM c WHERE c.companyId = @companyId AND (c.isActive = true OR NOT IS_DEFINED(c.isActive))',
-      parameters: [{ name: '@companyId', value: companyId }],
-    })
+    .query({ query, parameters }, { partitionKey: companyId })
     .fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }

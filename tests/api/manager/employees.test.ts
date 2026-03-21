@@ -92,6 +92,30 @@ describe('manager/employees', () => {
 
       expect(response.status).toBe(400)
     })
+
+    it('returns paginated data when limit is provided', async () => {
+      setup()
+      const fetchNext = vi
+        .fn()
+        .mockResolvedValue({ resources: [{ id: 'e1' }], continuationToken: 'next-page' })
+      const fetchAll = vi.fn().mockResolvedValue({ resources: [11] })
+      mockContainer.items.query
+        .mockReturnValueOnce({ fetchNext })
+        .mockReturnValueOnce({ fetchAll })
+
+      const request = mockRequest({
+        query: { companyId: 'c1', name: 'alice', limit: '10' },
+      })
+      const response = await listEmployeesHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody).toMatchObject({
+        success: true,
+        data: [{ id: 'e1' }],
+        total: 11,
+        nextCursor: Buffer.from('next-page', 'utf8').toString('base64url'),
+      })
+    })
   })
 
   describe('createEmployeesHandler', () => {

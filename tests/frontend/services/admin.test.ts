@@ -49,6 +49,14 @@ describe('services/admin', () => {
     expect(mockApiRequest).toHaveBeenCalledWith('/management/companies')
   })
 
+  it('listCompanies includes pagination params when provided', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listCompanies({ limit: 10, cursor: 'cursor_1' })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/management/companies?limit=10&cursor=cursor_1',
+    )
+  })
+
   it('deleteCompany calls DELETE /management/companies/:id', async () => {
     mockApiRequest.mockResolvedValue({ success: true })
     await deleteCompany('c1')
@@ -86,6 +94,16 @@ describe('services/admin', () => {
     await listManagers('c1')
     expect(mockApiRequest).toHaveBeenCalledWith(
       expect.stringContaining('/management/managers?companyId=c1'),
+    )
+  })
+
+  it('listManagers includes pagination params when provided', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listManagers({ companyId: 'c1', limit: 10, cursor: 'cursor_2' })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/management/managers?companyId=c1&limit=10&cursor=cursor_2',
+      ),
     )
   })
 
@@ -142,5 +160,13 @@ describe('services/admin', () => {
     mockApiRequest.mockResolvedValue({ success: true, data: [] })
     await listEmployees()
     expect(mockApiRequest).toHaveBeenCalledWith('/management/employees')
+  })
+
+  it('listEmployees includes pagination params when provided', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listEmployees({ companyId: 'c1', limit: 10, cursor: 'cursor_3' })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/management/employees?companyId=c1&limit=10&cursor=cursor_3',
+    )
   })
 })

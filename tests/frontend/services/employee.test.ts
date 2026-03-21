@@ -28,6 +28,22 @@ describe('services/employee', () => {
     )
   })
 
+  it('listEmployeeTestInstances includes filters and pagination params', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listEmployeeTestInstances({
+      employeeId: 'e1',
+      status: 'assigned',
+      name: 'safety',
+      limit: 10,
+      cursor: 'cursor_1',
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/employee/testInstances?employeeId=e1&status=assigned&name=safety&limit=10&cursor=cursor_1',
+      ),
+    )
+  })
+
   it('fetchTestInstanceDetails calls GET /employee/testInstances/:id', async () => {
     mockApiRequest.mockResolvedValue({ success: true })
     await fetchTestInstanceDetails('i1')

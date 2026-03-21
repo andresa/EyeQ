@@ -84,6 +84,33 @@ describe('manager/tests', () => {
 
       expect(response.status).toBe(400)
     })
+
+    it('returns paginated tests when limit is provided', async () => {
+      setup()
+      const fetchNext = vi
+        .fn()
+        .mockResolvedValue({
+          resources: [{ id: 't1', name: 'Safety' }],
+          continuationToken: 'cursor_1',
+        })
+      const fetchAll = vi.fn().mockResolvedValue({ resources: [7] })
+      mockContainer.items.query
+        .mockReturnValueOnce({ fetchNext })
+        .mockReturnValueOnce({ fetchAll })
+
+      const request = mockRequest({
+        query: { companyId: 'c1', name: 'safe', limit: '10' },
+      })
+      const response = await listTestsHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody).toMatchObject({
+        success: true,
+        data: [{ id: 't1', name: 'Safety' }],
+        total: 7,
+        nextCursor: Buffer.from('cursor_1', 'utf8').toString('base64url'),
+      })
+    })
   })
 
   describe('createTestHandler', () => {

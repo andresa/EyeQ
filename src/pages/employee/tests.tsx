@@ -11,15 +11,16 @@ import {
   Typography,
 } from 'antd'
 import Selection from '../../components/atoms/Selection'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { listEmployeeTestInstances } from '../../services/employee'
 import type { TestInstance, TestInstanceStatus } from '../../types'
 import { formatDateTime } from '../../utils/date'
 import { useSession } from '../../hooks/useSession'
+import { useInfiniteList } from '../../hooks/useInfiniteList'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import StatusBadge from '../../components/atoms/StatusBadge'
 import { ClipboardList } from 'lucide-react'
 
@@ -58,7 +59,6 @@ const EmployeeTestsPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { userProfile, profileError } = useSession()
-  const [loading, setLoading] = useState(false)
   const employeeId = userProfile?.userType === 'employee' ? userProfile.id : undefined
 
   const [startTestModalRecord, setStartTestModalRecord] = useState<TestInstance | null>(
@@ -77,37 +77,69 @@ const EmployeeTestsPage = () => {
     }
     return 'all'
   })
+  const screens = Grid.useBreakpoint()
+  const isMobile = !screens.md
 
-  const { data: instances } = useQuery({
-    queryKey: ['employee', 'testInstances', employeeId],
-    queryFn: async () => {
-      setLoading(true)
-      if (!employeeId) return [] as TestInstance[]
-      const response = await listEmployeeTestInstances(employeeId)
+  const listFilters = {
+    status: status !== 'all' ? status : undefined,
+    name: query.trim() || undefined,
+  }
+
+  const fetchInstancesPage = useCallback(
+    async ({ limit, cursor }: { limit: number; cursor?: string | null }) => {
+      if (!employeeId) {
+        return { success: true, data: [], nextCursor: null, total: 0 }
+      }
+
+      const response = await listEmployeeTestInstances({
+        employeeId,
+        status: listFilters.status,
+        name: listFilters.name,
+        limit,
+        cursor,
+      })
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load tests')
       }
-      setLoading(false)
-      return response.data
+      return response
     },
-    enabled: !!employeeId,
+    [employeeId, listFilters.name, listFilters.status],
+  )
+
+  const {
+    data: desktopInstances,
+    response: desktopResponse,
+    isLoading: isDesktopLoading,
+    pagination,
+  } = usePaginatedQuery({
+    queryKey: ['employee', 'testInstances', employeeId, 'desktop'],
+    enabled: !!employeeId && !isMobile,
+    filters: listFilters,
+    fetchPage: fetchInstancesPage,
   })
 
-  const filteredInstances = useMemo(() => {
-    const items = instances || []
-    return items
-      .filter((instance) => {
-        if (status !== 'all' && instance.status !== status) return false
-        if (!query) return true
-        const searchValue =
-          instance.testName?.toLowerCase() || instance.testId.toLowerCase()
-        return searchValue.includes(query.toLowerCase())
-      })
-      .sort((a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime())
-  }, [instances, query, status])
+  const {
+    items: mobileInstances,
+    total: mobileTotal,
+    isLoading: isMobileLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    sentinelRef,
+  } = useInfiniteList({
+    queryKey: ['employee', 'testInstances', employeeId, 'mobile'],
+    enabled: !!employeeId && isMobile,
+    filters: listFilters,
+    fetchPage: fetchInstancesPage,
+  })
 
-  const screens = Grid.useBreakpoint()
-  const isMobile = !screens.md
+  const attachSentinelRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (typeof sentinelRef === 'function') {
+        sentinelRef(node)
+      }
+    },
+    [sentinelRef],
+  )
 
   const heading = <StandardPageHeading title="My tests" icon={<ClipboardList />} />
 
@@ -150,8 +182,12 @@ const EmployeeTestsPage = () => {
     return `${m} minute${m !== 1 ? 's' : ''}`
   }
 
+  const hasFilters = status !== 'all' || Boolean(query.trim())
+  const totalCount = isMobile
+    ? (mobileTotal ?? mobileInstances.length)
+    : (desktopResponse?.total ?? desktopInstances.length)
   const emptyMessage =
-    instances?.length === 0
+    !hasFilters && totalCount === 0
       ? 'No tests assigned to you yet.'
       : 'No tests match your filters.'
 
@@ -188,15 +224,15 @@ const EmployeeTestsPage = () => {
           />
         </div>
         {isMobile ? (
-          loading ? (
+          isMobileLoading ? (
             <div className="flex justify-center py-8">
               <Spin />
             </div>
-          ) : filteredInstances.length === 0 ? (
+          ) : mobileInstances.length === 0 ? (
             <Typography.Text type="secondary">{emptyMessage}</Typography.Text>
           ) : (
             <div className="flex flex-col gap-3 w-full">
-              {filteredInstances.map((record) => (
+              {mobileInstances.map((record) => (
                 <Card
                   key={record.id}
                   hoverable
@@ -231,13 +267,20 @@ const EmployeeTestsPage = () => {
                   </div>
                 </Card>
               ))}
+              {isFetchingNextPage && (
+                <div className="flex justify-center py-4">
+                  <Spin />
+                </div>
+              )}
+              {hasNextPage && <div ref={attachSentinelRef} className="h-1 w-full" />}
             </div>
           )
         ) : (
           <Table<TestInstance>
-            loading={loading}
-            dataSource={filteredInstances}
+            loading={isDesktopLoading}
+            dataSource={desktopInstances}
             rowKey="id"
+            pagination={pagination}
             onRow={(record) => ({
               onClick: () => handleRowClick(record),
               style: { cursor: 'pointer' },

@@ -9,6 +9,7 @@ import ManagerLayout from '../../layouts/ManagerLayout'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { listEmployees, listTestInstances, listTests } from '../../services/manager'
 import type { Employee, TestInstance, TestTemplate } from '../../types'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { formatDateTime } from '../../utils/date'
 import { useSession } from '../../hooks/useSession'
 import StatusBadge from '../../components/atoms/StatusBadge'
@@ -16,8 +17,6 @@ import {
   endOfDay,
   endOfMonth,
   endOfWeek,
-  isWithinInterval,
-  parseISO,
   startOfDay,
   startOfMonth,
   startOfWeek,
@@ -63,22 +62,6 @@ const SubmissionsPage = () => {
     },
   })
 
-  const { data: instances, isLoading } = useQuery({
-    queryKey: ['manager', 'testInstances', testId, companyId],
-    queryFn: async () => {
-      if (!companyId) return [] as TestInstance[]
-      const response = await listTestInstances({
-        testId: testId || undefined,
-        companyId: testId ? undefined : companyId,
-      })
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Unable to load submissions')
-      }
-      return response.data
-    },
-    enabled: Boolean(companyId),
-  })
-
   const testMap = useMemo(
     () =>
       (tests || []).reduce<Record<string, string>>((map, test) => {
@@ -97,56 +80,71 @@ const SubmissionsPage = () => {
     [employees],
   )
 
-  const filteredInstances = useMemo(() => {
+  const assignedRange = useMemo(() => {
     const now = new Date()
-    const resolveAssignedRange = () => {
-      switch (assignedFilter) {
-        case 'today':
-          return { start: startOfDay(now), end: endOfDay(now) }
-        case 'this_week':
-          return {
-            start: startOfWeek(now, { weekStartsOn: 1 }),
-            end: endOfWeek(now, { weekStartsOn: 1 }),
-          }
-        case 'last_week': {
-          const lastWeek = subWeeks(now, 1)
-          return {
-            start: startOfWeek(lastWeek, { weekStartsOn: 1 }),
-            end: endOfWeek(lastWeek, { weekStartsOn: 1 }),
-          }
+    switch (assignedFilter) {
+      case 'today':
+        return { start: startOfDay(now), end: endOfDay(now) }
+      case 'this_week':
+        return {
+          start: startOfWeek(now, { weekStartsOn: 1 }),
+          end: endOfWeek(now, { weekStartsOn: 1 }),
         }
-        case 'this_month':
-          return { start: startOfMonth(now), end: endOfMonth(now) }
-        case 'last_month': {
-          const lastMonth = subMonths(now, 1)
-          return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) }
+      case 'last_week': {
+        const lastWeek = subWeeks(now, 1)
+        return {
+          start: startOfWeek(lastWeek, { weekStartsOn: 1 }),
+          end: endOfWeek(lastWeek, { weekStartsOn: 1 }),
         }
-        default:
-          return null
       }
+      case 'this_month':
+        return { start: startOfMonth(now), end: endOfMonth(now) }
+      case 'last_month': {
+        const lastMonth = subMonths(now, 1)
+        return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) }
+      }
+      default:
+        return null
     }
+  }, [assignedFilter])
 
-    const range = resolveAssignedRange()
+  const submissionFilters = {
+    employeeIds: employeeFilter.length > 0 ? employeeFilter : undefined,
+    statuses: statusFilter.length > 0 ? statusFilter : undefined,
+    assignedAfter: assignedRange?.start.toISOString(),
+    assignedBefore: assignedRange?.end.toISOString(),
+  }
 
-    return (instances || [])
-      .filter((instance) => {
-        if (employeeFilter.length > 0 && !employeeFilter.includes(instance.employeeId)) {
-          return false
-        }
-        if (statusFilter.length > 0 && !statusFilter.includes(instance.status)) {
-          return false
-        }
-        if (range) {
-          return isWithinInterval(parseISO(instance.assignedAt), range)
-        }
-        return true
+  const {
+    data: instances,
+    isLoading,
+    pagination,
+  } = usePaginatedQuery({
+    queryKey: ['manager', 'testInstances', testId, companyId],
+    enabled: Boolean(companyId),
+    filters: {
+      ...submissionFilters,
+      testId: testId || undefined,
+      companyId: testId ? undefined : companyId,
+    },
+    fetchPage: async ({ limit, cursor }) => {
+      if (!companyId) {
+        return { success: true, data: [], nextCursor: null, total: 0 }
+      }
+
+      const response = await listTestInstances({
+        testId: testId || undefined,
+        companyId: testId ? undefined : companyId,
+        ...submissionFilters,
+        limit,
+        cursor,
       })
-      .sort((a, b) => {
-        const aDate = a.completedAt || a.assignedAt
-        const bDate = b.completedAt || b.assignedAt
-        return new Date(bDate).getTime() - new Date(aDate).getTime()
-      })
-  }, [assignedFilter, employeeFilter, instances, statusFilter])
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Unable to load submissions')
+      }
+      return response
+    },
+  })
 
   const getMenuItems = (instanceId: string): MenuProps['items'] => [
     {
@@ -238,8 +236,9 @@ const SubmissionsPage = () => {
         </div>
         <Table
           loading={isLoading}
-          dataSource={filteredInstances}
+          dataSource={instances}
           rowKey="id"
+          pagination={pagination}
           onRow={(record) => ({
             onClick: () => navigate(`/manager/submission/${record.id}?tab=view`),
             style: { cursor: 'pointer' },

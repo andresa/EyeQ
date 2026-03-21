@@ -39,12 +39,15 @@ function setup() {
   vi.mocked(getAuthenticatedUser).mockResolvedValue(managerUser)
   vi.mocked(requireManager).mockReturnValue(null)
 
+  mockContainer.items.query.mockReset()
   mockContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
+  testsContainer.items.query.mockReset()
   testsContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
+  responsesContainer.items.query.mockReset()
   responsesContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
@@ -85,6 +88,40 @@ describe('manager/testInstances', () => {
       const response = await listTestInstancesHandler(request)
 
       expect(response.status).toBe(400)
+    })
+
+    it('returns paginated instances with filters when limit is provided', async () => {
+      setup()
+      testsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [{ id: 't1' }] }),
+      })
+      const pageFetchAll = vi
+        .fn()
+        .mockResolvedValue({ resources: [{ id: 'i1', testId: 't1' }] })
+      const countFetchAll = vi.fn().mockResolvedValue({ resources: [3] })
+      mockContainer.items.query
+        .mockReturnValueOnce({ fetchAll: pageFetchAll })
+        .mockReturnValueOnce({ fetchAll: countFetchAll })
+
+      const request = mockRequest({
+        query: {
+          companyId: 'c1',
+          employeeIds: 'e1,e2',
+          statuses: 'completed,marked',
+          assignedAfter: '2025-01-01T00:00:00.000Z',
+          assignedBefore: '2025-01-31T23:59:59.999Z',
+          limit: '10',
+        },
+      })
+      const response = await listTestInstancesHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody).toMatchObject({
+        success: true,
+        data: [{ id: 'i1', testId: 't1' }],
+        total: 3,
+        nextCursor: Buffer.from('1', 'utf8').toString('base64url'),
+      })
     })
   })
 

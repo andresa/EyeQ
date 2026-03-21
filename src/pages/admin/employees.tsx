@@ -13,6 +13,7 @@ import AdminLayout from '../../layouts/AdminLayout'
 import { listCompanies, listEmployees } from '../../services/admin'
 import { deleteEmployee, sendInvitation } from '../../services/manager'
 import type { Company, Employee, InvitationStatus, UserRole } from '../../types'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import UserModal from '../../components/molecules/UserModal'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { Users } from 'lucide-react'
@@ -36,12 +37,10 @@ const AdminEmployeesPage = () => {
   const [open, setOpen] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
-  const [loading, setLoading] = useState(false)
 
-  const { data: companies } = useQuery({
-    queryKey: ['admin', 'companies'],
+  const { data: companies, isLoading: isCompaniesLoading } = useQuery({
+    queryKey: ['admin', 'companies', 'lookup'],
     queryFn: async () => {
-      setLoading(true)
       const response = await listCompanies()
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
@@ -49,22 +48,31 @@ const AdminEmployeesPage = () => {
       if (response.data.length === 1) {
         setCompanyId(response.data[0].id)
       }
-      setLoading(false)
       return response.data
     },
   })
 
-  const { data: employees, refetch } = useQuery({
+  const {
+    data: employees,
+    isLoading: isEmployeesLoading,
+    pagination,
+    refetch,
+  } = usePaginatedQuery({
     queryKey: ['admin', 'employees', companyId],
-    queryFn: async () => {
-      setLoading(true)
-      if (!companyId) return [] as Employee[]
-      const response = await listEmployees(companyId)
+    enabled: !!companyId,
+    fetchPage: async ({ limit, cursor }) => {
+      if (!companyId) {
+        return { success: true, data: [], nextCursor: null, total: 0 }
+      }
+      const response = await listEmployees({
+        companyId,
+        limit,
+        cursor,
+      })
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load employees')
       }
-      setLoading(false)
-      return response.data
+      return response
     },
   })
 
@@ -180,9 +188,10 @@ const AdminEmployeesPage = () => {
           </Button>
         </div>
         <Table
-          loading={loading}
+          loading={isCompaniesLoading || isEmployeesLoading}
           dataSource={employees || []}
           rowKey="id"
+          pagination={pagination}
           onRow={(record) => ({
             onClick: () => openEdit(record),
             style: { cursor: 'pointer' },

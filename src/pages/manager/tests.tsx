@@ -16,6 +16,7 @@ import {
 } from '../../services/manager'
 import type { Employee, TestTemplate } from '../../types'
 import { useSession } from '../../hooks/useSession'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { formatDateTime } from '../../utils/date'
 import dayjs from 'dayjs'
 import { FlaskConical } from 'lucide-react'
@@ -32,19 +33,42 @@ const ManagerTestsPage = () => {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
   const [expiry, setExpiry] = useState<string | undefined>()
   const [nameFilter, setNameFilter] = useState('')
-  const [loading, setLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  const { data: tests } = useQuery({
+  const {
+    data: tests,
+    isLoading,
+    pagination,
+  } = usePaginatedQuery({
     queryKey: ['manager', 'tests', companyId],
+    enabled: !!companyId,
+    filters: { name: nameFilter.trim() || undefined },
+    fetchPage: async ({ limit, cursor }) => {
+      if (!companyId) {
+        return { success: true, data: [], nextCursor: null, total: 0 }
+      }
+
+      const response = await listTests({
+        companyId,
+        name: nameFilter.trim() || undefined,
+        limit,
+        cursor,
+      })
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Unable to load tests')
+      }
+      return response
+    },
+  })
+
+  const { data: allTests } = useQuery({
+    queryKey: ['manager', 'tests', companyId, 'lookup'],
     queryFn: async () => {
-      setLoading(true)
       if (!companyId) return [] as TestTemplate[]
       const response = await listTests(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load tests')
       }
-      setLoading(false)
       return response.data
     },
   })
@@ -52,28 +76,20 @@ const ManagerTestsPage = () => {
   const { data: employees } = useQuery({
     queryKey: ['manager', 'employees', companyId],
     queryFn: async () => {
-      setLoading(true)
       if (!companyId) return [] as Employee[]
       const response = await listEmployees(companyId)
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load employees')
       }
-      setLoading(false)
       return response.data
     },
   })
 
   const sortedTests = useMemo(() => {
-    return (tests || []).slice().sort((a, b) => {
+    return (allTests || []).slice().sort((a, b) => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
-  }, [tests])
-
-  const filteredTests = useMemo(() => {
-    if (!nameFilter.trim()) return sortedTests
-    const q = nameFilter.trim().toLowerCase()
-    return sortedTests.filter((test) => test.name.toLowerCase().includes(q))
-  }, [sortedTests, nameFilter])
+  }, [allTests])
 
   const openAssign = (testId?: string) => {
     setAssignTestId(testId ?? '')
@@ -212,9 +228,10 @@ const ManagerTestsPage = () => {
           </div>
         </div>
         <Table
-          dataSource={filteredTests}
+          dataSource={tests}
           rowKey="id"
-          loading={loading}
+          loading={isLoading}
+          pagination={pagination}
           onRow={(record) => ({
             onClick: () => navigate(`/manager/test-builder/${record.id}`),
             style: { cursor: 'pointer' },

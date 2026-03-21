@@ -6,6 +6,11 @@ export interface ApiResponse<T> {
   error?: string
 }
 
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+  nextCursor?: string | null
+  total?: number
+}
+
 export type UserRole = 'employee' | 'manager' | 'admin'
 export type UserType = 'employee' | 'manager' | 'admin'
 

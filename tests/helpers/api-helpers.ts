@@ -12,6 +12,9 @@ export function createMockContainer() {
       }),
       query: vi.fn().mockReturnValue({
         fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+        fetchNext: vi
+          .fn()
+          .mockResolvedValue({ resources: [], continuationToken: undefined }),
       }),
     },
     item: vi.fn().mockReturnValue({

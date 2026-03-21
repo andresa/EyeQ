@@ -1,9 +1,10 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
-import { jsonResponse, parseJsonBody } from '../shared/http.js'
+import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
 import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
+import { paginatedQuery } from '../shared/pagination.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
 
@@ -22,28 +23,40 @@ export const listAllEmployeesHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
+  const limit = request.query.get('limit')
+  const cursor = request.query.get('cursor')
   const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
+  let whereClause = 'FROM c WHERE c.role = @role'
+  const parameters: { name: string; value: string }[] = [
+    { name: '@role', value: 'employee' },
+  ]
+
   if (companyId) {
-    // Filter by company if provided, only return employees (not managers)
-    const { resources } = await container.items
-      .query({
-        query: 'SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role',
-        parameters: [
-          { name: '@companyId', value: companyId },
-          { name: '@role', value: 'employee' },
-        ],
-      })
-      .fetchAll()
-    return jsonResponse(200, { success: true, data: resources })
+    whereClause += ' AND c.companyId = @companyId'
+    parameters.push({ name: '@companyId', value: companyId })
   }
 
-  // Return all employees (not managers)
+  const query = `SELECT * ${whereClause} ORDER BY c.createdAt DESC`
+  const countQuery = `SELECT VALUE COUNT(1) ${whereClause}`
+
+  if (limit) {
+    const page = await paginatedQuery(
+      container,
+      { query, parameters },
+      {
+        limit,
+        cursor,
+        countQuery: { query: countQuery, parameters },
+        partitionKey: companyId ?? undefined,
+      },
+    )
+    return paginatedJsonResponse(200, page)
+  }
+
+  const queryOptions = companyId ? { partitionKey: companyId } : undefined
   const { resources } = await container.items
-    .query({
-      query: 'SELECT * FROM c WHERE c.role = @role',
-      parameters: [{ name: '@role', value: 'employee' }],
-    })
+    .query({ query, parameters }, queryOptions)
     .fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }
