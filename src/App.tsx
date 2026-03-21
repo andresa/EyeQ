@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Spin } from 'antd'
+import LandingPage from './pages/shared/landing'
 import LoginPage from './pages/shared/login'
 import VerifyPage from './pages/shared/verify'
 import AcceptInvitationPage from './pages/shared/accept-invitation'
@@ -36,17 +37,16 @@ const App = () => {
     )
   }
 
-  // Determine default route based on authentication
-  const getDefaultRoute = () => {
-    if (!isAuthenticated || !userProfile) return '/login'
-    return getDashboardRoute(userProfile.role)
-  }
-
-  const defaultRoute = getDefaultRoute()
+  const isSignedIn = Boolean(isAuthenticated && userProfile)
+  const dashboardRoute = userProfile ? getDashboardRoute(userProfile.role) : '/login'
+  const fallbackRoute = isSignedIn ? dashboardRoute : '/'
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+      <Route
+        path="/"
+        element={isSignedIn ? <Navigate to={dashboardRoute} replace /> : <LandingPage />}
+      />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/verify" element={<VerifyPage />} />
       <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
@@ -203,7 +203,7 @@ const App = () => {
         }
       />
 
-      <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+      <Route path="*" element={<Navigate to={fallbackRoute} replace />} />
     </Routes>
   )
 }
