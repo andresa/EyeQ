@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Button, Typography } from 'antd'
 import {
   ArrowRight,
@@ -147,23 +147,26 @@ const LandingPage = () => {
     }
   }
 
-  const scrollToSection = (
-    section: LandingSectionId,
-    options: { behavior?: ScrollBehavior; updateHash?: boolean } = {},
-  ) => {
-    const target = getSectionRef(section).current
+  const scrollToSection = useCallback(
+    (
+      section: LandingSectionId,
+      options: { behavior?: ScrollBehavior; updateHash?: boolean } = {},
+    ) => {
+      const target = getSectionRef(section).current
 
-    if (!target) return
+      if (!target) return
 
-    target.scrollIntoView({
-      behavior: options.behavior ?? 'smooth',
-      block: 'start',
-    })
+      target.scrollIntoView({
+        behavior: options.behavior ?? 'smooth',
+        block: 'start',
+      })
 
-    if (options.updateHash !== false) {
-      window.history.replaceState(null, '', `#${section}`)
-    }
-  }
+      if (options.updateHash !== false) {
+        window.history.replaceState(null, '', `#${section}`)
+      }
+    },
+    [],
+  )
 
   const scrollToTop = () => {
     scrollContainerRef.current?.scrollTo({
@@ -192,7 +195,7 @@ const LandingPage = () => {
     window.addEventListener('hashchange', onHashChange)
 
     return () => window.removeEventListener('hashchange', onHashChange)
-  }, [])
+  }, [scrollToSection])
 
   return (
     <div
