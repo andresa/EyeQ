@@ -3,6 +3,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
+import RichText from '../../components/atoms/RichText'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import {
   fetchTestInstanceResults,
@@ -19,6 +20,7 @@ import {
   resolveAnswer,
 } from './submission-utils'
 import StatusBadge from '../../components/atoms/StatusBadge'
+import QuestionImage from '../../components/atoms/QuestionImage'
 
 const TAB_VIEW = 'view'
 const TAB_MARK = 'mark'
@@ -235,23 +237,42 @@ const SubmissionDetailPage = () => {
                   if (component.type === 'info') {
                     return (
                       <Card key={component.id} type="inner">
-                        <Typography.Text strong>{component.title}</Typography.Text>
-                        <Typography.Paragraph>
-                          {component.description}
-                        </Typography.Paragraph>
+                        <div className="flex flex-col gap-1">
+                          <Typography.Text strong>
+                            <RichText content={component.title} />
+                          </Typography.Text>
+                          <Typography.Paragraph>
+                            <RichText content={component.description} />
+                          </Typography.Paragraph>
+                        </div>
+                        <div className="max-w-[400px]">
+                          <QuestionImage imageId={component.imageId} />
+                        </div>
                       </Card>
                     )
                   }
                   const response = responseMap.get(component.id)
                   return (
                     <Card key={component.id} type="inner">
-                      <Typography.Text strong>{component.title}</Typography.Text>
-                      <Typography.Paragraph type="secondary">
-                        {component.description}
-                      </Typography.Paragraph>
-                      <Typography.Text>
-                        {resolveAnswer(component, response)}
-                      </Typography.Text>
+                      <div className="flex flex-col gap-4 w-full">
+                        <div className="flex flex-col gap-1">
+                          <Typography.Text strong>
+                            <RichText content={component.title} />
+                          </Typography.Text>
+                          <Typography.Paragraph type="secondary">
+                            <RichText content={component.description} />
+                          </Typography.Paragraph>
+                        </div>
+                        <div className="max-w-[400px]">
+                          <QuestionImage imageId={component.imageId} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Typography.Text strong>Employee answer</Typography.Text>
+                          <Typography.Text>
+                            {resolveAnswer(component, response)}
+                          </Typography.Text>
+                        </div>
+                      </div>
                     </Card>
                   )
                 })}
@@ -278,10 +299,19 @@ const SubmissionDetailPage = () => {
                   if (component.type === 'info') {
                     return (
                       <Card key={component.id} type="inner">
-                        <Typography.Text strong>{component.title}</Typography.Text>
-                        <Typography.Paragraph>
-                          {component.description}
-                        </Typography.Paragraph>
+                        <div className="flex flex-col gap-4 w-full">
+                          <div className="flex flex-col gap-1">
+                            <Typography.Text strong>
+                              <RichText content={component.title} />
+                            </Typography.Text>
+                            <Typography.Paragraph>
+                              <RichText content={component.description} />
+                            </Typography.Paragraph>
+                          </div>
+                          <div className="max-w-[400px]">
+                            <QuestionImage imageId={component.imageId} />
+                          </div>
+                        </div>
                       </Card>
                     )
                   }
@@ -295,17 +325,30 @@ const SubmissionDetailPage = () => {
                   return (
                     <Card key={component.id} type="inner">
                       <div className="flex flex-col gap-4 w-full">
-                        <Typography.Text strong>{component.title}</Typography.Text>
-                        <Typography.Paragraph type="secondary">
-                          {component.description}
-                        </Typography.Paragraph>
-                        <Typography.Text>
-                          Employee answer: {resolveAnswer(component, response)}
-                        </Typography.Text>
-                        {correctAnswerLabel ? (
-                          <Typography.Text type="secondary">
-                            Correct answer: {correctAnswerLabel}
+                        <div className="flex flex-col gap-1">
+                          <Typography.Text strong>
+                            <RichText content={component.title} />
                           </Typography.Text>
+                          <Typography.Paragraph type="secondary">
+                            <RichText content={component.description} />
+                          </Typography.Paragraph>
+                        </div>
+                        <div className="max-w-[400px]">
+                          <QuestionImage imageId={component.imageId} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Typography.Text strong>Employee answer</Typography.Text>
+                          <Typography.Text>
+                            {resolveAnswer(component, response)}
+                          </Typography.Text>
+                        </div>
+                        {correctAnswerLabel ? (
+                          <div className="flex flex-col gap-1">
+                            <Typography.Text strong>Correct answer</Typography.Text>
+                            <Typography.Text type="secondary">
+                              {correctAnswerLabel}
+                            </Typography.Text>
+                          </div>
                         ) : null}
                         <div className="flex gap-4">
                           {isCorrectValue ? (

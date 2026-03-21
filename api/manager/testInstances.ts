@@ -1,21 +1,140 @@
+import type { SqlParameter } from '@azure/cosmos'
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
-import { jsonResponse, parseJsonBody } from '../shared/http.js'
+import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
+import { DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from '../shared/pagination.js'
+
+const normalisePageLimit = (limit?: string | null) => {
+  const parsed = limit ? Number.parseInt(limit, 10) : DEFAULT_PAGE_LIMIT
+  if (!parsed || Number.isNaN(parsed) || parsed < 1) {
+    return DEFAULT_PAGE_LIMIT
+  }
+  return Math.min(parsed, MAX_PAGE_LIMIT)
+}
+
+const encodeOffsetCursor = (offset: number) =>
+  Buffer.from(String(offset), 'utf8').toString('base64url')
+
+const decodeOffsetCursor = (cursor?: string | null) => {
+  if (!cursor) return 0
+  try {
+    const parsed = Number.parseInt(Buffer.from(cursor, 'base64url').toString('utf8'), 10)
+    return Number.isNaN(parsed) || parsed < 0 ? 0 : parsed
+  } catch {
+    return 0
+  }
+}
+
+const fetchOffsetPaginatedResults = async <T>(
+  container: Awaited<ReturnType<typeof getContainer>>,
+  querySpec: { query: string; parameters: SqlParameter[] },
+  countQuery: { query: string; parameters: SqlParameter[] },
+  limitParam?: string | null,
+  cursor?: string | null,
+) => {
+  const limit = normalisePageLimit(limitParam)
+  const offset = decodeOffsetCursor(cursor)
+  const pageQuery = {
+    query: `${querySpec.query} OFFSET @offset LIMIT @limit`,
+    parameters: [
+      ...querySpec.parameters,
+      { name: '@offset', value: offset },
+      { name: '@limit', value: limit },
+    ],
+  }
+
+  const [pageResult, countResult] = await Promise.all([
+    container.items.query<T>(pageQuery).fetchAll(),
+    container.items.query<number>(countQuery).fetchAll(),
+  ])
+
+  const total = countResult?.resources?.[0]
+  const nextOffset = offset + (pageResult.resources?.length ?? 0)
+  const nextCursor =
+    typeof total === 'number' && nextOffset < total
+      ? encodeOffsetCursor(nextOffset)
+      : null
+
+  return {
+    items: pageResult.resources ?? [],
+    total: typeof total === 'number' ? total : undefined,
+    nextCursor,
+  }
+}
 
 export const listTestInstancesHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const testId = request.query.get('testId')
+  const employeeIds = (request.query.get('employeeIds') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+  const statuses = (request.query.get('statuses') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+  const assignedAfter = request.query.get('assignedAfter')
+  const assignedBefore = request.query.get('assignedBefore')
+  const limit = request.query.get('limit')
+  const cursor = request.query.get('cursor')
   const container = await getContainer('testInstances', '/employeeId')
+
+  const buildQuery = (baseClause: string, parameters: SqlParameter[]) => {
+    let whereClause = baseClause
+    const queryParameters: SqlParameter[] = [...parameters]
+
+    if (employeeIds.length > 0) {
+      whereClause += ' AND ARRAY_CONTAINS(@employeeIds, c.employeeId)'
+      queryParameters.push({ name: '@employeeIds', value: employeeIds })
+    }
+
+    if (statuses.length > 0) {
+      whereClause += ' AND ARRAY_CONTAINS(@statuses, c.status)'
+      queryParameters.push({ name: '@statuses', value: statuses })
+    }
+
+    if (assignedAfter) {
+      whereClause += ' AND c.assignedAt >= @assignedAfter'
+      queryParameters.push({ name: '@assignedAfter', value: assignedAfter })
+    }
+
+    if (assignedBefore) {
+      whereClause += ' AND c.assignedAt <= @assignedBefore'
+      queryParameters.push({ name: '@assignedBefore', value: assignedBefore })
+    }
+
+    return {
+      pageQuery: {
+        query: `SELECT * ${whereClause} ORDER BY c.assignedAt DESC`,
+        parameters: queryParameters,
+      },
+      countQuery: {
+        query: `SELECT VALUE COUNT(1) ${whereClause}`,
+        parameters: queryParameters,
+      },
+    }
+  }
+
   if (testId) {
-    const { resources } = await container.items
-      .query({
-        query: 'SELECT * FROM c WHERE c.testId = @testId',
-        parameters: [{ name: '@testId', value: testId }],
-      })
-      .fetchAll()
+    const querySpec = buildQuery('FROM c WHERE c.testId = @testId', [
+      { name: '@testId', value: testId },
+    ])
+
+    if (limit) {
+      const page = await fetchOffsetPaginatedResults(
+        container,
+        querySpec.pageQuery,
+        querySpec.countQuery,
+        limit,
+        cursor,
+      )
+      return paginatedJsonResponse(200, page)
+    }
+
+    const { resources } = await container.items.query(querySpec.pageQuery).fetchAll()
     return jsonResponse(200, { success: true, data: resources })
   }
 
@@ -37,15 +156,28 @@ export const listTestInstancesHandler = async (
 
   const testIds = tests.map((test) => test.id)
   if (testIds.length === 0) {
+    if (limit) {
+      return paginatedJsonResponse(200, { items: [], nextCursor: null, total: 0 })
+    }
     return jsonResponse(200, { success: true, data: [] })
   }
 
-  const { resources } = await container.items
-    .query({
-      query: 'SELECT * FROM c WHERE ARRAY_CONTAINS(@testIds, c.testId)',
-      parameters: [{ name: '@testIds', value: testIds }],
-    })
-    .fetchAll()
+  const querySpec = buildQuery('FROM c WHERE ARRAY_CONTAINS(@testIds, c.testId)', [
+    { name: '@testIds', value: testIds },
+  ])
+
+  if (limit) {
+    const page = await fetchOffsetPaginatedResults(
+      container,
+      querySpec.pageQuery,
+      querySpec.countQuery,
+      limit,
+      cursor,
+    )
+    return paginatedJsonResponse(200, page)
+  }
+
+  const { resources } = await container.items.query(querySpec.pageQuery).fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }
 

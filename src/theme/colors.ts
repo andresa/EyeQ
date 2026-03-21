@@ -47,11 +47,14 @@ export const themeColors = {
   tagInfoColor: palette.tags.info.color,
   tagInfoBg: palette.tags.info.bg,
   tagInfoBorder: palette.tags.info.border,
+  bodyBg: '#f5f7fb',
 } as const
 
 /** Ant Design theme config for ConfigProvider */
 export const antdColourTheme: ThemeConfig = {
   token: {
+    fontFamily:
+      '"Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     colorPrimary: themeColors.primary,
     colorPrimaryBg: themeColors.primaryBg,
     colorPrimaryBgHover: palette.neutral['100'],

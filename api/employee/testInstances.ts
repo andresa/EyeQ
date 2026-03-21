@@ -1,8 +1,10 @@
+import type { SqlParameter } from '@azure/cosmos'
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
-import { jsonResponse, parseJsonBody } from '../shared/http.js'
+import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireEmployee } from '../shared/auth.js'
+import { paginatedQuery } from '../shared/pagination.js'
 
 interface ResponseBody {
   questionId: string
@@ -19,62 +21,50 @@ interface SaveBody {
   responses?: ResponseBody[]
 }
 
-const isExpired = (expiresAt?: string | null) => {
-  if (!expiresAt) return false
-  return new Date(expiresAt).getTime() < Date.now()
+const EXPIRABLE_STATUSES = ['assigned', 'opened', 'in-progress']
+
+interface TestInstanceDoc {
+  id: string
+  employeeId: string
+  testId: string
+  status: string
+  expiresAt?: string | null
+  [key: string]: unknown
 }
 
-export const listEmployeeTestInstancesHandler = async (
-  request: HttpRequest,
-): Promise<HttpResponseInit> => {
-  const employeeId = request.query.get('employeeId')
-  if (!employeeId) {
-    return jsonResponse(400, { success: false, error: 'employeeId is required.' })
-  }
+const countQuestions = (sections: { components?: { type?: string }[] }[] | undefined) => {
+  if (!Array.isArray(sections)) return 0
+  return sections.reduce(
+    (sum, section) =>
+      sum +
+      (section.components || []).filter((component) => component.type !== 'info').length,
+    0,
+  )
+}
 
-  const container = await getContainer('testInstances', '/employeeId')
-  const { resources } = await container.items
-    .query({
-      query: 'SELECT * FROM c WHERE c.employeeId = @employeeId',
-      parameters: [{ name: '@employeeId', value: employeeId }],
-    })
-    .fetchAll()
-
-  const expirableStatuses = ['assigned', 'opened', 'in-progress']
-  const updated = []
-  for (const instance of resources) {
-    if (expirableStatuses.includes(instance.status) && isExpired(instance.expiresAt)) {
-      const expired = { ...instance, status: 'expired' }
-      await container.item(instance.id, instance.employeeId).replace(expired)
-      updated.push(expired)
-    } else {
-      updated.push(instance)
-    }
-  }
-
-  const testIds = [...new Set(updated.map((instance) => instance.testId))].filter(Boolean)
+const enrichTestInstances = async (instances: TestInstanceDoc[], companyId?: string) => {
+  const testIds = [
+    ...new Set(instances.map((instance) => instance.testId).filter(Boolean)),
+  ]
   if (testIds.length === 0) {
-    return jsonResponse(200, { success: true, data: updated })
+    return instances
   }
 
   const testContainer = await getContainer('tests', '/companyId')
-  const { resources: tests } = await testContainer.items
-    .query({
-      query: 'SELECT c.id, c.name, c.sections FROM c WHERE ARRAY_CONTAINS(@ids, c.id)',
-      parameters: [{ name: '@ids', value: testIds }],
-    })
-    .fetchAll()
+  const query = companyId
+    ? 'SELECT c.id, c.name, c.sections, c.settings FROM c WHERE c.companyId = @companyId AND ARRAY_CONTAINS(@ids, c.id)'
+    : 'SELECT c.id, c.name, c.sections, c.settings FROM c WHERE ARRAY_CONTAINS(@ids, c.id)'
+  const parameters = companyId
+    ? [
+        { name: '@companyId', value: companyId },
+        { name: '@ids', value: testIds },
+      ]
+    : [{ name: '@ids', value: testIds }]
 
-  const countQuestions = (
-    sections: { components?: { type?: string }[] }[] | undefined,
-  ) => {
-    if (!Array.isArray(sections)) return 0
-    return sections.reduce(
-      (sum, section) =>
-        sum + (section.components || []).filter((c) => c.type !== 'info').length,
-      0,
-    )
-  }
+  const queryOptions = companyId ? { partitionKey: companyId } : undefined
+  const { resources: tests } = await testContainer.items
+    .query({ query, parameters }, queryOptions)
+    .fetchAll()
 
   const nameMap = tests.reduce<Record<string, string>>((map, test) => {
     map[test.id] = test.name
@@ -84,12 +74,132 @@ export const listEmployeeTestInstancesHandler = async (
     map[test.id] = countQuestions(test.sections)
     return map
   }, {})
+  const timeLimitMap = tests.reduce<Record<string, number | null>>((map, test) => {
+    map[test.id] = test.settings?.timeLimitMinutes ?? null
+    return map
+  }, {})
 
-  const enriched = updated.map((instance) => ({
+  return instances.map((instance) => ({
     ...instance,
-    testName: nameMap[instance.testId],
-    questionCount: questionCountMap[instance.testId],
+    testName: nameMap[String(instance.testId)],
+    questionCount: questionCountMap[String(instance.testId)],
+    timeLimitMinutes: timeLimitMap[String(instance.testId)] ?? null,
   }))
+}
+
+const expireEmployeeTestInstances = async (employeeId: string) => {
+  const container = await getContainer('testInstances', '/employeeId')
+  const { resources } = await container.items
+    .query(
+      {
+        query: `SELECT * FROM c
+          WHERE c.employeeId = @employeeId
+            AND ARRAY_CONTAINS(@statuses, c.status)
+            AND IS_DEFINED(c.expiresAt)
+            AND c.expiresAt < @now`,
+        parameters: [
+          { name: '@employeeId', value: employeeId },
+          { name: '@statuses', value: EXPIRABLE_STATUSES },
+          { name: '@now', value: nowIso() },
+        ],
+      },
+      { partitionKey: employeeId },
+    )
+    .fetchAll()
+
+  for (const instance of resources) {
+    await container.item(instance.id, instance.employeeId).replace({
+      ...instance,
+      status: 'expired',
+    })
+  }
+
+  return container
+}
+
+export const listEmployeeTestInstancesHandler = async (
+  request: HttpRequest,
+  companyId?: string,
+): Promise<HttpResponseInit> => {
+  const employeeId = request.query.get('employeeId')
+  if (!employeeId) {
+    return jsonResponse(400, { success: false, error: 'employeeId is required.' })
+  }
+
+  const status = request.query.get('status')
+  const name = request.query.get('name')
+  const limit = request.query.get('limit')
+  const cursor = request.query.get('cursor')
+
+  const container = await expireEmployeeTestInstances(employeeId)
+
+  let whereClause = 'FROM c WHERE c.employeeId = @employeeId'
+  const parameters: SqlParameter[] = [{ name: '@employeeId', value: employeeId }]
+
+  if (status) {
+    whereClause += ' AND c.status = @status'
+    parameters.push({ name: '@status', value: status })
+  }
+
+  if (name) {
+    const testsContainer = await getContainer('tests', '/companyId')
+    const testQuery = companyId
+      ? 'SELECT c.id FROM c WHERE c.companyId = @companyId AND CONTAINS(LOWER(c.name), LOWER(@name))'
+      : 'SELECT c.id FROM c WHERE CONTAINS(LOWER(c.name), LOWER(@name))'
+    const testParameters: SqlParameter[] = companyId
+      ? [
+          { name: '@companyId', value: companyId },
+          { name: '@name', value: name },
+        ]
+      : [{ name: '@name', value: name }]
+    const queryOptions = companyId ? { partitionKey: companyId } : undefined
+    const { resources: matchingTests } = await testsContainer.items
+      .query({ query: testQuery, parameters: testParameters }, queryOptions)
+      .fetchAll()
+
+    const matchingTestIds = matchingTests.map((test) => test.id)
+    if (matchingTestIds.length === 0) {
+      if (limit) {
+        return paginatedJsonResponse(200, { items: [], nextCursor: null, total: 0 })
+      }
+      return jsonResponse(200, { success: true, data: [] })
+    }
+
+    whereClause += ' AND ARRAY_CONTAINS(@testIds, c.testId)'
+    parameters.push({ name: '@testIds', value: matchingTestIds })
+  }
+
+  const query = `SELECT * ${whereClause} ORDER BY c.assignedAt DESC`
+  const countQuery = `SELECT VALUE COUNT(1) ${whereClause}`
+
+  if (limit) {
+    const page = await paginatedQuery(
+      container,
+      { query, parameters },
+      {
+        limit,
+        cursor,
+        countQuery: { query: countQuery, parameters },
+        partitionKey: employeeId,
+      },
+    )
+    const enriched = await enrichTestInstances(page.items as TestInstanceDoc[], companyId)
+    return paginatedJsonResponse(200, {
+      ...page,
+      items: enriched,
+    })
+  }
+
+  const { resources } = await container.items
+    .query({ query, parameters }, { partitionKey: employeeId })
+    .fetchAll()
+  const updated = resources as TestInstanceDoc[]
+
+  if (updated.length === 0) {
+    return jsonResponse(200, { success: true, data: [] })
+  }
+
+  const enriched = await enrichTestInstances(updated, companyId)
 
   return jsonResponse(200, { success: true, data: enriched })
 }
@@ -263,7 +373,8 @@ export const saveTestResponsesHandler = async (
   if (
     instance.status === 'completed' ||
     instance.status === 'marked' ||
-    instance.status === 'expired'
+    instance.status === 'expired' ||
+    instance.status === 'timed-out'
   ) {
     return jsonResponse(409, {
       success: false,
@@ -323,7 +434,11 @@ export const submitTestInstanceHandler = async (
     })
   }
 
-  if (instance.status === 'completed' || instance.status === 'marked') {
+  if (
+    instance.status === 'completed' ||
+    instance.status === 'marked' ||
+    instance.status === 'timed-out'
+  ) {
     return jsonResponse(409, {
       success: false,
       error: 'This test has already been completed.',
@@ -339,6 +454,50 @@ export const submitTestInstanceHandler = async (
   }
   await instanceContainer.item(instance.id, instance.employeeId).replace(updated)
 
+  return jsonResponse(200, { success: true, data: updated })
+}
+
+export const timeoutTestInstanceHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
+  const user = await getAuthenticatedUser(request)
+  const authError = requireEmployee(user)
+  if (authError) return authError
+
+  const instanceId = request.params.instanceId
+  if (!instanceId) {
+    return jsonResponse(400, { success: false, error: 'instanceId is required.' })
+  }
+
+  const instanceContainer = await getContainer('testInstances', '/employeeId')
+  const { resources } = await instanceContainer.items
+    .query({
+      query: 'SELECT * FROM c WHERE c.id = @id',
+      parameters: [{ name: '@id', value: instanceId }],
+    })
+    .fetchAll()
+
+  const instance = resources[0]
+  if (!instance) {
+    return jsonResponse(404, { success: false, error: 'Test instance not found.' })
+  }
+
+  if (user!.role !== 'admin' && user!.id !== instance.employeeId) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'You can only modify your own test instances.',
+    })
+  }
+
+  if (instance.status !== 'opened' && instance.status !== 'in-progress') {
+    return jsonResponse(409, {
+      success: false,
+      error: 'This test cannot be timed out in its current state.',
+    })
+  }
+
+  const updated = { ...instance, status: 'timed-out', timedOutAt: nowIso() }
+  await instanceContainer.item(instance.id, instance.employeeId).replace(updated)
   return jsonResponse(200, { success: true, data: updated })
 }
 
@@ -404,7 +563,7 @@ app.http('employeeTestInstances', {
       })
     }
 
-    return listEmployeeTestInstancesHandler(request)
+    return listEmployeeTestInstancesHandler(request, user!.companyId)
   },
 })
 
@@ -442,6 +601,13 @@ app.http('employeeTestInstanceSubmit', {
   authLevel: 'anonymous',
   route: 'employee/testInstances/{instanceId}/submit',
   handler: submitTestInstanceHandler,
+})
+
+app.http('employeeTestInstanceTimeout', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'employee/testInstances/{instanceId}/timeout',
+  handler: timeoutTestInstanceHandler,
 })
 
 app.http('employeeTestInstanceResults', {

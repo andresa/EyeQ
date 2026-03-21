@@ -1,5 +1,6 @@
 import type {
   ApiResponse,
+  PaginatedResponse,
   ResponsePayload,
   TestInstance,
   TestInstanceDetails,
@@ -8,9 +9,29 @@ import type {
 import { apiRequest } from './api'
 
 export const listEmployeeTestInstances = (
-  employeeId: string,
-): Promise<ApiResponse<TestInstance[]>> =>
-  apiRequest(`/employee/testInstances?employeeId=${encodeURIComponent(employeeId)}`)
+  employeeIdOrParams:
+    | string
+    | {
+        employeeId: string
+        status?: string
+        name?: string
+        limit?: number
+        cursor?: string | null
+      },
+): Promise<PaginatedResponse<TestInstance>> => {
+  const params =
+    typeof employeeIdOrParams === 'string'
+      ? { employeeId: employeeIdOrParams }
+      : employeeIdOrParams
+
+  const query = new URLSearchParams({ employeeId: params.employeeId })
+  if (params.status) query.set('status', params.status)
+  if (params.name) query.set('name', params.name)
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
+
+  return apiRequest(`/employee/testInstances?${query.toString()}`)
+}
 
 export const fetchTestInstanceDetails = (
   instanceId: string,
@@ -44,3 +65,8 @@ export const fetchEmployeeTestInstanceResults = (
   instanceId: string,
 ): Promise<ApiResponse<TestInstanceResults>> =>
   apiRequest(`/employee/testInstances/${instanceId}/results`)
+
+export const timeoutTestInstance = (
+  instanceId: string,
+): Promise<ApiResponse<TestInstance>> =>
+  apiRequest(`/employee/testInstances/${instanceId}/timeout`, { method: 'POST' })

@@ -1,9 +1,15 @@
 import type { HttpResponseInit, HttpRequest } from '@azure/functions'
+import type { PaginatedResult } from './pagination.js'
 
 export interface ApiResult<T> {
   success: boolean
   data?: T
   error?: string
+}
+
+export interface PaginatedApiResult<T> extends ApiResult<T[]> {
+  nextCursor?: string | null
+  total?: number
 }
 
 export const jsonResponse = <T>(
@@ -16,6 +22,17 @@ export const jsonResponse = <T>(
     'Content-Type': 'application/json',
   },
 })
+
+export const paginatedJsonResponse = <T>(
+  status: number,
+  result: PaginatedResult<T>,
+): HttpResponseInit =>
+  jsonResponse(status, {
+    success: true,
+    data: result.items,
+    nextCursor: result.nextCursor,
+    total: result.total,
+  } as PaginatedApiResult<T>)
 
 export const parseJsonBody = async <T>(request: HttpRequest): Promise<T | null> => {
   try {

@@ -8,14 +8,16 @@ import {
   LibraryBig,
   ScrollText,
   Settings,
+  Trophy,
   Users,
 } from 'lucide-react'
 
 interface ManagerLayoutProps extends PropsWithChildren {
   pageHeading?: ReactNode
+  maxWidth?: 'default' | 'wide'
 }
 
-const ManagerLayout = ({ pageHeading, children }: ManagerLayoutProps) => {
+const ManagerLayout = ({ pageHeading, children, maxWidth }: ManagerLayoutProps) => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -34,6 +36,7 @@ const ManagerLayout = ({ pageHeading, children }: ManagerLayoutProps) => {
       label: 'Submissions',
       icon: <ScrollText size={iconSize} />,
     },
+    { key: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
   ]
   const footerItems: MenuProps['items'] = [
     { key: '/manager/settings', label: 'Settings', icon: <Settings size={iconSize} /> },
@@ -55,6 +58,7 @@ const ManagerLayout = ({ pageHeading, children }: ManagerLayoutProps) => {
       footerItems={footerItems}
       selectedKeys={[selectedPath]}
       onNavigate={navigate}
+      maxWidth={maxWidth}
     >
       {children}
     </AppLayout>

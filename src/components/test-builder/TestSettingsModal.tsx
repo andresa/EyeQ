@@ -1,12 +1,18 @@
-import { Checkbox, Form, Modal } from 'antd'
-import { useEffect } from 'react'
+import { App, Checkbox, Form, InputNumber, Modal, Typography } from 'antd'
+import { useEffect, useState } from 'react'
 import type { TestSettings } from '../../types'
 
 interface TestSettingsModalProps {
   open: boolean
   onClose: () => void
   settings: TestSettings
-  onChange: (settings: TestSettings) => void
+  onChange: (settings: TestSettings) => Promise<void>
+}
+
+interface SettingsFormValues {
+  allowBackNavigation: boolean
+  _hours: number | null
+  _minutes: number | null
 }
 
 const TestSettingsModal = ({
@@ -15,18 +21,37 @@ const TestSettingsModal = ({
   settings,
   onChange,
 }: TestSettingsModalProps) => {
-  const [form] = Form.useForm<TestSettings>()
+  const [form] = Form.useForm<SettingsFormValues>()
+  const [isSaving, setIsSaving] = useState(false)
+  const { message } = App.useApp()
 
   useEffect(() => {
     if (open) {
-      form.setFieldsValue(settings)
+      const total = settings.timeLimitMinutes ?? 0
+      form.setFieldsValue({
+        allowBackNavigation: settings.allowBackNavigation,
+        _hours: total >= 60 ? Math.floor(total / 60) : null,
+        _minutes: total % 60 || (total ? 0 : null),
+      })
     }
   }, [open, settings, form])
 
   const handleOk = async () => {
-    const values = await form.validateFields()
-    onChange(values)
-    onClose()
+    try {
+      setIsSaving(true)
+      const values = await form.validateFields()
+      const totalMinutes = (values._hours || 0) * 60 + (values._minutes || 0)
+      await onChange({
+        allowBackNavigation: values.allowBackNavigation,
+        timeLimitMinutes: totalMinutes > 0 ? totalMinutes : null,
+      })
+      onClose()
+    } catch (error) {
+      console.error(error)
+      message.error('Unable to save settings')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -36,17 +61,45 @@ const TestSettingsModal = ({
       onOk={handleOk}
       onCancel={onClose}
       okText="Save"
+      okButtonProps={{ loading: isSaving }}
     >
-      <Form form={form} layout="vertical" initialValues={settings}>
+      <Form form={form} layout="vertical">
         <Form.Item
           name="allowBackNavigation"
           valuePropName="checked"
           extra="When selected, employees can navigate back to review and change answers in previous sections. When disabled, they can only move forward."
         >
-          <Checkbox checked={settings.allowBackNavigation}>
-            Allow back navigation
-          </Checkbox>
+          <Checkbox>Allow back navigation</Checkbox>
         </Form.Item>
+        <Typography.Text strong className="block mb-2">
+          Time to complete
+        </Typography.Text>
+        <div className="flex items-center gap-2 mb-1">
+          <Form.Item name="_hours" className="mb-0" noStyle>
+            <InputNumber
+              min={0}
+              max={23}
+              precision={0}
+              placeholder="0"
+              className="w-20"
+            />
+          </Form.Item>
+          <Typography.Text>hours</Typography.Text>
+          <Form.Item name="_minutes" className="mb-0" noStyle>
+            <InputNumber
+              min={0}
+              max={59}
+              precision={0}
+              placeholder="0"
+              className="w-20"
+            />
+          </Form.Item>
+          <Typography.Text>minutes</Typography.Text>
+        </div>
+        <Typography.Text type="secondary" className="text-xs">
+          Maximum time employees have to complete the test from the moment they open it.
+          Leave blank for no time restriction.
+        </Typography.Text>
       </Form>
     </Modal>
   )

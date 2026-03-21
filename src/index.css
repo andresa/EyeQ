@@ -2,14 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('./assets/fonts/Source_Sans_3/SourceSans3-VariableFont_wght.ttf')
+    format('truetype');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('./assets/fonts/Source_Sans_3/SourceSans3-Italic-VariableFont_wght.ttf')
+    format('truetype');
+  font-weight: 200 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Raleway';
+  src: url('./assets/fonts/Raleway/Raleway-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Raleway';
+  src: url('./assets/fonts/Raleway/Raleway-Italic-VariableFont_wght.ttf')
+    format('truetype');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
-  font-family:
-    'Inter',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  --font-sans:
+    'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Raleway', var(--font-sans);
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
   font-weight: 400;
@@ -17,6 +49,15 @@
   background-color: #f5f7fb;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+h1.ant-typography,
+h2.ant-typography,
+h3.ant-typography,
+h4.ant-typography,
+h5.ant-typography,
+h6.ant-typography {
+  font-family: var(--font-heading);
 }
 
 * {
@@ -45,47 +86,20 @@ body {
   overflow: hidden;
 }
 
-.page-center {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+/* Hide scrollbar for Chrome, Safari, Edge, Opera */
+*::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for Firefox */
+* {
+  scrollbar-width: none;
 }
 
-.page-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.builder-grid {
-  display: grid;
-  grid-template-columns: 240px 1fr 220px;
-  gap: 16px;
-  flex: 1;
-  min-height: 0;
-}
-
-.builder-grid > * {
-  min-height: 0;
-}
-
-.builder-grid-scroll {
-  overflow-y: auto;
-}
-
-@media (max-width: 900px) {
-  .builder-grid {
-    grid-template-columns: 1fr;
+main {
+  @media (pointer: coarse) and (orientation: landscape) {
+    padding-bottom: 10rem !important;
+    padding-left: 5rem !important;
+    padding-right: 5rem !important;
   }
 }
 
@@ -101,4 +115,26 @@ body {
   height: 0;
   overflow: hidden;
   transform: translateY(8px);
+}
+
+/* Tiptap editor */
+.ProseMirror p {
+  margin: 0;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #a3a3a3;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror a {
+  color: var(--color-accent, #1e3a5f);
+  text-decoration: underline;
+}
+
+.ProseMirror a:hover {
+  color: var(--color-accent-light, #4178aa);
 }

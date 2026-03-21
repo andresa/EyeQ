@@ -55,6 +55,7 @@ const SectionList = ({
                   onClick={(event) => event.stopPropagation()}
                   onKeyDown={(event) => event.stopPropagation()}
                   onFocus={() => onSelect(section.id)}
+                  variant="underlined"
                   aria-label="Section title"
                 />
                 <div className="flex gap-2">

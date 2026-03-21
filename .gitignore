@@ -29,3 +29,6 @@ api/local.settings.json
 
 # Admin seeding script (contains secrets)
 scripts/seed-admins.ts
+
+# Cursor
+.cursor

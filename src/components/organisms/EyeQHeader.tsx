@@ -1,8 +1,9 @@
-import { Button, Layout, Typography } from 'antd'
+import { Grid, Layout, Typography } from 'antd'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../hooks/useSession'
-import { LogOut } from 'lucide-react'
+import { EyeQLogo } from '../molecules/EyeQLogo'
+import clsx from 'clsx'
 
 interface EyeQHeaderProps {
   menuButton?: ReactNode
@@ -10,39 +11,33 @@ interface EyeQHeaderProps {
 
 const EyeQHeader = ({ menuButton }: EyeQHeaderProps) => {
   const navigate = useNavigate()
-  const { userProfile, logout } = useSession()
-
-  const handleSignOut = async () => {
-    await logout()
-    navigate('/login', { replace: true })
-  }
+  const { userProfile } = useSession()
+  const isMobile = !Grid.useBreakpoint().md
 
   return (
-    <Layout.Header className="flex h-[60px] items-center justify-between px-3 md:px-5 lg:px-6 bg-accent-700">
-      <div className="flex items-center gap-2 md:gap-3 min-w-0">
-        {menuButton}
-        <Typography.Title
-          level={4}
-          className="shrink-0 cursor-pointer !text-white"
-          onClick={() => navigate('/')}
-        >
-          EyeQ
-        </Typography.Title>
-      </div>
-      {userProfile && (
-        <div className="flex min-w-0 items-center gap-4 md:gap-3">
-          {userProfile?.firstName && (
-            <Typography.Text className="truncate text-white font-semibold">
-              {userProfile.firstName}
-            </Typography.Text>
-          )}
-          <Button
-            type="text"
-            icon={<LogOut />}
-            onClick={handleSignOut}
-            className="text-white"
-          />
-        </div>
+    <Layout.Header className="sticky top-0 z-50 flex h-[72px] items-center px-3 md:px-5 lg:px-6 bg-accent-700">
+      <div className="flex items-center gap-2 md:gap-3 min-w-0">{menuButton}</div>
+
+      <button
+        type="button"
+        className={clsx(
+          'flex shrink-0 cursor-pointer items-center gap-2.5 bg-transparent border-none p-0',
+          isMobile && 'absolute left-1/2 -translate-x-1/2',
+        )}
+        onClick={() => navigate('/')}
+      >
+        <EyeQLogo size="small" shadow rounded color="white" />
+        {!isMobile && (
+          <span className="text-2xl font-semibold tracking-wide text-white font-heading">
+            EyeQ
+          </span>
+        )}
+      </button>
+
+      {!isMobile && userProfile?.firstName && (
+        <Typography.Text className="ml-auto truncate text-white/90 font-medium">
+          {userProfile.firstName}
+        </Typography.Text>
       )}
     </Layout.Header>
   )

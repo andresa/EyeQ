@@ -88,6 +88,9 @@ createRoot(document.getElementById('root')!).render(
                   headerColor: themeColors.primaryDark,
                   headerBorderRadius: smallBorderRadius,
                 },
+                Layout: {
+                  bodyBg: themeColors.bodyBg,
+                },
               },
             }}
           >

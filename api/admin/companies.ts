@@ -1,8 +1,9 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
-import { jsonResponse, parseJsonBody } from '../shared/http.js'
+import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
+import { paginatedQuery } from '../shared/pagination.js'
 
 interface CompanyBody {
   name?: string
@@ -10,9 +11,26 @@ interface CompanyBody {
   isActive?: boolean
 }
 
-export const listCompaniesHandler = async (): Promise<HttpResponseInit> => {
+export const listCompaniesHandler = async (
+  request?: HttpRequest,
+): Promise<HttpResponseInit> => {
   const container = await getContainer('companies', '/id')
-  const { resources } = await container.items.query('SELECT * FROM c').fetchAll()
+  const limit = request?.query.get('limit')
+  const cursor = request?.query.get('cursor')
+
+  const query = 'SELECT * FROM c ORDER BY c.createdAt DESC'
+  const countQuery = 'SELECT VALUE COUNT(1) FROM c'
+
+  if (limit) {
+    const page = await paginatedQuery(container, query, {
+      limit,
+      cursor,
+      countQuery,
+    })
+    return paginatedJsonResponse(200, page)
+  }
+
+  const { resources } = await container.items.query(query).fetchAll()
   return jsonResponse(200, { success: true, data: resources })
 }
 
@@ -89,7 +107,7 @@ app.http('adminCompanies', {
       const user = await getAuthenticatedUser(request)
       const authError = requireAdmin(user)
       if (authError) return authError
-      return listCompaniesHandler()
+      return listCompaniesHandler(request)
     }
     return createCompanyHandler(request)
   },
@@ -132,5 +150,5 @@ app.http('sharedCompanies', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'shared/companies',
-  handler: listCompaniesHandler,
+  handler: (request) => listCompaniesHandler(request),
 })

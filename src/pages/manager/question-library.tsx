@@ -11,6 +11,7 @@ import {
   Typography,
 } from 'antd'
 import Selection from '../../components/atoms/Selection'
+import RichTextEditor from '../../components/atoms/RichTextEditor'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -25,11 +26,13 @@ import {
 } from '../../services/manager'
 import type { ComponentType, QuestionLibraryItem, TestComponentOption } from '../../types'
 import { useSession } from '../../hooks/useSession'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { formatDateTime } from '../../utils/date'
 import { createUUID } from '../../utils/uuid'
 import { LibraryBig, Trash2 } from 'lucide-react'
 import { questionTypeLabels } from '../../utils/questions'
 import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
+import ImageUpload from '../../components/test-builder/ImageUpload'
 
 /** Draft for creating a new question (no server fields). */
 type QuestionDraft = Pick<
@@ -41,6 +44,7 @@ type QuestionDraft = Pick<
   | 'options'
   | 'correctAnswer'
   | 'categoryId'
+  | 'imageId'
 >
 
 const defaultDraft = (): QuestionDraft => ({
@@ -54,6 +58,7 @@ const defaultDraft = (): QuestionDraft => ({
   ],
   correctAnswer: undefined,
   categoryId: null,
+  imageId: null,
 })
 
 const QuestionLibraryPage = () => {
@@ -69,13 +74,33 @@ const QuestionLibraryPage = () => {
   const [editing, setEditing] = useState<QuestionLibraryItem | QuestionDraft | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const { data: items, isLoading } = useQuery({
+  const questionLibraryFilters = {
+    name: nameFilter.trim() || undefined,
+    type: typeFilter || undefined,
+    categoryId: categoryFilter || undefined,
+  }
+
+  const {
+    data: items,
+    isLoading,
+    pagination,
+  } = usePaginatedQuery({
     queryKey: ['questionLibrary', companyId],
-    queryFn: async () => {
-      if (!companyId) return []
-      const res = await listQuestionLibrary(companyId)
+    enabled: !!companyId,
+    filters: questionLibraryFilters,
+    fetchPage: async ({ limit, cursor }) => {
+      if (!companyId) {
+        return { success: true, data: [], nextCursor: null, total: 0 }
+      }
+
+      const res = await listQuestionLibrary({
+        companyId,
+        ...questionLibraryFilters,
+        limit,
+        cursor,
+      })
       if (!res.success || !res.data) throw new Error(res.error || 'Failed to load')
-      return res.data
+      return res
     },
   })
 
@@ -90,20 +115,6 @@ const QuestionLibraryPage = () => {
   })
 
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]))
-
-  const filtered = (items || []).filter((item) => {
-    if (nameFilter && !item.title.toLowerCase().includes(nameFilter.toLowerCase()))
-      return false
-    if (typeFilter && item.type !== typeFilter) return false
-    if (categoryFilter) {
-      if (categoryFilter === 'uncategorised') {
-        if (item.categoryId) return false
-      } else if (item.categoryId !== categoryFilter) {
-        return false
-      }
-    }
-    return true
-  })
 
   const handleDelete = (record: QuestionLibraryItem) => {
     modal.confirm({
@@ -143,10 +154,16 @@ const QuestionLibraryPage = () => {
     },
   ]
 
+  const stripMarkdown = (md: string) =>
+    md
+      .replace(/\*+/g, '')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .trim()
+
   const handleSaveEdit = async () => {
     if (!editing) return
     const trimmedTitle = editing.title?.trim() ?? ''
-    if (!trimmedTitle) {
+    if (!stripMarkdown(trimmedTitle)) {
       message.error('Title is required')
       return
     }
@@ -170,6 +187,7 @@ const QuestionLibraryPage = () => {
             options: editing.options,
             correctAnswer: editing.correctAnswer,
             categoryId: editing.categoryId,
+            imageId: editing.imageId,
           },
         ],
       })
@@ -188,6 +206,7 @@ const QuestionLibraryPage = () => {
         options: editing.options,
         correctAnswer: editing.correctAnswer,
         categoryId: editing.categoryId,
+        imageId: editing.imageId,
       })
       setSaving(false)
       if (!res.success) {
@@ -299,8 +318,9 @@ const QuestionLibraryPage = () => {
         </div>
         <Table
           loading={isLoading}
-          dataSource={filtered}
+          dataSource={items}
           rowKey="id"
+          pagination={pagination}
           onRow={(record) => ({
             onClick: () => setEditing({ ...record }),
             style: { cursor: 'pointer' },
@@ -367,9 +387,13 @@ const QuestionLibraryPage = () => {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Title</Typography.Text>
-              <Input
+              <RichTextEditor
+                key={('id' in editing ? editing.id : 'new') + '-title'}
                 value={editing.title}
-                onChange={(e) => updateEditing({ title: e.target.value })}
+                onChange={(title) => updateEditing({ title })}
+                placeholder="Question title"
+                singleLine
+                ariaLabel="Question title"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -397,12 +421,19 @@ const QuestionLibraryPage = () => {
             </div>
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Description</Typography.Text>
-              <Input.TextArea
-                value={editing.description}
-                onChange={(e) => updateEditing({ description: e.target.value })}
-                rows={3}
+              <RichTextEditor
+                key={('id' in editing ? editing.id : 'new') + '-desc'}
+                value={editing.description ?? ''}
+                onChange={(description) => updateEditing({ description })}
+                placeholder="Description"
+                ariaLabel="Question description"
               />
             </div>
+            <ImageUpload
+              imageId={editing.imageId}
+              companyId={companyId}
+              onChange={(imageId) => updateEditing({ imageId })}
+            />
             {editing.type !== 'info' && (
               <Checkbox
                 checked={editing.required}

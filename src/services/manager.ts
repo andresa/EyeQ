@@ -1,6 +1,7 @@
 import type {
   ApiResponse,
   Employee,
+  PaginatedResponse,
   QuestionCategory,
   QuestionLibraryItem,
   TestInstance,
@@ -57,8 +58,28 @@ export const updateEmployee = (
     },
   )
 
-export const listEmployees = (companyId: string): Promise<ApiResponse<Employee[]>> =>
-  apiRequest(`/manager/employees?companyId=${encodeURIComponent(companyId)}`)
+export const listEmployees = (
+  companyIdOrParams:
+    | string
+    | {
+        companyId: string
+        name?: string
+        limit?: number
+        cursor?: string | null
+      },
+): Promise<PaginatedResponse<Employee>> => {
+  const params =
+    typeof companyIdOrParams === 'string'
+      ? { companyId: companyIdOrParams }
+      : companyIdOrParams
+
+  const query = new URLSearchParams({ companyId: params.companyId })
+  if (params.name) query.set('name', params.name)
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
+
+  return apiRequest(`/manager/employees?${query.toString()}`)
+}
 
 export const deleteEmployee = (
   employeeId: string,
@@ -101,8 +122,28 @@ export const deleteTestTemplate = (testId: string): Promise<ApiResponse<TestTemp
     method: 'DELETE',
   })
 
-export const listTests = (companyId: string): Promise<ApiResponse<TestTemplate[]>> =>
-  apiRequest(`/manager/tests?companyId=${encodeURIComponent(companyId)}`)
+export const listTests = (
+  companyIdOrParams:
+    | string
+    | {
+        companyId: string
+        name?: string
+        limit?: number
+        cursor?: string | null
+      },
+): Promise<PaginatedResponse<TestTemplate>> => {
+  const params =
+    typeof companyIdOrParams === 'string'
+      ? { companyId: companyIdOrParams }
+      : companyIdOrParams
+
+  const query = new URLSearchParams({ companyId: params.companyId })
+  if (params.name) query.set('name', params.name)
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
+
+  return apiRequest(`/manager/tests?${query.toString()}`)
+}
 
 export const assignTest = (
   testId: string,
@@ -116,10 +157,22 @@ export const assignTest = (
 export const listTestInstances = (params: {
   testId?: string
   companyId?: string
-}): Promise<ApiResponse<TestInstance[]>> => {
+  employeeIds?: string[]
+  statuses?: string[]
+  assignedAfter?: string
+  assignedBefore?: string
+  limit?: number
+  cursor?: string | null
+}): Promise<PaginatedResponse<TestInstance>> => {
   const query = new URLSearchParams()
   if (params.testId) query.set('testId', params.testId)
   if (params.companyId) query.set('companyId', params.companyId)
+  if (params.employeeIds?.length) query.set('employeeIds', params.employeeIds.join(','))
+  if (params.statuses?.length) query.set('statuses', params.statuses.join(','))
+  if (params.assignedAfter) query.set('assignedAfter', params.assignedAfter)
+  if (params.assignedBefore) query.set('assignedBefore', params.assignedBefore)
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
   return apiRequest(`/manager/testInstances?${query.toString()}`)
 }
 
@@ -150,12 +203,28 @@ export const markTestInstance = (
 // ============================================================================
 
 export const listQuestionLibrary = (
-  companyId: string,
-  filters?: { name?: string; type?: string },
-): Promise<ApiResponse<QuestionLibraryItem[]>> => {
-  const query = new URLSearchParams({ companyId })
-  if (filters?.name) query.set('name', filters.name)
-  if (filters?.type) query.set('type', filters.type)
+  companyIdOrParams:
+    | string
+    | {
+        companyId: string
+        name?: string
+        type?: string
+        categoryId?: string
+        limit?: number
+        cursor?: string | null
+      },
+): Promise<PaginatedResponse<QuestionLibraryItem>> => {
+  const params =
+    typeof companyIdOrParams === 'string'
+      ? { companyId: companyIdOrParams }
+      : companyIdOrParams
+
+  const query = new URLSearchParams({ companyId: params.companyId })
+  if (params.name) query.set('name', params.name)
+  if (params.type) query.set('type', params.type)
+  if (params.categoryId) query.set('categoryId', params.categoryId)
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
   return apiRequest(`/manager/question-library?${query.toString()}`)
 }
 
@@ -170,6 +239,7 @@ export const createQuestionLibraryItems = (payload: {
     options?: { id: string; label: string }[]
     correctAnswer?: string | string[]
     categoryId?: string | null
+    imageId?: string | null
   }[]
 }): Promise<ApiResponse<QuestionLibraryItem[]>> =>
   apiRequest('/manager/question-library', {
@@ -226,3 +296,34 @@ export const deleteQuestionCategory = (
   apiRequest(`/manager/question-categories/${categoryId}`, {
     method: 'DELETE',
   })
+
+// ============================================================================
+// Image Upload
+// ============================================================================
+
+export const getImageUploadUrl = (payload: {
+  companyId: string
+  contentType: string
+}): Promise<ApiResponse<{ imageId: string; uploadUrl: string }>> =>
+  apiRequest('/manager/images/upload-url', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const uploadImageToBlob = async (
+  uploadUrl: string,
+  file: Blob,
+  contentType: string,
+): Promise<void> => {
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'x-ms-blob-type': 'BlockBlob',
+      'Content-Type': contentType,
+    },
+    body: file,
+  })
+  if (!response.ok) {
+    throw new Error(`Upload failed with status ${response.status}`)
+  }
+}

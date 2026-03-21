@@ -12,6 +12,7 @@ const statusMap: Record<TestInstanceStatus, { color: string; label: string }> = 
   completed: { color: 'green', label: 'Completed' },
   marked: { color: 'purple', label: 'Marked' },
   expired: { color: 'red', label: 'Expired' },
+  'timed-out': { color: 'volcano', label: 'Timed Out' },
 }
 
 const StatusBadge = ({ status }: StatusBadgeProps) => {

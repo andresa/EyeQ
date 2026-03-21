@@ -2,7 +2,6 @@ import { App, Button, Dropdown, Form, Input, Modal, Switch, Table } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import AdminLayout from '../../layouts/AdminLayout'
 import {
   createCompany,
@@ -11,6 +10,7 @@ import {
   updateCompany,
 } from '../../services/admin'
 import type { Company } from '../../types'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { Building } from 'lucide-react'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 
@@ -19,18 +19,15 @@ const AdminCompaniesPage = () => {
   const [form] = Form.useForm()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Company | null>(null)
-  const [loading, setLoading] = useState(false)
 
-  const { data, refetch } = useQuery({
+  const { data, isLoading, pagination, refetch } = usePaginatedQuery({
     queryKey: ['admin', 'companies'],
-    queryFn: async () => {
-      setLoading(true)
-      const response = await listCompanies()
+    fetchPage: async ({ limit, cursor }) => {
+      const response = await listCompanies({ limit, cursor })
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
       }
-      setLoading(false)
-      return response.data
+      return response
     },
   })
 
@@ -120,9 +117,10 @@ const AdminCompaniesPage = () => {
           </Button>
         </div>
         <Table
-          loading={loading}
+          loading={isLoading}
           dataSource={data || []}
           rowKey="id"
+          pagination={pagination}
           onRow={(record) => ({
             onClick: () => openEdit(record),
             style: { cursor: 'pointer' },

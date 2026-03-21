@@ -3,10 +3,12 @@ import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
+import RichText from '../../components/atoms/RichText'
 import { fetchEmployeeTestInstanceResults } from '../../services/employee'
 import type { ResponseRecord, TestComponent } from '../../types'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { ClipboardList } from 'lucide-react'
+import QuestionImage from '../../components/atoms/QuestionImage'
 
 const buildResponseMap = (responses: ResponseRecord[]) =>
   responses.reduce((map, response) => {
@@ -83,18 +85,26 @@ const EmployeeTestResultsPage = () => {
                 if (component.type === 'info') {
                   return (
                     <Card key={component.id} type="inner">
-                      <Typography.Text strong>{component.title}</Typography.Text>
-                      <Typography.Paragraph>{component.description}</Typography.Paragraph>
+                      <Typography.Text strong>
+                        <RichText content={component.title} />
+                      </Typography.Text>
+                      <Typography.Paragraph>
+                        <RichText content={component.description} />
+                      </Typography.Paragraph>
+                      <QuestionImage imageId={component.imageId} />
                     </Card>
                   )
                 }
                 const response = responseMap.get(component.id)
                 return (
                   <Card key={component.id} type="inner">
-                    <Typography.Text strong>{component.title}</Typography.Text>
+                    <Typography.Text strong>
+                      <RichText content={component.title} />
+                    </Typography.Text>
                     <Typography.Paragraph type="secondary">
-                      {component.description}
+                      <RichText content={component.description} />
                     </Typography.Paragraph>
+                    <QuestionImage imageId={component.imageId} />
                     <Typography.Text>
                       {resolveAnswer(component, response)}
                     </Typography.Text>

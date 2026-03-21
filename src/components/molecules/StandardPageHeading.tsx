@@ -2,12 +2,14 @@ import { Button, Typography } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import clsx from 'clsx'
 
 interface StandardPageHeadingProps {
   title: ReactNode
   icon?: ReactNode
   backTo?: string
   actions?: ReactNode
+  className?: string
 }
 
 const StandardPageHeading = ({
@@ -15,6 +17,7 @@ const StandardPageHeading = ({
   icon,
   backTo,
   actions,
+  className,
 }: StandardPageHeadingProps) => {
   const navigate = useNavigate()
   const hasBack = Boolean(backTo)
@@ -30,7 +33,12 @@ const StandardPageHeading = ({
     )
 
   return (
-    <div className="h-[60px] flex-shrink-0 flex items-center justify-between px-6 bg-white border-b border-neutral-200">
+    <div
+      className={clsx(
+        'h-[60px] flex-shrink-0 flex items-center justify-between px-6 bg-white border-b border-neutral-200',
+        className,
+      )}
+    >
       <div className={`flex min-w-0 flex-1 items-center overflow-hidden ${leftGap}`}>
         {hasBack && (
           <Button

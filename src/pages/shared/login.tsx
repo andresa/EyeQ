@@ -18,6 +18,7 @@ import {
   type DevUser,
   type DevUsersResponse,
 } from '../../services/shared'
+import { EyeQLogo } from '../../components/molecules/EyeQLogo'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -122,12 +123,10 @@ const LoginPage = () => {
 
   if (isLoading) {
     return (
-      <div className="page-center">
-        <Card className="w-full max-w-md">
-          <div className="flex justify-center py-8">
-            <Typography.Text type="secondary">Loading...</Typography.Text>
-          </div>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="flex justify-center py-8">
+          <Spin />
+        </div>
       </div>
     )
   }
@@ -135,14 +134,14 @@ const LoginPage = () => {
   const showDevLogin = devModeEnabled && devUsers
 
   return (
-    <div className="page-center">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <div className="flex flex-col gap-6 w-full">
           <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl text-white font-bold">EyeQ</span>
+            <div className="flex justify-center">
+              <EyeQLogo size="large" />
             </div>
-            <Typography.Title level={3} className="mb-1">
+            <Typography.Title level={3} className="mt-4">
               Welcome to EyeQ
             </Typography.Title>
             <Typography.Text type="secondary">

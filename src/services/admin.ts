@@ -1,4 +1,4 @@
-import type { ApiResponse, Company, Employee, Manager } from '../types'
+import type { ApiResponse, Company, Employee, Manager, PaginatedResponse } from '../types'
 import { apiRequest } from './api'
 
 export const createCompany = (payload: {
@@ -19,8 +19,19 @@ export const updateCompany = (
     body: JSON.stringify(payload),
   })
 
-export const listCompanies = (): Promise<ApiResponse<Company[]>> =>
-  apiRequest('/management/companies')
+export const listCompanies = (params?: {
+  limit?: number
+  cursor?: string | null
+}): Promise<PaginatedResponse<Company>> => {
+  const query = new URLSearchParams()
+  if (params?.limit != null) query.set('limit', String(params.limit))
+  if (params?.cursor) query.set('cursor', params.cursor)
+  const queryString = query.toString()
+
+  return apiRequest(
+    queryString ? `/management/companies?${queryString}` : '/management/companies',
+  )
+}
 
 export const deleteCompany = (companyId: string): Promise<ApiResponse<{ id: string }>> =>
   apiRequest(`/management/companies/${companyId}`, { method: 'DELETE' })
@@ -51,8 +62,26 @@ export const updateManager = (
     },
   )
 
-export const listManagers = (companyId: string): Promise<ApiResponse<Manager[]>> =>
-  apiRequest(`/management/managers?companyId=${encodeURIComponent(companyId)}`)
+export const listManagers = (
+  companyIdOrParams:
+    | string
+    | {
+        companyId: string
+        limit?: number
+        cursor?: string | null
+      },
+): Promise<PaginatedResponse<Manager>> => {
+  const params =
+    typeof companyIdOrParams === 'string'
+      ? { companyId: companyIdOrParams }
+      : companyIdOrParams
+
+  const query = new URLSearchParams({ companyId: params.companyId })
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
+
+  return apiRequest(`/management/managers?${query.toString()}`)
+}
 
 export const deleteManager = (
   managerId: string,
@@ -100,7 +129,27 @@ export const updateEmployee = (
     },
   )
 
-export const listEmployees = (companyId?: string): Promise<ApiResponse<Employee[]>> =>
-  companyId
-    ? apiRequest(`/management/employees?companyId=${encodeURIComponent(companyId)}`)
-    : apiRequest('/management/employees')
+export const listEmployees = (
+  companyIdOrParams?:
+    | string
+    | {
+        companyId?: string
+        limit?: number
+        cursor?: string | null
+      },
+): Promise<PaginatedResponse<Employee>> => {
+  const params =
+    typeof companyIdOrParams === 'string' || companyIdOrParams == null
+      ? { companyId: companyIdOrParams }
+      : companyIdOrParams
+
+  const query = new URLSearchParams()
+  if (params.companyId) query.set('companyId', params.companyId)
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
+  const queryString = query.toString()
+
+  return apiRequest(
+    queryString ? `/management/employees?${queryString}` : '/management/employees',
+  )
+}

@@ -4,6 +4,7 @@ import {
   Card,
   Form,
   Input,
+  Modal,
   Progress,
   Radio,
   Checkbox,
@@ -14,11 +15,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
+import RichText from '../../components/atoms/RichText'
 import {
   fetchTestInstanceDetails,
   openTestInstance,
   saveTestResponses,
   submitTestInstance,
+  timeoutTestInstance,
 } from '../../services/employee'
 import type {
   ResponsePayload,
@@ -26,10 +29,20 @@ import type {
   TestComponent,
   TestInstanceDetails,
 } from '../../types'
-import { CheckCircleOutlined } from '@ant-design/icons'
+import { SaveOutlined } from '@ant-design/icons'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
+import QuestionImage from '../../components/atoms/QuestionImage'
 
 const AUTO_SAVE_DELAY_MS = 2000
+
+const formatTimeRemaining = (ms: number): string => {
+  const totalSeconds = Math.ceil(ms / 1000)
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = totalSeconds % 60
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+}
 
 const renderComponentInput = (component: TestComponent) => {
   switch (component.type) {
@@ -101,6 +114,48 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   const sections = data.test.sections
   const isLastSection = currentSectionIndex === sections.length - 1
   const allowBack = data.test.settings?.allowBackNavigation ?? false
+  const timeLimitMinutes = data.test.settings?.timeLimitMinutes
+  const [openedAt, setOpenedAt] = useState<string | undefined>(data.instance.openedAt)
+
+  const deadline = useMemo(() => {
+    if (!timeLimitMinutes || !openedAt) return null
+    return new Date(openedAt).getTime() + timeLimitMinutes * 60 * 1000
+  }, [timeLimitMinutes, openedAt])
+
+  const [timeRemainingMs, setTimeRemainingMs] = useState<number | null>(() => {
+    if (!deadline) return null
+    return Math.max(0, deadline - Date.now())
+  })
+  const [timedOut, setTimedOut] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (deadline === null) return
+    const tick = () => {
+      const remaining = Math.max(0, deadline - Date.now())
+      setTimeRemainingMs(remaining)
+      if (remaining === 0) setTimedOut(true)
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [deadline])
+
+  const isTimerActive = deadline !== null && timeRemainingMs !== null
+  const isLowTime = isTimerActive && timeRemainingMs < 5 * 60 * 1000
+
+  const handleTimeoutOk = async () => {
+    try {
+      setIsSubmitting(true)
+      await timeoutTestInstance(instanceId)
+      navigate('/employee/tests')
+    } catch (error) {
+      console.error(error)
+      message.error('Unable to timeout test')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const components = useMemo(() => {
     return sections.flatMap((section) => section.components)
@@ -154,7 +209,9 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
 
   // Call open on mount
   useEffect(() => {
-    openTestInstance(instanceId)
+    openTestInstance(instanceId).then((res) => {
+      if (res.success && res.data?.openedAt) setOpenedAt(res.data.openedAt)
+    })
   }, [instanceId])
 
   // Auto-save on value changes
@@ -203,6 +260,14 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
     }
   }
 
+  // Scroll main content to top when section changes so each section starts at the top
+  useEffect(() => {
+    const scrollEl = document.querySelector('[data-main-scroll]') as HTMLElement | null
+    if (scrollEl) {
+      scrollEl.scrollTo(0, 0)
+    }
+  }, [currentSectionIndex])
+
   const handleNext = async () => {
     const isValid = await validateSectionRequired(currentSectionIndex)
     if (!isValid) return
@@ -215,6 +280,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
 
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true)
       if (data.instance.status === 'completed' || data.instance.status === 'marked') {
         message.warning('This test has already been completed.')
         return
@@ -254,22 +320,33 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
       if (error instanceof Error) {
         message.error(error.message)
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <EmployeeLayout
       hideHeader
+      disableSideMenu
       pageHeading={
         <StandardPageHeading
+          className="sticky top-0"
           title={
             <div className="flex items-center gap-2">
+              {isTimerActive && (
+                <Typography.Text
+                  type={isLowTime ? 'danger' : undefined}
+                  strong
+                  className="min-w-[50px]"
+                >
+                  {formatTimeRemaining(timeRemainingMs)}
+                </Typography.Text>
+              )}
               <Progress percent={progressPercent} className="flex-1" />
               <div className="w-5 h-5 flex items-center justify-center">
                 {saveStatus == 'saving' && <Spin size="small" />}
-                {(saveStatus === 'saved' || saveStatus === 'idle') && (
-                  <CheckCircleOutlined />
-                )}
+                {(saveStatus === 'saved' || saveStatus === 'idle') && <SaveOutlined />}
               </div>
             </div>
           }
@@ -289,10 +366,15 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                   {section.components.map((component) => {
                     if (component.type === 'info') {
                       return (
-                        <Card key={component.id} styles={{ body: { padding: '16px' } }}>
+                        <Card key={component.id}>
                           <div className="flex flex-col gap-2">
-                            <Typography.Text strong>{component.title}</Typography.Text>
-                            <Typography.Text>{component.description}</Typography.Text>
+                            <Typography.Text strong>
+                              <RichText content={component.title} />
+                            </Typography.Text>
+                            <Typography.Text>
+                              <RichText content={component.description} />
+                            </Typography.Text>
+                            <QuestionImage imageId={component.imageId} />
                           </div>
                         </Card>
                       )
@@ -304,13 +386,15 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                         name={`q_${component.id}`}
                         label={
                           <div className="flex flex-col">
-                            <Typography.Text strong>{component.title}</Typography.Text>
+                            <Typography.Text strong>
+                              <RichText content={component.title} />
+                            </Typography.Text>
                             {component.description && (
                               <Typography.Text
                                 type="secondary"
                                 className="block font-normal"
                               >
-                                {component.description}
+                                <RichText content={component.description} />
                               </Typography.Text>
                             )}
                           </div>
@@ -321,7 +405,14 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
                             : []
                         }
                       >
-                        {renderComponentInput(component)}
+                        <div className="flex flex-col gap-2">
+                          <div className="max-w-[400px]">
+                            {component.imageId && (
+                              <QuestionImage imageId={component.imageId} />
+                            )}
+                          </div>
+                          {renderComponentInput(component)}
+                        </div>
                       </Form.Item>
                     )
                   })}
@@ -330,16 +421,23 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
             ))}
             <div className="flex w-full justify-between gap-4 mt-4">
               {allowBack && currentSectionIndex > 0 ? (
-                <Button onClick={handlePrevious}>Previous</Button>
+                <Button onClick={handlePrevious} disabled={timedOut}>
+                  Previous
+                </Button>
               ) : (
                 <div />
               )}
               {isLastSection ? (
-                <Button type="primary" onClick={handleSubmit}>
+                <Button
+                  type="primary"
+                  onClick={handleSubmit}
+                  disabled={timedOut}
+                  loading={isSubmitting}
+                >
                   Submit test
                 </Button>
               ) : (
-                <Button type="primary" onClick={handleNext}>
+                <Button type="primary" onClick={handleNext} disabled={timedOut}>
                   Next
                 </Button>
               )}
@@ -347,6 +445,22 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
           </Card>
         </Form>
       </div>
+      <Modal
+        title="Time limit reached"
+        open={timedOut}
+        closable={false}
+        mask={{ closable: false }}
+        footer={
+          <Button type="primary" onClick={handleTimeoutOk} loading={isSubmitting}>
+            Ok
+          </Button>
+        }
+      >
+        <Typography.Paragraph className="mb-0">
+          The time limit for this test has elapsed. Your answers have been saved
+          automatically.
+        </Typography.Paragraph>
+      </Modal>
     </EmployeeLayout>
   )
 }
@@ -369,7 +483,7 @@ const EmployeeTestPage = () => {
 
   if (isLoading || !data) {
     return (
-      <EmployeeLayout>
+      <EmployeeLayout hideHeader disableSideMenu>
         <div className="flex justify-center items-center h-full">
           <Spin />
         </div>
@@ -411,6 +525,26 @@ const EmployeeTestPage = () => {
             <Typography.Title level={4}>{data.test.name}</Typography.Title>
             <Typography.Text type="secondary">
               This test has expired and can no longer be completed.
+            </Typography.Text>
+            <div>
+              <Button onClick={() => navigate('/employee/tests')}>
+                Back to My tests
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </EmployeeLayout>
+    )
+  }
+
+  if (data.instance.status === 'timed-out') {
+    return (
+      <EmployeeLayout>
+        <Card>
+          <div className="flex flex-col gap-4 w-full">
+            <Typography.Title level={4}>{data.test.name}</Typography.Title>
+            <Typography.Text type="secondary">
+              The time limit for this test has elapsed and it can no longer be completed.
             </Typography.Text>
             <div>
               <Button onClick={() => navigate('/employee/tests')}>

@@ -17,6 +17,7 @@ import {
   sendManagerInvitation,
 } from '../../services/admin'
 import type { Company, Manager, InvitationStatus, UserRole } from '../../types'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import UserModal from '../../components/molecules/UserModal'
 import { UserStar } from 'lucide-react'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
@@ -40,12 +41,10 @@ const AdminManagersPage = () => {
   const [open, setOpen] = useState(false)
   const [editingManager, setEditingManager] = useState<Manager | null>(null)
   const [companyId, setCompanyId] = useState<string>('')
-  const [loading, setLoading] = useState(false)
 
-  const { data: companies } = useQuery({
-    queryKey: ['admin', 'companies'],
+  const { data: companies, isLoading: isCompaniesLoading } = useQuery({
+    queryKey: ['admin', 'companies', 'lookup'],
     queryFn: async () => {
-      setLoading(true)
       const response = await listCompanies()
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load companies')
@@ -53,22 +52,31 @@ const AdminManagersPage = () => {
       if (response.data.length === 1) {
         setCompanyId(response.data[0].id)
       }
-      setLoading(false)
       return response.data
     },
   })
 
-  const { data: managers, refetch } = useQuery({
+  const {
+    data: managers,
+    isLoading: isManagersLoading,
+    pagination,
+    refetch,
+  } = usePaginatedQuery({
     queryKey: ['admin', 'managers', companyId],
-    queryFn: async () => {
-      setLoading(true)
-      if (!companyId) return [] as Manager[]
-      const response = await listManagers(companyId)
+    enabled: !!companyId,
+    fetchPage: async ({ limit, cursor }) => {
+      if (!companyId) {
+        return { success: true, data: [], nextCursor: null, total: 0 }
+      }
+      const response = await listManagers({
+        companyId,
+        limit,
+        cursor,
+      })
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Unable to load managers')
       }
-      setLoading(false)
-      return response.data
+      return response
     },
   })
 
@@ -186,9 +194,10 @@ const AdminManagersPage = () => {
           </Button>
         </div>
         <Table
-          loading={loading}
+          loading={isCompaniesLoading || isManagersLoading}
           dataSource={managers || []}
           rowKey="id"
+          pagination={pagination}
           onRow={(record) => ({
             onClick: () => openEdit(record),
             style: { cursor: 'pointer' },

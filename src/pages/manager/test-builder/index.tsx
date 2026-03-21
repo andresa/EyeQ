@@ -1,6 +1,6 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react'
 import { Button, Card, Input, Spin, Typography, App } from 'antd'
-import { SettingOutlined } from '@ant-design/icons'
+import { SaveOutlined, SettingOutlined } from '@ant-design/icons'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -50,30 +50,31 @@ const createComponent = (type: ComponentType): TestComponent => {
 
 interface TestBuilderFormProps {
   testId?: string
-  existingTest?: TestTemplate
   companyId?: string
-  managerId?: string
+  sections: TestSection[]
+  onSectionsChange: React.Dispatch<React.SetStateAction<TestSection[]>>
+  settings: TestSettings
+  onSettingsChange: React.Dispatch<React.SetStateAction<TestSettings>>
+  settingsOpen: boolean
+  onSettingsOpenChange: (open: boolean) => void
 }
 
 const TestBuilderForm = ({
   testId,
-  existingTest,
   companyId,
-  managerId,
+  sections,
+  onSectionsChange: setSections,
+  settings,
+  onSettingsChange: setSettings,
+  settingsOpen,
+  onSettingsOpenChange: setSettingsOpen,
 }: TestBuilderFormProps) => {
-  const navigate = useNavigate()
   const { message } = App.useApp()
 
-  const [name, setName] = useState(existingTest?.name || '')
-  const [sections, setSections] = useState<TestSection[]>(existingTest?.sections || [])
-  const [settings, setSettings] = useState<TestSettings>(
-    existingTest?.settings ?? { allowBackNavigation: false },
-  )
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [componentsAnimateRef] = useAutoAnimate({ duration: 250 })
   const [selectedSectionId, setSelectedSectionId] = useState<string>(
-    existingTest?.sections[0]?.id || '',
+    sections[0]?.id || '',
   )
 
   const activeSection = useMemo(
@@ -203,116 +204,36 @@ const TestBuilderForm = ({
         `${components.length} question${components.length === 1 ? '' : 's'} added from library`,
       )
     },
-    [selectedSectionId, message],
+    [selectedSectionId, message, setSections],
   )
 
-  const handleSave = async () => {
-    if (!companyId || !managerId) {
-      message.error('Select a company and manager first.')
-      return
-    }
-    if (!name) {
-      message.error('Enter a test name.')
-      return
-    }
-    if (sections.length === 0) {
-      message.error('Add at least one section.')
-      return
-    }
-
-    const libraryItems = sections
-      .flatMap((s) => s.components)
-      .filter((c) => c.saveToLibrary && c.title)
-
-    const cleanedSections = sections.map((section) => ({
-      ...section,
-      components: section.components.map((c) => {
-        const { saveToLibrary, ...rest } = c
-        void saveToLibrary
-        return rest
-      }),
-    }))
-
-    const payload = {
-      companyId,
-      managerId,
-      name,
-      sections: cleanedSections,
-      settings,
-    }
-
-    const response = testId
-      ? await updateTestTemplate(testId, payload)
-      : await createTestTemplate(payload)
-
-    if (!response.success) {
-      message.error(response.error || 'Unable to save test')
-      return
-    }
-
-    if (libraryItems.length > 0) {
-      await createQuestionLibraryItems({
-        companyId,
-        managerId,
-        items: libraryItems.map((c) => ({
-          type: c.type,
-          title: c.title!,
-          description: c.description,
-          required: c.required,
-          options: c.options,
-          correctAnswer: c.correctAnswer,
-          categoryId: c.categoryId,
-        })),
-      })
-    }
-
-    message.success('Test saved')
-    navigate('/manager/tests')
-  }
-
   return (
-    <div className="flex flex-col gap-6 w-full">
-      <div className="builder-grid">
-        <div className="flex flex-col gap-4 h-full">
-          <Card className="shrink-0">
-            <div className="flex flex-col gap-4 w-full">
-              <Typography.Text strong>Test name</Typography.Text>
-              <Input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Safety Induction"
-                aria-label="Test name"
-              />
-            </div>
-          </Card>
-          <div className="builder-grid-scroll flex-1 min-h-0">
-            <SectionList
-              sections={sections}
-              selectedId={selectedSectionId}
-              onSelect={setSelectedSectionId}
-              onAdd={addSection}
-              onRename={renameSection}
-              onMove={moveSection}
-              onDelete={deleteSection}
-            />
-          </div>
+    <div className="flex flex-col gap-6 w-full flex-1 min-h-0 overflow-hidden">
+      <div className="flex gap-4 flex-1 min-h-0 overflow-hidden">
+        {/* left pane */}
+        <div className="flex-1 max-w-[300px] min-w-[200px] overflow-y-auto">
+          <SectionList
+            sections={sections}
+            selectedId={selectedSectionId}
+            onSelect={setSelectedSectionId}
+            onAdd={addSection}
+            onRename={renameSection}
+            onMove={moveSection}
+            onDelete={deleteSection}
+          />
         </div>
-        <div className="builder-grid-pane flex flex-col gap-4 min-h-0">
+        {/* middle pane */}
+        <div className="flex-[2_1_0] max-w-[800px] min-w-0 flex flex-col min-h-0 gap-4">
           {activeSection ? (
             <>
-              <Card>
-                <Typography.Title level={4} className="shrink-0">
-                  {activeSection.title}
-                </Typography.Title>
-              </Card>
               {activeSection.components.length === 0 ? (
-                <Card>
+                <Card className="shrink-0">
                   <Typography.Text type="secondary">
                     Add components to start building this section.
                   </Typography.Text>
                 </Card>
               ) : null}
-              <div className="builder-grid-scroll flex-1 min-h-0">
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 <div
                   ref={componentsAnimateRef}
                   className="flex flex-col gap-4 overflow-visible"
@@ -340,40 +261,30 @@ const TestBuilderForm = ({
             </Card>
           )}
         </div>
-        <div className="builder-grid-pane min-h-0">
-          <div className="builder-grid-scroll h-full">
-            <Card className="h-full">
-              <div className="flex flex-col gap-4 w-full">
-                <Typography.Text strong>Components</Typography.Text>
+        {/* right pane */}
+        <div className="flex-1 max-w-[300px] min-w-[200px] flex flex-col gap-4 overflow-y-auto">
+          <Card className="h-full">
+            <div className="flex flex-col gap-4 w-full">
+              <Typography.Text strong>Components</Typography.Text>
+              <Button
+                type="dashed"
+                icon={<LibraryBig size={20} />}
+                onClick={() => setLibraryOpen(true)}
+              >
+                Copy from library
+              </Button>
+              {questionTypeLabels.map((item) => (
                 <Button
-                  type="dashed"
-                  icon={<LibraryBig size={20} />}
-                  onClick={() => setLibraryOpen(true)}
+                  key={item.value}
+                  icon={getQuestionTypeIcon(item.value, 20)}
+                  onClick={() => addComponentToSection(item.value)}
                 >
-                  Copy from library
+                  {item.label}
                 </Button>
-                {questionTypeLabels.map((item) => (
-                  <Button
-                    key={item.value}
-                    icon={getQuestionTypeIcon(item.value, 20)}
-                    onClick={() => addComponentToSection(item.value)}
-                  >
-                    {item.label}
-                  </Button>
-                ))}
-              </div>
-            </Card>
-          </div>
+              ))}
+            </div>
+          </Card>
         </div>
-      </div>
-      <div className="flex gap-4 justify-end">
-        <Button onClick={() => navigate('/manager/tests')}>Cancel</Button>
-        <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)}>
-          Settings
-        </Button>
-        <Button type="primary" onClick={handleSave}>
-          Save test
-        </Button>
       </div>
       <TestSettingsModal
         open={settingsOpen}
@@ -405,9 +316,18 @@ const TestBuilderForm = ({
 
 const TestBuilderPage = () => {
   const { testId } = useParams()
+  const navigate = useNavigate()
+  const { message } = App.useApp()
   const { userProfile } = useSession()
   const companyId = userProfile?.companyId
   const managerId = userProfile?.userType === 'manager' ? userProfile.id : undefined
+  const [name, setName] = useState('')
+  const [nameInitialized, setNameInitialized] = useState(!testId)
+  const [sections, setSections] = useState<TestSection[]>([])
+  const [settings, setSettings] = useState<TestSettings>({ allowBackNavigation: false })
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [stateInitialized, setStateInitialized] = useState(!testId)
+  const [isSaving, setIsSaving] = useState(false)
 
   const { data: tests, isLoading } = useQuery({
     queryKey: ['manager', 'tests', companyId],
@@ -426,11 +346,124 @@ const TestBuilderPage = () => {
     [testId, tests],
   )
 
-  const heading = <StandardPageHeading title="Test Builder" backTo="/manager/tests" />
+  if (existingTest && !nameInitialized) {
+    setName(existingTest.name || '')
+    setNameInitialized(true)
+  }
+
+  if (existingTest && !stateInitialized) {
+    setSections(existingTest.sections || [])
+    setSettings(existingTest.settings ?? { allowBackNavigation: false })
+    setStateInitialized(true)
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+      if (!companyId || !managerId) {
+        message.error('Select a company and manager first.')
+        return
+      }
+      if (!name) {
+        message.error('Enter a test name.')
+        return
+      }
+      if (sections.length === 0) {
+        message.error('Add at least one section.')
+        return
+      }
+
+      const libraryItems = sections
+        .flatMap((s) => s.components)
+        .filter((c) => c.saveToLibrary && c.title)
+
+      const cleanedSections = sections.map((section) => ({
+        ...section,
+        components: section.components.map((c) => {
+          const { saveToLibrary, ...rest } = c
+          void saveToLibrary
+          return rest
+        }),
+      }))
+
+      const payload = {
+        companyId,
+        managerId,
+        name,
+        sections: cleanedSections,
+        settings,
+      }
+
+      const response = testId
+        ? await updateTestTemplate(testId, payload)
+        : await createTestTemplate(payload)
+
+      if (!response.success) {
+        message.error(response.error || 'Unable to save test')
+        return
+      }
+
+      if (libraryItems.length > 0) {
+        await createQuestionLibraryItems({
+          companyId,
+          managerId,
+          items: libraryItems.map((c) => ({
+            type: c.type,
+            title: c.title!,
+            description: c.description,
+            required: c.required,
+            options: c.options,
+            correctAnswer: c.correctAnswer,
+            categoryId: c.categoryId,
+            imageId: c.imageId,
+          })),
+        })
+      }
+
+      message.success('Test saved')
+      navigate('/manager/tests')
+    } catch (error) {
+      console.error(error)
+      message.error('Unable to save test')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const heading = (
+    <StandardPageHeading
+      backTo="/manager/tests"
+      title={
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Untitled test"
+          variant="underlined"
+          className="font-semibold text-xl"
+          aria-label="Test name"
+        />
+      }
+      actions={
+        <div className="flex gap-2 shrink-0 ml-4">
+          <Button icon={<SettingOutlined />} onClick={() => setSettingsOpen(true)}>
+            Settings
+          </Button>
+          <Button
+            icon={<SaveOutlined />}
+            type="primary"
+            onClick={handleSave}
+            loading={isSaving}
+          >
+            Save
+          </Button>
+        </div>
+      }
+    />
+  )
 
   if (testId && isLoading) {
     return (
-      <ManagerLayout pageHeading={heading}>
+      <ManagerLayout pageHeading={heading} maxWidth="wide">
         <div className="flex justify-center items-center h-full">
           <Spin />
         </div>
@@ -439,13 +472,17 @@ const TestBuilderPage = () => {
   }
 
   return (
-    <ManagerLayout pageHeading={heading}>
+    <ManagerLayout pageHeading={heading} maxWidth="wide">
       <TestBuilderForm
         key={testId || 'new'}
         testId={testId}
-        existingTest={existingTest}
         companyId={companyId}
-        managerId={managerId}
+        sections={sections}
+        onSectionsChange={setSections}
+        settings={settings}
+        onSettingsChange={setSettings}
+        settingsOpen={settingsOpen}
+        onSettingsOpenChange={setSettingsOpen}
       />
     </ManagerLayout>
   )

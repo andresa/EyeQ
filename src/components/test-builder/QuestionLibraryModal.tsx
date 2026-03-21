@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Button, Input, Modal, Table, Tag } from 'antd'
 import Selection from '../atoms/Selection'
 import { useQuery } from '@tanstack/react-query'
 import type { QuestionLibraryItem, TestComponent } from '../../types'
+import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { listQuestionCategories, listQuestionLibrary } from '../../services/manager'
 import { createUUID } from '../../utils/uuid'
 
@@ -37,6 +38,7 @@ const toComponent = (item: QuestionLibraryItem): TestComponent => ({
   options: item.options?.map((opt) => ({ id: createUUID(), label: opt.label })),
   correctAnswer: undefined,
   categoryId: item.categoryId,
+  imageId: item.imageId,
 })
 
 const QuestionLibraryModal = ({
@@ -46,18 +48,38 @@ const QuestionLibraryModal = ({
   onClose,
 }: QuestionLibraryModalProps) => {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
+  const [selectedItems, setSelectedItems] = useState<Record<string, QuestionLibraryItem>>(
+    {},
+  )
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ['questionLibrary', companyId],
-    queryFn: async () => {
-      const res = await listQuestionLibrary(companyId)
-      if (!res.success || !res.data) throw new Error(res.error || 'Failed to load')
-      return res.data
-    },
+  const questionLibraryFilters = {
+    name: nameFilter.trim() || undefined,
+    type: typeFilter || undefined,
+    categoryId: categoryFilter || undefined,
+  }
+
+  const {
+    data: items,
+    isLoading,
+    pagination,
+  } = usePaginatedQuery({
+    queryKey: ['questionLibrary', companyId, 'modal'],
     enabled: open && !!companyId,
+    pageSize: 8,
+    filters: questionLibraryFilters,
+    fetchPage: async ({ limit, cursor }) => {
+      const res = await listQuestionLibrary({
+        companyId,
+        ...questionLibraryFilters,
+        limit,
+        cursor,
+      })
+      if (!res.success || !res.data) throw new Error(res.error || 'Failed to load')
+      return res
+    },
   })
 
   const { data: categories = [] } = useQuery({
@@ -75,35 +97,33 @@ const QuestionLibraryModal = ({
   const handleAfterOpenChange = (visible: boolean) => {
     if (!visible) {
       setSelectedKeys([])
+      setSelectedItems({})
       setNameFilter('')
       setTypeFilter('')
       setCategoryFilter('')
     }
   }
 
-  const filtered = useMemo(() => {
-    let result = items
-    if (nameFilter) {
-      const lower = nameFilter.toLowerCase()
-      result = result.filter((i) => i.title.toLowerCase().includes(lower))
-    }
-    if (typeFilter) {
-      result = result.filter((i) => i.type === typeFilter)
-    }
-    if (categoryFilter) {
-      if (categoryFilter === 'uncategorised') {
-        result = result.filter((i) => !i.categoryId)
-      } else {
-        result = result.filter((i) => i.categoryId === categoryFilter)
-      }
-    }
-    return result
-  }, [items, nameFilter, typeFilter, categoryFilter])
-
   const handleAdd = () => {
-    const selected = items.filter((i) => selectedKeys.includes(i.id))
+    const selected = selectedKeys
+      .map((key) => selectedItems[key])
+      .filter((item): item is QuestionLibraryItem => Boolean(item))
     onAdd(selected.map(toComponent))
     onClose()
+  }
+
+  const toggleSelection = (item: QuestionLibraryItem) => {
+    setSelectedKeys((prev) =>
+      prev.includes(item.id) ? prev.filter((key) => key !== item.id) : [...prev, item.id],
+    )
+    setSelectedItems((prev) => {
+      if (prev[item.id]) {
+        const next = { ...prev }
+        delete next[item.id]
+        return next
+      }
+      return { ...prev, [item.id]: item }
+    })
   }
 
   return (
@@ -154,21 +174,32 @@ const QuestionLibraryModal = ({
       </div>
       <Table
         loading={isLoading}
-        dataSource={filtered}
+        dataSource={items}
         rowKey="id"
         size="small"
-        pagination={{ pageSize: 8 }}
+        pagination={pagination}
         rowSelection={{
           selectedRowKeys: selectedKeys,
-          onChange: (keys) => setSelectedKeys(keys as string[]),
+          preserveSelectedRowKeys: true,
+          onChange: (keys, rows) => {
+            setSelectedKeys(keys as string[])
+            setSelectedItems((prev) => {
+              const next = { ...prev }
+              for (const row of rows as QuestionLibraryItem[]) {
+                next[row.id] = row
+              }
+              for (const item of items) {
+                if (!keys.includes(item.id)) {
+                  delete next[item.id]
+                }
+              }
+              return next
+            })
+          },
         }}
         onRow={(record) => ({
           onClick: () => {
-            setSelectedKeys((prev) =>
-              prev.includes(record.id)
-                ? prev.filter((k) => k !== record.id)
-                : [...prev, record.id],
-            )
+            toggleSelection(record)
           },
           style: { cursor: 'pointer' },
         })}

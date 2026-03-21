@@ -7,6 +7,9 @@ import type {
   UserProfile,
   SessionResponse,
   VerifyResponse,
+  LeaderboardBoardConfig,
+  LeaderboardData,
+  LeaderboardSettings,
 } from '../types'
 import { apiRequest } from './api'
 
@@ -98,6 +101,41 @@ export const listEmployeesShared = (
   companyId: string,
 ): Promise<ApiResponse<Employee[]>> =>
   apiRequest(`/shared/employees?companyId=${encodeURIComponent(companyId)}`)
+
+// ============================================================================
+// Leaderboard
+// ============================================================================
+
+export const fetchLeaderboardSettings = (
+  companyId: string,
+): Promise<ApiResponse<LeaderboardSettings>> =>
+  apiRequest(`/shared/leaderboard-settings?companyId=${encodeURIComponent(companyId)}`)
+
+export const updateLeaderboardSettings = (payload: {
+  companyId: string
+  boards: LeaderboardBoardConfig[]
+}): Promise<ApiResponse<LeaderboardSettings>> =>
+  apiRequest('/shared/leaderboard-settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+export const fetchLeaderboard = (params: {
+  companyId: string
+  boardIndex: number
+  periodOffset?: number
+  offset?: number
+  limit?: number
+}): Promise<ApiResponse<LeaderboardData>> => {
+  const query = new URLSearchParams({
+    companyId: params.companyId,
+    boardIndex: String(params.boardIndex),
+  })
+  if (params.periodOffset != null) query.set('periodOffset', String(params.periodOffset))
+  if (params.offset != null) query.set('offset', String(params.offset))
+  if (params.limit != null) query.set('limit', String(params.limit))
+  return apiRequest(`/shared/leaderboard?${query.toString()}`)
+}
 
 // ============================================================================
 // Dev Login (only works in development)

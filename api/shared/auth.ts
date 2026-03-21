@@ -273,6 +273,25 @@ export function requireEmployee(user: AuthenticatedUser | null): HttpResponseIni
 
 export { createSession, findUserByEmail }
 
+export async function authenticateByToken(
+  token: string,
+): Promise<AuthenticatedUser | null> {
+  const session = await validateSession(token)
+  if (!session) return null
+  const result = await findUserByEmail(session.email)
+  if (!result) return null
+  const { user, userType } = result
+  return {
+    id: user.id as string,
+    email: user.email as string,
+    firstName: user.firstName as string,
+    lastName: user.lastName as string,
+    role: (user.role as UserRole) || userType,
+    companyId: (user.companyId as string) || '',
+    userType,
+  }
+}
+
 // ============================================================================
 // HTTP Handlers
 // ============================================================================

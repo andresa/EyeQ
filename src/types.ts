@@ -6,6 +6,11 @@ export interface ApiResponse<T> {
   error?: string
 }
 
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+  nextCursor?: string | null
+  total?: number
+}
+
 export type UserRole = 'employee' | 'manager' | 'admin'
 export type UserType = 'employee' | 'manager' | 'admin'
 
@@ -111,6 +116,7 @@ export type ComponentType = 'single_choice' | 'multiple_choice' | 'text' | 'info
 
 export interface TestSettings {
   allowBackNavigation: boolean
+  timeLimitMinutes?: number | null
 }
 
 export interface TestTemplate {
@@ -146,6 +152,7 @@ export interface TestComponent {
   correctAnswer?: string | string[]
   saveToLibrary?: boolean
   categoryId?: string | null
+  imageId?: string | null
 }
 
 export interface QuestionLibraryItem {
@@ -159,6 +166,7 @@ export interface QuestionLibraryItem {
   options?: TestComponentOption[]
   correctAnswer?: string | string[]
   categoryId?: string | null
+  imageId?: string | null
   createdAt: string
   updatedAt?: string
 }
@@ -178,6 +186,7 @@ export type TestInstanceStatus =
   | 'completed'
   | 'expired'
   | 'marked'
+  | 'timed-out'
 
 export interface TestInstance {
   id: UUID
@@ -185,6 +194,7 @@ export interface TestInstance {
   testName?: string
   /** Number of questions (excluding info components). Used for time estimate. */
   questionCount?: number
+  timeLimitMinutes?: number | null
   employeeId: UUID
   assignedByManagerId: UUID
   status: TestInstanceStatus
@@ -192,6 +202,7 @@ export interface TestInstance {
   openedAt?: string
   expiresAt?: string
   completedAt?: string
+  timedOutAt?: string
   markedAt?: string
   score?: number | null
 }
@@ -226,4 +237,41 @@ export interface ResponsePayload {
   questionId: UUID
   answer: string | string[] | null
   textAnswer?: string | null
+}
+
+// ============================================================================
+// Leaderboard
+// ============================================================================
+
+export type LeaderboardType = 'top_average_score' | 'top_single_test_score'
+export type LeaderboardPeriod = 'week' | 'month'
+export type LeaderboardDisplayLimit = 'top5' | 'full'
+
+export interface LeaderboardBoardConfig {
+  type: LeaderboardType
+  period: LeaderboardPeriod
+  displayLimit: LeaderboardDisplayLimit
+}
+
+export interface LeaderboardSettings {
+  boards: LeaderboardBoardConfig[]
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  employeeId: string
+  employeeName: string
+  score: number
+  testCount: number
+}
+
+export interface LeaderboardData {
+  board: LeaderboardBoardConfig
+  periodLabel: string
+  periodStart: string
+  periodEnd: string
+  entries: LeaderboardEntry[]
+  total: number
+  offset: number
+  limit: number
 }
