@@ -44,7 +44,7 @@ function setup() {
   sessionsContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
-  sessionsContainer.items.create.mockResolvedValue({})
+  sessionsContainer.items.create.mockResolvedValue({ resource: {} })
   sessionsContainer.item.mockReturnValue({
     read: vi.fn().mockResolvedValue({ resource: null }),
     replace: vi.fn().mockResolvedValue({}),
@@ -53,7 +53,7 @@ function setup() {
   magicLinksContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
-  magicLinksContainer.items.create.mockResolvedValue({})
+  magicLinksContainer.items.create.mockResolvedValue({ resource: {} })
   magicLinksContainer.item.mockReturnValue({
     read: vi.fn(),
     replace: vi.fn().mockResolvedValue({}),

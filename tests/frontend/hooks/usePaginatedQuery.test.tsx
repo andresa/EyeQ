@@ -40,7 +40,7 @@ describe('hooks/usePaginatedQuery', () => {
           fetchPage,
         }),
       {
-        initialProps: { filters: { search: undefined } },
+        initialProps: { filters: { search: undefined as string | undefined } },
         wrapper,
       },
     )

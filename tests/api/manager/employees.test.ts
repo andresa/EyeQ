@@ -51,7 +51,7 @@ function setup(overrides: { isManager?: boolean } = {}) {
   mockContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
-  mockContainer.items.create.mockResolvedValue({})
+  mockContainer.items.create.mockResolvedValue({ resource: {} })
   mockContainer.item.mockReturnValue({
     read: vi.fn().mockResolvedValue({ resource: null }),
     replace: vi.fn().mockResolvedValue({}),

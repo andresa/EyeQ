@@ -54,10 +54,10 @@ export function createWrapper(options: WrapperOptions = {}) {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('../../src/hooks/useSession'),
     )
-    ;(mod as Record<string, unknown>).__setSession({
-      ...defaultSession,
-      ...options.session,
-    })
+    const setSession = (mod as Record<string, unknown>).__setSession as (
+      s: Record<string, unknown>,
+    ) => void
+    setSession({ ...defaultSession, ...options.session })
   }
 
   function Wrapper({ children }: PropsWithChildren) {

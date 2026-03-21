@@ -57,13 +57,15 @@ export const useInfiniteList = <T>({
     staleTime,
   })
 
+  const { hasNextPage, isFetchingNextPage, fetchNextPage: fetchNext } = query
+
   useEffect(() => {
     const node = sentinelRef.current
     if (
       typeof IntersectionObserver === 'undefined' ||
       !node ||
-      !query.hasNextPage ||
-      query.isFetchingNextPage
+      !hasNextPage ||
+      isFetchingNextPage
     ) {
       return
     }
@@ -71,8 +73,8 @@ export const useInfiniteList = <T>({
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries
-        if (entry?.isIntersecting && query.hasNextPage && !query.isFetchingNextPage) {
-          void query.fetchNextPage()
+        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNext()
         }
       },
       { rootMargin },
@@ -80,7 +82,7 @@ export const useInfiniteList = <T>({
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [query.fetchNextPage, query.hasNextPage, query.isFetchingNextPage, rootMargin])
+  }, [fetchNext, hasNextPage, isFetchingNextPage, rootMargin])
 
   return {
     items: query.data?.pages.flatMap((page) => page.data ?? []) ?? [],

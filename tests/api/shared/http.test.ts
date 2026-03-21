@@ -13,7 +13,9 @@ describe('shared/http', () => {
 
       expect(response.status).toBe(200)
       expect(response.jsonBody).toEqual({ success: true, data: { id: '1' } })
-      expect(response.headers?.['Content-Type']).toBe('application/json')
+      expect((response.headers as Record<string, string>)?.['Content-Type']).toBe(
+        'application/json',
+      )
     })
 
     it('builds a 400 error response', () => {

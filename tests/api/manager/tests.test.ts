@@ -49,14 +49,14 @@ function setup(overrides: { isManager?: boolean } = {}) {
   mockContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
-  mockContainer.items.create.mockResolvedValue({})
+  mockContainer.items.create.mockResolvedValue({ resource: {} })
   mockContainer.item.mockReturnValue({
     read: vi.fn().mockResolvedValue({ resource: null }),
     replace: vi.fn().mockResolvedValue({}),
     delete: vi.fn().mockResolvedValue({}),
   })
 
-  instancesContainer.items.create.mockResolvedValue({})
+  instancesContainer.items.create.mockResolvedValue({ resource: {} })
 }
 
 describe('manager/tests', () => {
@@ -87,12 +87,10 @@ describe('manager/tests', () => {
 
     it('returns paginated tests when limit is provided', async () => {
       setup()
-      const fetchNext = vi
-        .fn()
-        .mockResolvedValue({
-          resources: [{ id: 't1', name: 'Safety' }],
-          continuationToken: 'cursor_1',
-        })
+      const fetchNext = vi.fn().mockResolvedValue({
+        resources: [{ id: 't1', name: 'Safety' }],
+        continuationToken: 'cursor_1',
+      })
       const fetchAll = vi.fn().mockResolvedValue({ resources: [7] })
       mockContainer.items.query
         .mockReturnValueOnce({ fetchNext })

@@ -47,7 +47,7 @@ function setup() {
   instancesContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
-  instancesContainer.items.create.mockResolvedValue({})
+  instancesContainer.items.create.mockResolvedValue({ resource: {} })
   instancesContainer.item.mockReturnValue({
     read: vi.fn().mockResolvedValue({ resource: null }),
     replace: vi.fn().mockResolvedValue({}),
@@ -61,7 +61,7 @@ function setup() {
   responsesContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
-  responsesContainer.items.create.mockResolvedValue({})
+  responsesContainer.items.create.mockResolvedValue({ resource: {} })
   responsesContainer.item.mockReturnValue({
     read: vi.fn().mockResolvedValue({ resource: null }),
     replace: vi.fn().mockResolvedValue({}),

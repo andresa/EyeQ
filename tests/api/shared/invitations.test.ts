@@ -15,26 +15,22 @@ vi.mock('../../../api/shared/cosmos', () => ({
 }))
 
 vi.mock('../../../api/shared/auth', () => ({
-  getAuthenticatedUser: vi
-    .fn()
-    .mockResolvedValue({
-      id: 'mgr_1',
-      email: 'm@t.com',
-      firstName: 'M',
-      lastName: 'G',
-      role: 'manager',
-      companyId: 'c1',
-      userType: 'manager',
-    }),
+  getAuthenticatedUser: vi.fn().mockResolvedValue({
+    id: 'mgr_1',
+    email: 'm@t.com',
+    firstName: 'M',
+    lastName: 'G',
+    role: 'manager',
+    companyId: 'c1',
+    userType: 'manager',
+  }),
   requireManager: vi.fn().mockReturnValue(null),
   requireAdmin: vi.fn().mockReturnValue(null),
-  createSession: vi
-    .fn()
-    .mockResolvedValue({
-      id: 's1',
-      token: 'session_tok',
-      expiresAt: '2099-01-01T00:00:00Z',
-    }),
+  createSession: vi.fn().mockResolvedValue({
+    id: 's1',
+    token: 'session_tok',
+    expiresAt: '2099-01-01T00:00:00Z',
+  }),
 }))
 
 vi.mock('../../../api/shared/email', () => ({
@@ -50,7 +46,7 @@ function setup() {
   invitationsContainer.items.query.mockReturnValue({
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
-  invitationsContainer.items.create.mockResolvedValue({})
+  invitationsContainer.items.create.mockResolvedValue({ resource: {} })
   invitationsContainer.item.mockReturnValue({
     read: vi.fn().mockResolvedValue({ resource: null }),
     replace: vi.fn().mockResolvedValue({}),
@@ -60,18 +56,16 @@ function setup() {
     fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
   })
   usersContainer.item.mockReturnValue({
-    read: vi
-      .fn()
-      .mockResolvedValue({
-        resource: {
-          id: 'u1',
-          companyId: 'c1',
-          firstName: 'J',
-          lastName: 'D',
-          email: 'j@t.com',
-          role: 'employee',
-        },
-      }),
+    read: vi.fn().mockResolvedValue({
+      resource: {
+        id: 'u1',
+        companyId: 'c1',
+        firstName: 'J',
+        lastName: 'D',
+        email: 'j@t.com',
+        role: 'employee',
+      },
+    }),
     replace: vi.fn().mockResolvedValue({}),
     delete: vi.fn(),
   })

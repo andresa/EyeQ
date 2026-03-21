@@ -11,6 +11,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "typecheck": "tsc -b --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
     "test:watch": "vitest",
     "preview": "vite preview",
     "prepare": "husky install"
