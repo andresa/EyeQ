@@ -2,8 +2,10 @@ import ManagerLayout from '../../layouts/ManagerLayout'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { Tabs, Typography } from 'antd'
 import { useSession } from '../../hooks/useSession'
+import ArticleTopicsSection from '../../components/organisms/ArticleTopicsSection'
 import CategoriesSection from '../../components/organisms/CategoriesSection'
 import LeaderboardSettingsSection from '../../components/organisms/LeaderboardSettingsSection'
+import LearningResourcesSettingsSection from '../../components/organisms/LearningResourcesSettingsSection'
 import { Settings } from 'lucide-react'
 
 const ManagerSettingsPage = () => {
@@ -23,6 +25,16 @@ const ManagerSettingsPage = () => {
                 key: 'categories',
                 label: 'Question Categories',
                 children: <CategoriesSection companyId={companyId} />,
+              },
+              {
+                key: 'article-topics',
+                label: 'Article Topics',
+                children: <ArticleTopicsSection companyId={companyId} />,
+              },
+              {
+                key: 'learning-resources',
+                label: 'Learning Resources',
+                children: <LearningResourcesSettingsSection companyId={companyId} />,
               },
               {
                 key: 'leaderboard',

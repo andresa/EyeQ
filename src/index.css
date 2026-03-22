@@ -64,7 +64,7 @@ h6.ant-typography {
   box-sizing: border-box;
 }
 
-.ant-btn .ant-btn-icon {
+.ant-btn .ant-btn-icon .ant-modal-footer {
   display: flex;
   align-items: center;
   justify-content: center;

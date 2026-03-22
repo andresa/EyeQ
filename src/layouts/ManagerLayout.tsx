@@ -3,6 +3,7 @@ import type { MenuProps } from 'antd'
 import type { PropsWithChildren, ReactNode } from 'react'
 import AppLayout from './AppLayout'
 import {
+  BookOpen,
   FlaskConical,
   Gauge,
   LibraryBig,
@@ -36,6 +37,11 @@ const ManagerLayout = ({ pageHeading, children, maxWidth }: ManagerLayoutProps) 
       label: 'Submissions',
       icon: <ScrollText size={iconSize} />,
     },
+    {
+      key: '/manager/learning-resources',
+      label: 'Learning Resources',
+      icon: <BookOpen size={iconSize} />,
+    },
     { key: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
   ]
   const footerItems: MenuProps['items'] = [
@@ -48,7 +54,9 @@ const ManagerLayout = ({ pageHeading, children, maxWidth }: ManagerLayoutProps) 
       ? '/manager/test-submissions'
       : location.pathname.startsWith('/manager/test-builder')
         ? '/manager/tests'
-        : location.pathname
+        : location.pathname.startsWith('/manager/learning-resources')
+          ? '/manager/learning-resources'
+          : location.pathname
 
   return (
     <AppLayout

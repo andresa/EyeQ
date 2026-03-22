@@ -18,13 +18,19 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import {
+  createFlashCards,
   deleteQuestionLibraryItem,
   createQuestionLibraryItems,
   listQuestionCategories,
   listQuestionLibrary,
   updateQuestionLibraryItem,
 } from '../../services/manager'
-import type { ComponentType, QuestionLibraryItem, TestComponentOption } from '../../types'
+import type {
+  ComponentType,
+  FlashCardType,
+  QuestionLibraryItem,
+  TestComponentOption,
+} from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { formatDateTime } from '../../utils/date'
@@ -35,7 +41,7 @@ import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
 import ImageUpload from '../../components/test-builder/ImageUpload'
 
 /** Draft for creating a new question (no server fields). */
-type QuestionDraft = Pick<
+interface QuestionEditorState extends Pick<
   QuestionLibraryItem,
   | 'type'
   | 'title'
@@ -45,9 +51,12 @@ type QuestionDraft = Pick<
   | 'correctAnswer'
   | 'categoryId'
   | 'imageId'
->
+> {
+  id?: string
+  addToFlashCards?: boolean
+}
 
-const defaultDraft = (): QuestionDraft => ({
+const defaultDraft = (): QuestionEditorState => ({
   type: 'single_choice',
   title: '',
   description: '',
@@ -59,7 +68,16 @@ const defaultDraft = (): QuestionDraft => ({
   correctAnswer: undefined,
   categoryId: null,
   imageId: null,
+  addToFlashCards: false,
 })
+
+const hasCorrectAnswer = (value: QuestionEditorState['correctAnswer']) =>
+  typeof value === 'string' ? Boolean(value) : Array.isArray(value) && value.length > 0
+
+const canAddToFlashCards = (editing: QuestionEditorState | null) =>
+  !!editing &&
+  (editing.type === 'single_choice' || editing.type === 'multiple_choice') &&
+  hasCorrectAnswer(editing.correctAnswer)
 
 const QuestionLibraryPage = () => {
   const { message, modal } = App.useApp()
@@ -71,7 +89,7 @@ const QuestionLibraryPage = () => {
   const [nameFilter, setNameFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
-  const [editing, setEditing] = useState<QuestionLibraryItem | QuestionDraft | null>(null)
+  const [editing, setEditing] = useState<QuestionEditorState | null>(null)
   const [saving, setSaving] = useState(false)
 
   const questionLibraryFilters = {
@@ -140,7 +158,18 @@ const QuestionLibraryPage = () => {
       label: 'Edit',
       onClick: (e) => {
         e.domEvent.stopPropagation()
-        setEditing({ ...record })
+        setEditing({
+          id: record.id,
+          type: record.type,
+          title: record.title,
+          description: record.description,
+          required: record.required,
+          options: record.options,
+          correctAnswer: record.correctAnswer,
+          categoryId: record.categoryId,
+          imageId: record.imageId,
+          addToFlashCards: false,
+        })
       },
     },
     {
@@ -168,7 +197,7 @@ const QuestionLibraryPage = () => {
       return
     }
     setSaving(true)
-    const isCreate = !('id' in editing) || !editing.id
+    const isCreate = !editing.id
     if (isCreate) {
       if (!companyId || !managerId) {
         message.error('Cannot create question: missing company or manager context')
@@ -198,7 +227,14 @@ const QuestionLibraryPage = () => {
       }
       message.success('Question created')
     } else {
-      const res = await updateQuestionLibraryItem(editing.id, {
+      const itemId = editing.id
+      if (!itemId) {
+        setSaving(false)
+        message.error('Question id is missing')
+        return
+      }
+
+      const res = await updateQuestionLibraryItem(itemId, {
         type: editing.type,
         title: trimmedTitle,
         description: editing.description,
@@ -215,11 +251,37 @@ const QuestionLibraryPage = () => {
       }
       message.success('Question updated')
     }
+
+    if (editing.addToFlashCards && canAddToFlashCards(editing)) {
+      const flashCardResponse = await createFlashCards({
+        companyId: companyId!,
+        items: [
+          {
+            type: editing.type as FlashCardType,
+            title: trimmedTitle,
+            options: editing.options ?? [],
+            correctAnswer: editing.correctAnswer!,
+            imageId: editing.imageId,
+            categoryId: editing.categoryId,
+          },
+        ],
+      })
+
+      if (!flashCardResponse.success) {
+        message.warning(
+          flashCardResponse.error || 'Question saved, but the flash card was not created',
+        )
+      }
+    }
+
     setEditing(null)
     queryClient.invalidateQueries({ queryKey: ['questionLibrary'] })
+    queryClient.invalidateQueries({
+      queryKey: ['manager-learning-resources-flash-cards'],
+    })
   }
 
-  const updateEditing = (updates: Partial<QuestionLibraryItem | QuestionDraft>) => {
+  const updateEditing = (updates: Partial<QuestionEditorState>) => {
     if (!editing) return
     setEditing({ ...editing, ...updates })
   }
@@ -237,11 +299,17 @@ const QuestionLibraryPage = () => {
     const updated = editing.options.filter((_, i) => i !== index)
     const correctAnswer = editing.correctAnswer
     if (typeof correctAnswer === 'string' && correctAnswer === removed.id) {
-      updateEditing({ options: updated, correctAnswer: undefined })
-    } else if (Array.isArray(correctAnswer)) {
       updateEditing({
         options: updated,
-        correctAnswer: correctAnswer.filter((id) => id !== removed.id),
+        correctAnswer: undefined,
+        addToFlashCards: false,
+      })
+    } else if (Array.isArray(correctAnswer)) {
+      const nextAnswers = correctAnswer.filter((id) => id !== removed.id)
+      updateEditing({
+        options: updated,
+        correctAnswer: nextAnswers,
+        addToFlashCards: nextAnswers.length > 0 ? editing.addToFlashCards : false,
       })
     } else {
       updateEditing({ options: updated })
@@ -271,6 +339,7 @@ const QuestionLibraryPage = () => {
             ? editing.options
             : undefined,
       correctAnswer: isChoice ? undefined : undefined,
+      addToFlashCards: false,
     })
   }
 
@@ -322,7 +391,19 @@ const QuestionLibraryPage = () => {
           rowKey="id"
           pagination={pagination}
           onRow={(record) => ({
-            onClick: () => setEditing({ ...record }),
+            onClick: () =>
+              setEditing({
+                id: record.id,
+                type: record.type,
+                title: record.title,
+                description: record.description,
+                required: record.required,
+                options: record.options,
+                correctAnswer: record.correctAnswer,
+                categoryId: record.categoryId,
+                imageId: record.imageId,
+                addToFlashCards: false,
+              }),
             style: { cursor: 'pointer' },
           })}
           columns={[
@@ -373,9 +454,7 @@ const QuestionLibraryPage = () => {
       </div>
 
       <Modal
-        title={
-          editing && 'id' in editing && editing.id ? 'Edit Question' : 'Create Question'
-        }
+        title={editing?.id ? 'Edit Question' : 'Create Question'}
         open={!!editing}
         onCancel={() => setEditing(null)}
         onOk={handleSaveEdit}
@@ -388,7 +467,7 @@ const QuestionLibraryPage = () => {
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Title</Typography.Text>
               <RichTextEditor
-                key={('id' in editing ? editing.id : 'new') + '-title'}
+                key={`${editing.id ?? 'new'}-title`}
                 value={editing.title}
                 onChange={(title) => updateEditing({ title })}
                 placeholder="Question title"
@@ -422,7 +501,7 @@ const QuestionLibraryPage = () => {
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Description</Typography.Text>
               <RichTextEditor
-                key={('id' in editing ? editing.id : 'new') + '-desc'}
+                key={`${editing.id ?? 'new'}-desc`}
                 value={editing.description ?? ''}
                 onChange={(description) => updateEditing({ description })}
                 placeholder="Description"
@@ -479,7 +558,12 @@ const QuestionLibraryPage = () => {
                         ? editing.correctAnswer
                         : undefined
                     }
-                    onChange={(v) => updateEditing({ correctAnswer: v })}
+                    onChange={(v) =>
+                      updateEditing({
+                        correctAnswer: v,
+                        addToFlashCards: v ? editing.addToFlashCards : false,
+                      })
+                    }
                     options={(editing.options || []).map((o) => ({
                       value: o.id,
                       label: o.label || '(empty)',
@@ -494,7 +578,12 @@ const QuestionLibraryPage = () => {
                     value={
                       Array.isArray(editing.correctAnswer) ? editing.correctAnswer : []
                     }
-                    onChange={(v) => updateEditing({ correctAnswer: v })}
+                    onChange={(v) =>
+                      updateEditing({
+                        correctAnswer: v,
+                        addToFlashCards: v.length > 0 ? editing.addToFlashCards : false,
+                      })
+                    }
                     options={(editing.options || []).map((o) => ({
                       value: o.id,
                       label: o.label || '(empty)',
@@ -504,6 +593,14 @@ const QuestionLibraryPage = () => {
                   />
                 )}
               </div>
+            )}
+            {canAddToFlashCards(editing) && (
+              <Checkbox
+                checked={editing.addToFlashCards}
+                onChange={(e) => updateEditing({ addToFlashCards: e.target.checked })}
+              >
+                Add to Flash Cards
+              </Checkbox>
             )}
           </div>
         )}

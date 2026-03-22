@@ -1,14 +1,17 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Spin } from 'antd'
+import LandingPage from './pages/shared/landing'
 import LoginPage from './pages/shared/login'
 import VerifyPage from './pages/shared/verify'
 import AcceptInvitationPage from './pages/shared/accept-invitation'
 import EmployeeDashboard from './pages/employee'
+import EmployeeLearningResourcesPage from './pages/employee/learning-resources'
 import EmployeeTestsPage from './pages/employee/tests'
 import EmployeeTestPage from './pages/employee/test'
 import EmployeeTestResultsPage from './pages/employee/test-results'
 import ManagerDashboard from './pages/manager'
 import ManagerEmployeesPage from './pages/manager/employees'
+import ManagerLearningResourcesPage from './pages/manager/learning-resources'
 import ManagerTestsPage from './pages/manager/tests'
 import ManagerTestBuilderPage from './pages/manager/test-builder'
 import ManagerTestSubmissionsPage from './pages/manager/test-submissions'
@@ -36,17 +39,16 @@ const App = () => {
     )
   }
 
-  // Determine default route based on authentication
-  const getDefaultRoute = () => {
-    if (!isAuthenticated || !userProfile) return '/login'
-    return getDashboardRoute(userProfile.role)
-  }
-
-  const defaultRoute = getDefaultRoute()
+  const isSignedIn = Boolean(isAuthenticated && userProfile)
+  const dashboardRoute = userProfile ? getDashboardRoute(userProfile.role) : '/login'
+  const fallbackRoute = isSignedIn ? dashboardRoute : '/'
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+      <Route
+        path="/"
+        element={isSignedIn ? <Navigate to={dashboardRoute} replace /> : <LandingPage />}
+      />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/verify" element={<VerifyPage />} />
       <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
@@ -65,6 +67,14 @@ const App = () => {
         element={
           <RouteGuard allowedRoles={['employee']}>
             <EmployeeTestsPage />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/employee/learning-resources"
+        element={
+          <RouteGuard allowedRoles={['employee']}>
+            <EmployeeLearningResourcesPage />
           </RouteGuard>
         }
       />
@@ -117,6 +127,14 @@ const App = () => {
         element={
           <RouteGuard allowedRoles={['manager']}>
             <ManagerTestsPage />
+          </RouteGuard>
+        }
+      />
+      <Route
+        path="/manager/learning-resources"
+        element={
+          <RouteGuard allowedRoles={['manager']}>
+            <ManagerLearningResourcesPage />
           </RouteGuard>
         }
       />
@@ -203,7 +221,7 @@ const App = () => {
         }
       />
 
-      <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+      <Route path="*" element={<Navigate to={fallbackRoute} replace />} />
     </Routes>
   )
 }

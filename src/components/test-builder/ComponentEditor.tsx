@@ -18,6 +18,13 @@ const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProp
     onChange({ ...component, ...updates })
   }
 
+  const hasCorrectAnswer = (value: TestComponent['correctAnswer']) =>
+    typeof value === 'string' ? Boolean(value) : Array.isArray(value) && value.length > 0
+
+  const canAddToFlashCards =
+    (component.type === 'single_choice' || component.type === 'multiple_choice') &&
+    hasCorrectAnswer(component.correctAnswer)
+
   const { data: categories = [] } = useQuery({
     queryKey: ['questionCategories', companyId],
     queryFn: async () => {
@@ -77,6 +84,7 @@ const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProp
               update({
                 options,
                 correctAnswer: valid ? selected : undefined,
+                addToFlashCards: valid ? component.addToFlashCards : false,
               })
               return
             }
@@ -89,18 +97,37 @@ const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProp
             update({
               options,
               correctAnswer: validSelections,
+              addToFlashCards:
+                validSelections.length > 0 ? component.addToFlashCards : false,
             })
           }}
-          onCorrectAnswerChange={(value) => update({ correctAnswer: value })}
+          onCorrectAnswerChange={(value) =>
+            update({
+              correctAnswer: value,
+              addToFlashCards: hasCorrectAnswer(value)
+                ? component.addToFlashCards
+                : false,
+            })
+          }
         />
       ) : null}
-      <div className="flex justify-between">
-        <Checkbox
-          checked={component.saveToLibrary}
-          onChange={(event) => update({ saveToLibrary: event.target.checked })}
-        >
-          Save to library
-        </Checkbox>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <Checkbox
+            checked={component.saveToLibrary}
+            onChange={(event) => update({ saveToLibrary: event.target.checked })}
+          >
+            Save to library
+          </Checkbox>
+          {canAddToFlashCards ? (
+            <Checkbox
+              checked={component.addToFlashCards}
+              onChange={(event) => update({ addToFlashCards: event.target.checked })}
+            >
+              Add to Flash Cards
+            </Checkbox>
+          ) : null}
+        </div>
         {component.type !== 'info' && (
           <Switch
             checked={component.required}

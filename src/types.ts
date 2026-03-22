@@ -113,6 +113,7 @@ export interface InvitationValidation {
 }
 
 export type ComponentType = 'single_choice' | 'multiple_choice' | 'text' | 'info'
+export type FlashCardType = Extract<ComponentType, 'single_choice' | 'multiple_choice'>
 
 export interface TestSettings {
   allowBackNavigation: boolean
@@ -151,6 +152,7 @@ export interface TestComponent {
   options?: TestComponentOption[]
   correctAnswer?: string | string[]
   saveToLibrary?: boolean
+  addToFlashCards?: boolean
   categoryId?: string | null
   imageId?: string | null
 }
@@ -177,6 +179,44 @@ export interface QuestionCategory {
   name: string
   createdAt: string
   updatedAt?: string
+}
+
+export interface ArticleTopic {
+  id: string
+  companyId: string
+  name: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface Article {
+  id: string
+  companyId: string
+  createdBy: string
+  title: string
+  description: string
+  topicIds: string[]
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface FlashCard {
+  id: string
+  companyId: string
+  createdBy: string
+  type: FlashCardType
+  title: string
+  options: TestComponentOption[]
+  correctAnswer: string | string[]
+  imageId?: string | null
+  categoryId?: string | null
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface LearningResourcesSettings {
+  articlesEnabled: boolean
+  flashCardsEnabled: boolean
 }
 
 export type TestInstanceStatus =

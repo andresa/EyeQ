@@ -10,6 +10,10 @@ import type {
   ResponseRecord,
   QuestionLibraryItem,
   QuestionCategory,
+  ArticleTopic,
+  Article,
+  FlashCard,
+  LearningResourcesSettings,
 } from '../../src/types'
 
 let counter = 0
@@ -197,6 +201,56 @@ export function mockQuestionCategory(
     companyId: 'company_1',
     name: 'Safety',
     createdAt: '2025-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+export function mockArticleTopic(overrides: Partial<ArticleTopic> = {}): ArticleTopic {
+  return {
+    id: nextId('at'),
+    companyId: 'company_1',
+    name: 'Workplace Safety',
+    createdAt: '2025-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+export function mockArticle(overrides: Partial<Article> = {}): Article {
+  return {
+    id: nextId('art'),
+    companyId: 'company_1',
+    createdBy: 'user_1',
+    title: 'Safety Guidelines',
+    description: 'An article about workplace safety.',
+    topicIds: ['at_1'],
+    createdAt: '2025-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+export function mockFlashCard(overrides: Partial<FlashCard> = {}): FlashCard {
+  return {
+    id: nextId('fc'),
+    companyId: 'company_1',
+    createdBy: 'user_1',
+    type: 'single_choice',
+    title: 'What is the correct procedure?',
+    options: [
+      { id: 'opt_1', label: 'Option A' },
+      { id: 'opt_2', label: 'Option B' },
+    ],
+    correctAnswer: 'opt_1',
+    createdAt: '2025-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+export function mockLearningResourcesSettings(
+  overrides: Partial<LearningResourcesSettings> = {},
+): LearningResourcesSettings {
+  return {
+    articlesEnabled: true,
+    flashCardsEnabled: true,
     ...overrides,
   }
 }
