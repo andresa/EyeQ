@@ -171,79 +171,89 @@ const leaderboardRows = [
 
 export const PerformanceIllustration = () => {
   return (
-    <div className="relative mx-auto aspect-[5/4] w-full max-w-[520px] overflow-hidden rounded-[32px] border border-accent-100 bg-white p-5 shadow-[0_30px_80px_rgba(12,28,48,0.12)] sm:p-6">
+    <div className="relative mx-auto w-full max-w-[520px] overflow-hidden rounded-[24px] border border-accent-100 bg-white p-4 shadow-[0_30px_80px_rgba(12,28,48,0.12)] sm:rounded-[32px] sm:p-6">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(217,228,239,0.9),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(240,244,248,1),transparent_40%)]" />
 
-      <div className="relative rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-sm sm:p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-500">
-              Leaderboard
-            </p>
-            <p className="mt-2 font-heading text-2xl font-semibold text-primary-900">
-              Top Average Score
-            </p>
+      <div className="relative z-10 space-y-3 sm:space-y-4">
+        <div className="rounded-[20px] border border-white/80 bg-white/95 p-4 shadow-sm sm:rounded-[28px] sm:p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-500">
+                Leaderboard
+              </p>
+              <p className="mt-2 font-heading text-xl font-semibold text-primary-900 sm:text-2xl">
+                Top Average Score
+              </p>
+            </div>
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent-700 text-white shadow-sm sm:h-12 sm:w-12">
+              <Trophy className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={1.85} />
+            </div>
           </div>
 
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-700 text-white shadow-sm">
-            <Trophy className="h-6 w-6" strokeWidth={1.85} />
-          </div>
-        </div>
+          <div className="mt-4 space-y-2.5 sm:mt-5 sm:space-y-3">
+            {leaderboardRows.map((row, index) => (
+              <div
+                key={row.name}
+                className="rounded-[16px] border border-primary-100 bg-primary-50/80 p-2.5 sm:rounded-[22px] sm:p-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-xs font-semibold text-primary-700 shadow-sm sm:h-8 sm:w-8 sm:rounded-xl sm:text-sm">
+                      {index + 1}
+                    </div>
 
-        <div className="mt-5 space-y-3">
-          {leaderboardRows.map((row, index) => (
-            <div
-              key={row.name}
-              className="rounded-[22px] border border-primary-100 bg-primary-50/80 p-3"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-sm font-semibold text-primary-700 shadow-sm">
-                    {index + 1}
+                    <div>
+                      <p className="text-xs font-semibold text-primary-900 sm:text-sm">
+                        {row.name}
+                      </p>
+                      <p className="text-[11px] text-primary-600 sm:text-xs">
+                        {row.label}
+                      </p>
+                    </div>
                   </div>
 
-                  <div>
-                    <p className="text-sm font-semibold text-primary-900">{row.name}</p>
-                    <p className="text-xs text-primary-600">{row.label}</p>
-                  </div>
+                  <p className="text-xs font-semibold text-accent-700 sm:text-sm">
+                    {row.score}
+                  </p>
                 </div>
 
-                <p className="text-sm font-semibold text-accent-700">{row.score}</p>
+                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white sm:mt-3 sm:h-2">
+                  <div
+                    className="h-full rounded-full bg-accent-700"
+                    style={{ width: row.width }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+          <div className="flex items-center justify-center rounded-full border border-accent-100 bg-white/95 px-3 py-2 text-xs font-semibold text-primary-600 shadow-sm">
+            Marked results ready to review
+          </div>
+
+          <div className="flex-1 rounded-[20px] border border-accent-600 bg-accent-700 p-4 text-white shadow-[0_20px_40px_rgba(12,28,48,0.18)] sm:rounded-[24px]">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 sm:h-10 sm:w-10 sm:rounded-2xl">
+                <MessageSquareText className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.8} />
               </div>
 
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-                <div
-                  className="h-full rounded-full bg-accent-700"
-                  style={{ width: row.width }}
-                />
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-100 sm:text-xs">
+                  Marking notes
+                </p>
+                <p className="text-sm font-semibold">Helpful feedback stays attached.</p>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="absolute bottom-[23%] left-6 rounded-full border border-accent-100 bg-white/95 px-3 py-2 text-xs font-semibold text-primary-600 shadow-sm">
-        Marked results ready to review
-      </div>
-
-      <div className="absolute bottom-4 right-4 w-[44%] rounded-[24px] border border-accent-600 bg-accent-700 p-4 text-white shadow-[0_20px_40px_rgba(12,28,48,0.18)]">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-            <MessageSquareText className="h-5 w-5" strokeWidth={1.8} />
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-100">
-              Marking notes
+            <p className="text-xs leading-5 text-accent-100">
+              Managers can leave notes alongside marking so employees understand their
+              results.
             </p>
-            <p className="text-sm font-semibold">Helpful feedback stays attached.</p>
           </div>
         </div>
-
-        <p className="text-xs leading-5 text-accent-100">
-          Managers can leave notes alongside marking so employees understand their
-          results.
-        </p>
       </div>
     </div>
   )
