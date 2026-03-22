@@ -19,6 +19,7 @@ import type {
   TestTemplate,
 } from '../../../types'
 import {
+  createFlashCards,
   createQuestionLibraryItems,
   createTestTemplate,
   listTests,
@@ -47,6 +48,23 @@ const createComponent = (type: ComponentType): TestComponent => {
   }
   return base
 }
+
+const hasCorrectAnswer = (value: TestComponent['correctAnswer']) =>
+  typeof value === 'string' ? Boolean(value) : Array.isArray(value) && value.length > 0
+
+const isFlashCardEligible = (
+  component: TestComponent,
+): component is TestComponent & {
+  type: 'single_choice' | 'multiple_choice'
+  title: string
+  options: { id: string; label: string }[]
+  correctAnswer: string | string[]
+} =>
+  (component.type === 'single_choice' || component.type === 'multiple_choice') &&
+  Boolean(component.title) &&
+  Array.isArray(component.options) &&
+  component.options.length > 1 &&
+  hasCorrectAnswer(component.correctAnswer)
 
 interface TestBuilderFormProps {
   testId?: string
@@ -376,12 +394,25 @@ const TestBuilderPage = () => {
       const libraryItems = sections
         .flatMap((s) => s.components)
         .filter((c) => c.saveToLibrary && c.title)
+      const flashCardItems = sections
+        .flatMap((section) => section.components)
+        .filter(
+          (
+            component,
+          ): component is TestComponent & {
+            type: 'single_choice' | 'multiple_choice'
+            title: string
+            options: { id: string; label: string }[]
+            correctAnswer: string | string[]
+          } => Boolean(component.addToFlashCards) && isFlashCardEligible(component),
+        )
 
       const cleanedSections = sections.map((section) => ({
         ...section,
         components: section.components.map((c) => {
-          const { saveToLibrary, ...rest } = c
+          const { saveToLibrary, addToFlashCards, ...rest } = c
           void saveToLibrary
+          void addToFlashCards
           return rest
         }),
       }))
@@ -404,7 +435,7 @@ const TestBuilderPage = () => {
       }
 
       if (libraryItems.length > 0) {
-        await createQuestionLibraryItems({
+        const libraryResponse = await createQuestionLibraryItems({
           companyId,
           managerId,
           items: libraryItems.map((c) => ({
@@ -418,6 +449,34 @@ const TestBuilderPage = () => {
             imageId: c.imageId,
           })),
         })
+
+        if (!libraryResponse.success) {
+          message.warning(
+            libraryResponse.error ||
+              'Test saved, but some questions were not added to the library',
+          )
+        }
+      }
+
+      if (flashCardItems.length > 0) {
+        const flashCardResponse = await createFlashCards({
+          companyId,
+          items: flashCardItems.map((component) => ({
+            type: component.type,
+            title: component.title,
+            options: component.options,
+            correctAnswer: component.correctAnswer,
+            imageId: component.imageId,
+            categoryId: component.categoryId,
+          })),
+        })
+
+        if (!flashCardResponse.success) {
+          message.warning(
+            flashCardResponse.error ||
+              'Test saved, but some flash cards were not created',
+          )
+        }
       }
 
       message.success('Test saved')

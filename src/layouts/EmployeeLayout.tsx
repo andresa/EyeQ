@@ -3,8 +3,9 @@ import type { MenuProps } from 'antd'
 import type { PropsWithChildren, ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import AppLayout from './AppLayout'
-import { ClipboardList, Gauge, Trophy } from 'lucide-react'
+import { BookOpen, ClipboardList, Gauge, Trophy } from 'lucide-react'
 import { useSession } from '../hooks/useSession'
+import { getEmployeeLearningResourcesSettings } from '../services/employee'
 import { fetchLeaderboardSettings } from '../services/shared'
 
 interface EmployeeLayoutProps extends PropsWithChildren {
@@ -34,7 +35,23 @@ const EmployeeLayout = ({
     staleTime: 10 * 60 * 1000,
   })
 
+  const { data: learningResourcesSettings } = useQuery({
+    queryKey: ['employee-learning-resources-settings', companyId],
+    queryFn: async () => {
+      const response = await getEmployeeLearningResourcesSettings(companyId!)
+      if (!response.success || !response.data) {
+        return { articlesEnabled: false, flashCardsEnabled: false }
+      }
+      return response.data
+    },
+    enabled: !!companyId,
+    staleTime: 10 * 60 * 1000,
+  })
+
   const hasLeaderboards = (settingsData?.boards?.length ?? 0) > 0
+  const hasLearningResources =
+    Boolean(learningResourcesSettings?.articlesEnabled) ||
+    Boolean(learningResourcesSettings?.flashCardsEnabled)
 
   const iconSize = 18
   const items: MenuProps['items'] = [
@@ -44,6 +61,15 @@ const EmployeeLayout = ({
       label: 'My tests',
       icon: <ClipboardList size={iconSize} />,
     },
+    ...(hasLearningResources
+      ? [
+          {
+            key: '/employee/learning-resources',
+            label: 'Learning Resources',
+            icon: <BookOpen size={iconSize} />,
+          },
+        ]
+      : []),
     ...(hasLeaderboards
       ? [{ key: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> }]
       : []),
@@ -56,7 +82,9 @@ const EmployeeLayout = ({
           location.pathname.startsWith('/employee/test/') ||
           location.pathname.startsWith('/employee/test-results/')
         ? '/employee/tests'
-        : location.pathname
+        : location.pathname.startsWith('/employee/learning-resources')
+          ? '/employee/learning-resources'
+          : location.pathname
 
   return (
     <AppLayout

@@ -1,6 +1,11 @@
 import type {
+  Article,
+  ArticleTopic,
   ApiResponse,
   Employee,
+  FlashCard,
+  FlashCardType,
+  LearningResourcesSettings,
   PaginatedResponse,
   QuestionCategory,
   QuestionLibraryItem,
@@ -295,6 +300,176 @@ export const deleteQuestionCategory = (
 ): Promise<ApiResponse<{ id: string }>> =>
   apiRequest(`/manager/question-categories/${categoryId}`, {
     method: 'DELETE',
+  })
+
+// ============================================================================
+// Article Topics
+// ============================================================================
+
+export const listArticleTopics = (
+  companyId: string,
+): Promise<ApiResponse<ArticleTopic[]>> =>
+  apiRequest(`/manager/article-topics?companyId=${encodeURIComponent(companyId)}`)
+
+export const createArticleTopic = (payload: {
+  companyId: string
+  name: string
+}): Promise<ApiResponse<ArticleTopic>> =>
+  apiRequest('/manager/article-topics', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const updateArticleTopic = (
+  topicId: string,
+  payload: { name: string },
+): Promise<ApiResponse<ArticleTopic>> =>
+  apiRequest(`/manager/article-topics/${topicId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+export const deleteArticleTopic = (
+  topicId: string,
+): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(`/manager/article-topics/${topicId}`, {
+    method: 'DELETE',
+  })
+
+// ============================================================================
+// Articles
+// ============================================================================
+
+export const listArticles = (
+  companyIdOrParams:
+    | string
+    | {
+        companyId: string
+        name?: string
+        topicId?: string
+        limit?: number
+        cursor?: string | null
+      },
+): Promise<PaginatedResponse<Article>> => {
+  const params =
+    typeof companyIdOrParams === 'string'
+      ? { companyId: companyIdOrParams }
+      : companyIdOrParams
+
+  const query = new URLSearchParams({ companyId: params.companyId })
+  if (params.name) query.set('name', params.name)
+  if (params.topicId) query.set('topicId', params.topicId)
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
+  return apiRequest(`/manager/articles?${query.toString()}`)
+}
+
+export const createArticle = (payload: {
+  companyId: string
+  title: string
+  description: string
+  topicIds?: string[]
+}): Promise<ApiResponse<Article>> =>
+  apiRequest('/manager/articles', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const getArticle = (articleId: string): Promise<ApiResponse<Article>> =>
+  apiRequest(`/manager/articles/${articleId}`)
+
+export const updateArticle = (
+  articleId: string,
+  payload: Partial<Article>,
+): Promise<ApiResponse<Article>> =>
+  apiRequest(`/manager/articles/${articleId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+export const deleteArticle = (articleId: string): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(`/manager/articles/${articleId}`, {
+    method: 'DELETE',
+  })
+
+// ============================================================================
+// Flash Cards
+// ============================================================================
+
+export const listFlashCards = (
+  companyIdOrParams:
+    | string
+    | {
+        companyId: string
+        categoryId?: string
+        limit?: number
+        cursor?: string | null
+      },
+): Promise<PaginatedResponse<FlashCard>> => {
+  const params =
+    typeof companyIdOrParams === 'string'
+      ? { companyId: companyIdOrParams }
+      : companyIdOrParams
+
+  const query = new URLSearchParams({ companyId: params.companyId })
+  if (params.categoryId) query.set('categoryId', params.categoryId)
+  if (params.limit != null) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('cursor', params.cursor)
+  return apiRequest(`/manager/flash-cards?${query.toString()}`)
+}
+
+export const createFlashCards = (payload: {
+  companyId: string
+  items: {
+    type: FlashCardType
+    title: string
+    options: { id: string; label: string }[]
+    correctAnswer: string | string[]
+    imageId?: string | null
+    categoryId?: string | null
+  }[]
+}): Promise<ApiResponse<FlashCard[]>> =>
+  apiRequest('/manager/flash-cards', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const getFlashCard = (cardId: string): Promise<ApiResponse<FlashCard>> =>
+  apiRequest(`/manager/flash-cards/${cardId}`)
+
+export const updateFlashCard = (
+  cardId: string,
+  payload: Partial<FlashCard>,
+): Promise<ApiResponse<FlashCard>> =>
+  apiRequest(`/manager/flash-cards/${cardId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+export const deleteFlashCard = (cardId: string): Promise<ApiResponse<{ id: string }>> =>
+  apiRequest(`/manager/flash-cards/${cardId}`, {
+    method: 'DELETE',
+  })
+
+// ============================================================================
+// Learning Resources Settings
+// ============================================================================
+
+export const getLearningResourcesSettings = (
+  companyId: string,
+): Promise<ApiResponse<LearningResourcesSettings>> =>
+  apiRequest(
+    `/manager/learning-resources-settings?companyId=${encodeURIComponent(companyId)}`,
+  )
+
+export const updateLearningResourcesSettings = (payload: {
+  companyId: string
+  articlesEnabled: boolean
+  flashCardsEnabled: boolean
+}): Promise<ApiResponse<LearningResourcesSettings>> =>
+  apiRequest('/manager/learning-resources-settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
   })
 
 // ============================================================================
