@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Card, Modal, Spin, Tabs, Tag, Typography } from 'antd'
-import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BookOpen } from 'lucide-react'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
@@ -186,11 +185,20 @@ const ArticlesTab = ({ companyId }: { companyId: string }) => {
   )
 }
 
+type SwipePhase = 'idle' | 'swipe-out' | 'swipe-in'
+type SwipeDirection = 'left' | 'right'
+
+const SWIPE_DURATION_MS = 250
+
 const FlashCardsTab = ({ companyId }: { companyId: string }) => {
-  const navigate = useNavigate()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [sessionEnded, setSessionEnded] = useState(false)
+
+  const [swipePhase, setSwipePhase] = useState<SwipePhase>('idle')
+  const [swipeDirection, setSwipeDirection] = useState<SwipeDirection>('left')
+  const swipeLock = useRef(false)
+  const [isLocked, setIsLocked] = useState(false)
 
   const { data: flashCards = [], isLoading } = useQuery({
     queryKey: ['employee-learning-resources-flash-cards', companyId],
@@ -214,6 +222,9 @@ const FlashCardsTab = ({ companyId }: { companyId: string }) => {
     setCurrentIndex(0)
     setIsFlipped(false)
     setSessionEnded(false)
+    setSwipePhase('idle')
+    swipeLock.current = false
+    setIsLocked(false)
   }
 
   const finishSession = () => {
@@ -221,20 +232,48 @@ const FlashCardsTab = ({ companyId }: { companyId: string }) => {
     setIsFlipped(false)
   }
 
-  const goToNext = () => {
+  const navigateCard = useCallback((direction: SwipeDirection, nextIndex: number) => {
+    if (swipeLock.current) return
+    swipeLock.current = true
+    setIsLocked(true)
+    setSwipeDirection(direction)
+    setSwipePhase('swipe-out')
+
+    setTimeout(() => {
+      setIsFlipped(false)
+      setCurrentIndex(nextIndex)
+      setSwipeDirection(direction === 'left' ? 'right' : 'left')
+      setSwipePhase('swipe-in')
+
+      setTimeout(() => {
+        setSwipePhase('idle')
+        swipeLock.current = false
+        setIsLocked(false)
+      }, SWIPE_DURATION_MS)
+    }, SWIPE_DURATION_MS)
+  }, [])
+
+  const goToNext = useCallback(() => {
+    if (swipeLock.current) return
     if (currentIndex >= flashCards.length - 1) {
       finishSession()
       return
     }
-    setCurrentIndex((prev) => prev + 1)
-    setIsFlipped(false)
-  }
+    navigateCard('left', currentIndex + 1)
+  }, [currentIndex, flashCards.length, navigateCard])
 
-  const goToPrevious = () => {
+  const goToPrevious = useCallback(() => {
+    if (swipeLock.current) return
     if (currentIndex === 0) return
-    setCurrentIndex((prev) => prev - 1)
-    setIsFlipped(false)
-  }
+    navigateCard('right', currentIndex - 1)
+  }, [currentIndex, navigateCard])
+
+  const swipeTransform = (() => {
+    if (swipePhase === 'idle') return 'translateX(0)'
+    const sign = swipeDirection === 'left' ? '-' : ''
+    if (swipePhase === 'swipe-out') return `translateX(${sign}120%)`
+    return `translateX(${sign}120%)`
+  })()
 
   if (isLoading) {
     return (
@@ -260,15 +299,9 @@ const FlashCardsTab = ({ companyId }: { companyId: string }) => {
             You&apos;ve reviewed all cards
           </Typography.Title>
           <Typography.Text type="secondary">
-            Restart the session to go through the flash cards again, or finish to leave
-            the review session.
+            Click restart to go through the flash cards again.
           </Typography.Text>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Button onClick={restartSession}>Restart</Button>
-            <Button type="primary" onClick={() => navigate('/employee')}>
-              Finish
-            </Button>
-          </div>
+          <Button onClick={restartSession}>Restart</Button>
         </div>
       </Card>
     )
@@ -276,89 +309,109 @@ const FlashCardsTab = ({ companyId }: { companyId: string }) => {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
+      <div>
         <Typography.Text type="secondary">
           Card {currentIndex + 1} of {flashCards.length}
         </Typography.Text>
-        <Button onClick={finishSession}>Finish session</Button>
       </div>
-
-      <div className="mx-auto w-full max-w-3xl" style={{ perspective: '1200px' }}>
+      <div className="mx-auto w-full max-w-3xl overflow-hidden">
         <div
-          role="button"
-          tabIndex={0}
-          aria-label="Flip flash card"
-          className="relative h-[460px] w-full cursor-pointer transition-transform duration-500"
           style={{
-            transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-            transformStyle: 'preserve-3d',
-          }}
-          onClick={() => setIsFlipped((prev) => !prev)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              setIsFlipped((prev) => !prev)
-            }
-            if (event.key === 'ArrowRight') {
-              event.preventDefault()
-              goToNext()
-            }
-            if (event.key === 'ArrowLeft') {
-              event.preventDefault()
-              goToPrevious()
-            }
+            transform: swipeTransform,
+            opacity: swipePhase === 'idle' ? 1 : 0,
+            transition:
+              swipePhase === 'idle'
+                ? `transform ${SWIPE_DURATION_MS}ms ease-out, opacity ${SWIPE_DURATION_MS}ms ease-out`
+                : swipePhase === 'swipe-out'
+                  ? `transform ${SWIPE_DURATION_MS}ms ease-in, opacity ${SWIPE_DURATION_MS * 0.6}ms ease-in`
+                  : 'none',
           }}
         >
-          <Card
-            className="absolute inset-0 h-full w-full"
-            styles={{ body: { height: '100%', overflowY: 'auto' } }}
-            style={{ backfaceVisibility: 'hidden' }}
-          >
-            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-              <Typography.Text type="secondary">Question</Typography.Text>
-              {currentFlashCard?.imageId ? (
-                <QuestionImage imageId={currentFlashCard.imageId} />
-              ) : null}
-              <Typography.Title level={3} className="mb-0">
-                <RichText content={currentFlashCard?.title} />
-              </Typography.Title>
-              <Typography.Text type="secondary">
-                Click the card to reveal the answer.
-              </Typography.Text>
-            </div>
-          </Card>
+          <div style={{ perspective: '1200px' }}>
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Flip flash card"
+              className="relative h-[320px] w-full cursor-pointer sm:h-[460px]"
+              style={{
+                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                transformStyle: 'preserve-3d',
+                transition: swipePhase === 'idle' ? 'transform 500ms' : 'none',
+              }}
+              onClick={() => {
+                if (swipeLock.current) return
+                setIsFlipped((prev) => !prev)
+              }}
+              onKeyDown={(event) => {
+                if (swipeLock.current) return
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  setIsFlipped((prev) => !prev)
+                }
+                if (event.key === 'ArrowRight') {
+                  event.preventDefault()
+                  goToNext()
+                }
+                if (event.key === 'ArrowLeft') {
+                  event.preventDefault()
+                  goToPrevious()
+                }
+              }}
+            >
+              <Card
+                className="absolute inset-0 h-full w-full"
+                styles={{ body: { height: '100%', overflowY: 'auto' } }}
+                style={{ backfaceVisibility: 'hidden' }}
+              >
+                <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                  <Typography.Text type="secondary">Question</Typography.Text>
+                  {currentFlashCard?.imageId ? (
+                    <QuestionImage
+                      key={currentFlashCard.imageId}
+                      imageId={currentFlashCard.imageId}
+                    />
+                  ) : null}
+                  <Typography.Title level={3} className="mb-0">
+                    <RichText content={currentFlashCard?.title} />
+                  </Typography.Title>
+                  <Typography.Text type="secondary">
+                    <span className="hidden pointer-coarse:inline">Tap</span>
+                    <span className="pointer-coarse:hidden">Click</span> the card to
+                    reveal the answer.
+                  </Typography.Text>
+                </div>
+              </Card>
 
-          <Card
-            className="absolute inset-0 h-full w-full"
-            styles={{ body: { height: '100%', overflowY: 'auto' } }}
-            style={{
-              backfaceVisibility: 'hidden',
-              transform: 'rotateY(180deg)',
-            }}
-          >
-            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-              <Typography.Text type="secondary">Correct answer</Typography.Text>
-              <div className="flex flex-col gap-2">
-                {currentAnswers.map((answer) => (
-                  <Tag key={answer} className="px-3 py-1 text-base">
-                    {answer}
-                  </Tag>
-                ))}
-              </div>
-              <Typography.Text type="secondary">
-                Click the card to flip it back.
-              </Typography.Text>
+              <Card
+                className="absolute inset-0 h-full w-full"
+                styles={{ body: { height: '100%', overflowY: 'auto' } }}
+                style={{
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                }}
+              >
+                <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                  <Typography.Text type="secondary">Correct answer</Typography.Text>
+                  <div className="flex flex-col gap-2">
+                    {currentAnswers.map((answer) => (
+                      <Tag key={answer} className="px-3 py-1 text-base">
+                        {answer}
+                      </Tag>
+                    ))}
+                  </div>
+                </div>
+              </Card>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <Button onClick={goToPrevious} disabled={currentIndex === 0}>
+        <Button onClick={goToPrevious} disabled={currentIndex === 0 || isLocked}>
           Previous
         </Button>
         <Button onClick={restartSession}>Restart</Button>
-        <Button type="primary" onClick={goToNext}>
+        <Button type="primary" onClick={goToNext} disabled={isLocked}>
           {currentIndex === flashCards.length - 1 ? 'Finish' : 'Next'}
         </Button>
       </div>

@@ -17,5 +17,9 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addVariant }) {
+      addVariant('pointer-coarse', '@media (pointer: coarse)')
+    },
+  ],
 }

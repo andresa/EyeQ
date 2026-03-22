@@ -217,7 +217,7 @@ const ArticlesTabContent = ({ companyId }: { companyId: string }) => {
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-wrap gap-4">
+        <div className="flex items-center gap-4">
           <Input
             placeholder="Filter by title"
             value={nameFilter}

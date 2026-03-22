@@ -28,11 +28,6 @@ const ManagerLayout = ({ pageHeading, children, maxWidth }: ManagerLayoutProps) 
     { key: '/manager/employees', label: 'Employees', icon: <Users size={iconSize} /> },
     { key: '/manager/tests', label: 'Tests', icon: <FlaskConical size={iconSize} /> },
     {
-      key: '/manager/learning-resources',
-      label: 'Learning Resources',
-      icon: <BookOpen size={iconSize} />,
-    },
-    {
       key: '/manager/question-library',
       label: 'Question Library',
       icon: <LibraryBig size={iconSize} />,
@@ -41,6 +36,11 @@ const ManagerLayout = ({ pageHeading, children, maxWidth }: ManagerLayoutProps) 
       key: '/manager/test-submissions',
       label: 'Submissions',
       icon: <ScrollText size={iconSize} />,
+    },
+    {
+      key: '/manager/learning-resources',
+      label: 'Learning Resources',
+      icon: <BookOpen size={iconSize} />,
     },
     { key: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={iconSize} /> },
   ]

@@ -3,7 +3,7 @@ import { Button, Card, Input, Spin, Typography, App } from 'antd'
 import { SaveOutlined, SettingOutlined } from '@ant-design/icons'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import ManagerLayout from '../../../layouts/ManagerLayout'
 import StandardPageHeading from '../../../components/molecules/StandardPageHeading'
 import SectionList from '../../../components/test-builder/SectionList'
@@ -337,6 +337,7 @@ const TestBuilderPage = () => {
   const navigate = useNavigate()
   const { message } = App.useApp()
   const { userProfile } = useSession()
+  const queryClient = useQueryClient()
   const companyId = userProfile?.companyId
   const managerId = userProfile?.userType === 'manager' ? userProfile.id : undefined
   const [name, setName] = useState('')
@@ -476,6 +477,10 @@ const TestBuilderPage = () => {
             flashCardResponse.error ||
               'Test saved, but some flash cards were not created',
           )
+        } else {
+          queryClient.invalidateQueries({
+            queryKey: ['manager-learning-resources-flash-cards'],
+          })
         }
       }
 

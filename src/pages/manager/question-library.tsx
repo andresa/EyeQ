@@ -276,6 +276,9 @@ const QuestionLibraryPage = () => {
 
     setEditing(null)
     queryClient.invalidateQueries({ queryKey: ['questionLibrary'] })
+    queryClient.invalidateQueries({
+      queryKey: ['manager-learning-resources-flash-cards'],
+    })
   }
 
   const updateEditing = (updates: Partial<QuestionEditorState>) => {
