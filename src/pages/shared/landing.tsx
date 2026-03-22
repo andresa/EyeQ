@@ -267,8 +267,7 @@ const LandingPage = () => {
 
         <main>
           <section className="relative">
-            {/* <div className="mx-auto grid max-w-[90rem] gap-16 px-6 py-20 xl:grid-cols-[1.05fr_0.95fr] xl:items-center xl:px-8 xl:py-24"> */}
-            <div className="mx-auto flex max-w-[90rem] flex-col items-center justify-center gap-16 px-6 py-20 xl:grid xl:grid-cols-[1.05fr_0.95fr] xl:items-center xl:px-8 xl:py-24">
+            <div className="mx-auto flex max-w-[90rem] flex-col items-center justify-center gap-16 px-6 py-10 xl:grid xl:grid-cols-[1.05fr_0.95fr] xl:items-center xl:px-8 xl:py-24">
               <div>
                 <div className="inline-flex rounded-full border border-accent-100 bg-accent-50 px-4 py-2 text-sm font-semibold text-accent-700">
                   Employee training made simple
