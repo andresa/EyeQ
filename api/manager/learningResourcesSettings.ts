@@ -17,7 +17,7 @@ interface UpdateSettingsBody {
   flashCardsEnabled?: boolean
 }
 
-const getLearningResourcesSettingsHandler = async (
+export const getLearningResourcesSettingsHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
@@ -29,7 +29,7 @@ const getLearningResourcesSettingsHandler = async (
   return jsonResponse(200, { success: true, data: settings })
 }
 
-const updateLearningResourcesSettingsHandler = async (
+export const updateLearningResourcesSettingsHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)

@@ -32,6 +32,10 @@ vi.mock('../../src/pages/employee/test-results', () => ({
   default: () => <div>Employee Test Results Page</div>,
 }))
 
+vi.mock('../../src/pages/employee/learning-resources', () => ({
+  default: () => <div>Employee Learning Resources Page</div>,
+}))
+
 vi.mock('../../src/pages/manager', () => ({
   default: () => <div>Manager Dashboard</div>,
 }))
@@ -62,6 +66,10 @@ vi.mock('../../src/pages/manager/question-library', () => ({
 
 vi.mock('../../src/pages/manager/settings', () => ({
   default: () => <div>Manager Settings Page</div>,
+}))
+
+vi.mock('../../src/pages/manager/learning-resources', () => ({
+  default: () => <div>Manager Learning Resources Page</div>,
 }))
 
 vi.mock('../../src/pages/shared/leaderboard', () => ({
@@ -121,7 +129,7 @@ describe('App routing', () => {
 
     expect(
       screen.getByText(
-        /run staff training with clear assignments, consistent marking, and visible results/i,
+        /train your team with learning resources, structured tests, and visible results/i,
       ),
     ).toBeInTheDocument()
 
@@ -155,7 +163,7 @@ describe('App routing', () => {
     )
 
     expect(
-      screen.getByText(/everything needed to manage the staff training cycle/i),
+      screen.getByText(/everything needed to train employees and measure results/i),
     ).toBeInTheDocument()
   })
 })

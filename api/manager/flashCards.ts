@@ -145,7 +145,9 @@ const getFlashCardById = async (cardId: string) => {
   return resources[0]
 }
 
-const listFlashCardsHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const listFlashCardsHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
@@ -193,7 +195,7 @@ const listFlashCardsHandler = async (request: HttpRequest): Promise<HttpResponse
   return jsonResponse(200, { success: true, data: resources })
 }
 
-const createFlashCardsHandler = async (
+export const createFlashCardsHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
@@ -247,7 +249,9 @@ const createFlashCardsHandler = async (
   return jsonResponse(201, { success: true, data: created })
 }
 
-const getFlashCardHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const getFlashCardHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -272,7 +276,7 @@ const getFlashCardHandler = async (request: HttpRequest): Promise<HttpResponseIn
   return jsonResponse(200, { success: true, data: flashCard })
 }
 
-const updateFlashCardHandler = async (
+export const updateFlashCardHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
@@ -330,7 +334,7 @@ const updateFlashCardHandler = async (
   return jsonResponse(200, { success: true, data: updated })
 }
 
-const deleteFlashCardHandler = async (
+export const deleteFlashCardHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)

@@ -30,7 +30,7 @@ const getArticleById = async (articleId: string) => {
   return resources[0]
 }
 
-const listEmployeeArticleTopicsHandler = async (
+export const listEmployeeArticleTopicsHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
@@ -60,7 +60,7 @@ const listEmployeeArticleTopicsHandler = async (
   return jsonResponse(200, { success: true, data: resources })
 }
 
-const listEmployeeArticlesHandler = async (
+export const listEmployeeArticlesHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
@@ -114,7 +114,7 @@ const listEmployeeArticlesHandler = async (
   return jsonResponse(200, { success: true, data: resources })
 }
 
-const getEmployeeArticleHandler = async (
+export const getEmployeeArticleHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
@@ -147,7 +147,7 @@ const getEmployeeArticleHandler = async (
   return jsonResponse(200, { success: true, data: article })
 }
 
-const listEmployeeFlashCardsHandler = async (
+export const listEmployeeFlashCardsHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
@@ -192,7 +192,7 @@ const listEmployeeFlashCardsHandler = async (
   return jsonResponse(200, { success: true, data: resources })
 }
 
-const getEmployeeLearningResourcesSettingsHandler = async (
+export const getEmployeeLearningResourcesSettingsHandler = async (
   request: HttpRequest,
 ): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')

@@ -28,6 +28,22 @@ import {
   updateQuestionCategory,
   deleteQuestionCategory,
   getImageUploadUrl,
+  listArticleTopics,
+  createArticleTopic,
+  updateArticleTopic,
+  deleteArticleTopic,
+  listArticles,
+  createArticle,
+  getArticle,
+  updateArticle,
+  deleteArticle,
+  listFlashCards,
+  createFlashCards,
+  getFlashCard,
+  updateFlashCard,
+  deleteFlashCard,
+  getLearningResourcesSettings,
+  updateLearningResourcesSettings,
 } from '../../../src/services/manager'
 
 const mockApiRequest = vi.mocked(apiRequest)
@@ -297,6 +313,193 @@ describe('services/manager', () => {
     expect(mockApiRequest).toHaveBeenCalledWith(
       '/manager/images/upload-url',
       expect.objectContaining({ method: 'POST' }),
+    )
+  })
+
+  it('listArticleTopics calls GET with companyId', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listArticleTopics('c1')
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/manager/article-topics?companyId=c1'),
+    )
+  })
+
+  it('createArticleTopic calls POST', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await createArticleTopic({ companyId: 'c1', name: 'Safety' })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/article-topics',
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
+
+  it('updateArticleTopic calls PUT', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await updateArticleTopic('at1', { name: 'Updated' })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/article-topics/at1',
+      expect.objectContaining({ method: 'PUT' }),
+    )
+  })
+
+  it('deleteArticleTopic calls DELETE', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await deleteArticleTopic('at1')
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/article-topics/at1',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+
+  it('listArticles calls GET with companyId', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listArticles('c1')
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/manager/articles?companyId=c1'),
+    )
+  })
+
+  it('listArticles includes name, topicId, and pagination params', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listArticles({
+      companyId: 'c1',
+      name: 'safety',
+      topicId: 'at_1',
+      limit: 10,
+      cursor: 'cursor_5',
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/manager/articles?companyId=c1&name=safety&topicId=at_1&limit=10&cursor=cursor_5',
+      ),
+    )
+  })
+
+  it('createArticle calls POST', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await createArticle({
+      companyId: 'c1',
+      title: 'New Article',
+      description: 'Description',
+      topicIds: ['at_1'],
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/articles',
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
+
+  it('getArticle calls GET /manager/articles/:id', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await getArticle('art_1')
+    expect(mockApiRequest).toHaveBeenCalledWith('/manager/articles/art_1')
+  })
+
+  it('updateArticle calls PUT', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await updateArticle('art_1', { title: 'Updated' })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/articles/art_1',
+      expect.objectContaining({ method: 'PUT' }),
+    )
+  })
+
+  it('deleteArticle calls DELETE', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await deleteArticle('art_1')
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/articles/art_1',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+
+  it('listFlashCards calls GET with companyId', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listFlashCards('c1')
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/manager/flash-cards?companyId=c1'),
+    )
+  })
+
+  it('listFlashCards includes categoryId and pagination params', async () => {
+    mockApiRequest.mockResolvedValue({ success: true, data: [] })
+    await listFlashCards({
+      companyId: 'c1',
+      categoryId: 'qc_1',
+      limit: 10,
+      cursor: 'cursor_6',
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/manager/flash-cards?companyId=c1&categoryId=qc_1&limit=10&cursor=cursor_6',
+      ),
+    )
+  })
+
+  it('createFlashCards calls POST', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await createFlashCards({
+      companyId: 'c1',
+      items: [
+        {
+          type: 'single_choice',
+          title: 'Q1',
+          options: [
+            { id: 'o1', label: 'A' },
+            { id: 'o2', label: 'B' },
+          ],
+          correctAnswer: 'o1',
+        },
+      ],
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/flash-cards',
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
+
+  it('getFlashCard calls GET /manager/flash-cards/:id', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await getFlashCard('fc_1')
+    expect(mockApiRequest).toHaveBeenCalledWith('/manager/flash-cards/fc_1')
+  })
+
+  it('updateFlashCard calls PUT', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await updateFlashCard('fc_1', { title: 'Updated' })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/flash-cards/fc_1',
+      expect.objectContaining({ method: 'PUT' }),
+    )
+  })
+
+  it('deleteFlashCard calls DELETE', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await deleteFlashCard('fc_1')
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/flash-cards/fc_1',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+
+  it('getLearningResourcesSettings calls GET with companyId', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await getLearningResourcesSettings('c1')
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      expect.stringContaining('/manager/learning-resources-settings?companyId=c1'),
+    )
+  })
+
+  it('updateLearningResourcesSettings calls PUT', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await updateLearningResourcesSettings({
+      companyId: 'c1',
+      articlesEnabled: true,
+      flashCardsEnabled: false,
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/learning-resources-settings',
+      expect.objectContaining({ method: 'PUT' }),
     )
   })
 })

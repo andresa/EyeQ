@@ -52,7 +52,9 @@ const getArticleById = async (articleId: string) => {
   return resources[0]
 }
 
-const listArticlesHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const listArticlesHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
@@ -102,7 +104,9 @@ const listArticlesHandler = async (request: HttpRequest): Promise<HttpResponseIn
   return jsonResponse(200, { success: true, data: resources })
 }
 
-const createArticleHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const createArticleHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -144,7 +148,9 @@ const createArticleHandler = async (request: HttpRequest): Promise<HttpResponseI
   return jsonResponse(201, { success: true, data: doc })
 }
 
-const getArticleHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const getArticleHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -169,7 +175,9 @@ const getArticleHandler = async (request: HttpRequest): Promise<HttpResponseInit
   return jsonResponse(200, { success: true, data: article })
 }
 
-const updateArticleHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const updateArticleHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -217,7 +225,9 @@ const updateArticleHandler = async (request: HttpRequest): Promise<HttpResponseI
   return jsonResponse(200, { success: true, data: updated })
 }
 
-const deleteArticleHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const deleteArticleHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
