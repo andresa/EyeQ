@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import {
   BookOpen,
-  ClipboardCheck,
   FileCheck2,
   FileText,
   MessageSquareText,
@@ -45,35 +44,26 @@ const graphicConfig: Record<
   },
 }
 
-type IllustrationCardProps = {
+type HeroCardProps = {
   title: string
   detail: string
   Icon: LucideIcon
   chips: string[]
-  className?: string
   accent?: boolean
 }
 
-const IllustrationCard = ({
-  title,
-  detail,
-  Icon,
-  chips,
-  className,
-  accent = false,
-}: IllustrationCardProps) => {
+const HeroCard = ({ title, detail, Icon, chips, accent = false }: HeroCardProps) => {
   return (
     <div
       className={clsx(
-        'absolute rounded-[24px] border p-4 shadow-[0_20px_40px_rgba(12,28,48,0.12)] backdrop-blur-sm sm:p-5',
+        'rounded-[20px] border p-4 shadow-[0_12px_30px_rgba(12,28,48,0.1)] backdrop-blur-sm sm:rounded-[24px] sm:p-5',
         accent
           ? 'border-accent-600 bg-accent-700 text-white'
           : 'border-white/70 bg-white/95 text-primary-900',
-        className,
       )}
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
+      <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
+        <div className="min-w-0">
           <p className="text-sm font-semibold sm:text-base">{title}</p>
           <p
             className={clsx(
@@ -87,20 +77,20 @@ const IllustrationCard = ({
 
         <div
           className={clsx(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10 sm:rounded-2xl',
             accent ? 'bg-white/10 text-white' : 'bg-accent-50 text-accent-700',
           )}
         >
-          <Icon className="h-5 w-5" strokeWidth={1.8} />
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.8} />
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
         {chips.map((chip) => (
           <span
             key={chip}
             className={clsx(
-              'rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]',
+              'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:px-2.5 sm:py-1 sm:text-[11px]',
               accent
                 ? 'border-white/15 bg-white/10 text-white/90'
                 : 'border-primary-100 bg-primary-50 text-primary-600',
@@ -129,88 +119,46 @@ export const FeatureGraphic = ({ kind }: { kind: LandingGraphicKind }) => {
 
 export const HeroIllustration = () => {
   return (
-    <div className="relative mx-auto aspect-[6/5] w-full min-w-[500px] xl:min-w-[550px] max-w-[700px] overflow-hidden rounded-[32px] border border-accent-100 bg-primary-50 p-5 shadow-[0_30px_80px_rgba(12,28,48,0.12)] sm:p-6">
+    <div className="relative mx-auto w-full max-w-[700px] overflow-hidden rounded-[24px] border border-accent-100 bg-primary-50 p-4 shadow-[0_30px_80px_rgba(12,28,48,0.12)] sm:rounded-[32px] sm:p-6">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(217,228,239,0.95),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(240,244,248,1),transparent_45%)]" />
 
-      <svg
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        fill="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M50 50 C40 42, 36 33, 28 26"
-          stroke="#B3C9DF"
-          strokeWidth="0.6"
-          strokeDasharray="2.8 2.8"
+      <div className="relative z-10 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+        <HeroCard
+          title="Employees"
+          detail="Organise your people and keep them ready for training."
+          Icon={UsersRound}
+          chips={['Manage', 'Assign']}
         />
-        <path
-          d="M50 50 C60 41, 65 31, 74 24"
-          stroke="#B3C9DF"
-          strokeWidth="0.6"
-          strokeDasharray="2.8 2.8"
+        <HeroCard
+          title="Learning Resources"
+          detail="Articles and flash cards to support ongoing training."
+          Icon={BookOpen}
+          chips={['Articles', 'Flash Cards']}
+          accent
         />
-        <path
-          d="M50 50 C41 58, 36 67, 30 74"
-          stroke="#B3C9DF"
-          strokeWidth="0.6"
-          strokeDasharray="2.8 2.8"
+        <HeroCard
+          title="Tests"
+          detail="Build structured assessments with reusable content."
+          Icon={FileText}
+          chips={['Sections', 'Questions']}
         />
-        <path
-          d="M50 50 C61 57, 66 64, 74 69"
-          stroke="#B3C9DF"
-          strokeWidth="0.6"
-          strokeDasharray="2.8 2.8"
+        <HeroCard
+          title="Marking"
+          detail="Review submissions, mark answers, and add notes."
+          Icon={FileCheck2}
+          chips={['Marked', 'Notes']}
         />
-        <path
-          d="M50 50 C50 60, 50 70, 50 82"
-          stroke="#B3C9DF"
-          strokeWidth="0.6"
-          strokeDasharray="2.8 2.8"
-        />
-      </svg>
-
-      <div className="absolute left-1/2 top-1/2 z-10 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-accent-700 shadow-[0_16px_30px_rgba(12,28,48,0.15)]">
-        <ClipboardCheck className="h-9 w-9" strokeWidth={1.75} />
+        <div className="sm:col-span-2 flex justify-center">
+          <div className="w-full sm:w-1/2">
+            <HeroCard
+              title="Leaderboard"
+              detail="Make performance visible when peer comparison matters."
+              Icon={Trophy}
+              chips={['Rank', 'Results']}
+            />
+          </div>
+        </div>
       </div>
-
-      <IllustrationCard
-        title="Employees"
-        detail="Organise your people and keep assignments ready to send."
-        Icon={UsersRound}
-        chips={['Manage', 'Assign']}
-        className="left-[5%] top-[6%] w-[44%]"
-      />
-      <IllustrationCard
-        title="Tests"
-        detail="Build structured assessments with reusable content."
-        Icon={FileText}
-        chips={['Sections', 'Questions']}
-        className="right-[6%] top-[5%] w-[39%]"
-      />
-      <IllustrationCard
-        title="Marking"
-        detail="Review submissions, mark answers, and add notes."
-        Icon={FileCheck2}
-        chips={['Marked', 'Notes']}
-        accent
-        className="bottom-[22%] left-[4%] w-[46%]"
-      />
-      <IllustrationCard
-        title="Leaderboard"
-        detail="Make performance visible when peer comparison matters."
-        Icon={Trophy}
-        chips={['Rank', 'Results']}
-        className="bottom-[15%] right-[7%] w-[41%]"
-      />
-      <IllustrationCard
-        title="Learning Resources"
-        detail="Articles and flash cards to support ongoing training."
-        Icon={BookOpen}
-        chips={['Articles', 'Flash Cards']}
-        className="bottom-[1%] left-1/2 -translate-x-1/2 w-[48%]"
-      />
     </div>
   )
 }
