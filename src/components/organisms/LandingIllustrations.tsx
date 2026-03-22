@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import {
+  BookOpen,
   ClipboardCheck,
   FileCheck2,
   FileText,
@@ -16,6 +17,7 @@ export type LandingGraphicKind =
   | 'assignments'
   | 'marking'
   | 'leaderboards'
+  | 'learning'
 
 const graphicConfig: Record<
   LandingGraphicKind,
@@ -37,6 +39,9 @@ const graphicConfig: Record<
   },
   leaderboards: {
     Icon: Trophy,
+  },
+  learning: {
+    Icon: BookOpen,
   },
 }
 
@@ -158,6 +163,12 @@ export const HeroIllustration = () => {
           strokeWidth="0.6"
           strokeDasharray="2.8 2.8"
         />
+        <path
+          d="M50 50 C50 60, 50 70, 50 82"
+          stroke="#B3C9DF"
+          strokeWidth="0.6"
+          strokeDasharray="2.8 2.8"
+        />
       </svg>
 
       <div className="absolute left-1/2 top-1/2 z-10 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-accent-700 shadow-[0_16px_30px_rgba(12,28,48,0.15)]">
@@ -169,14 +180,14 @@ export const HeroIllustration = () => {
         detail="Organise your people and keep assignments ready to send."
         Icon={UsersRound}
         chips={['Manage', 'Assign']}
-        className="left-[5%] top-[8%] w-[44%]"
+        className="left-[5%] top-[6%] w-[44%]"
       />
       <IllustrationCard
         title="Tests"
         detail="Build structured assessments with reusable content."
         Icon={FileText}
         chips={['Sections', 'Questions']}
-        className="right-[6%] top-[7%] w-[39%]"
+        className="right-[6%] top-[5%] w-[39%]"
       />
       <IllustrationCard
         title="Marking"
@@ -184,14 +195,21 @@ export const HeroIllustration = () => {
         Icon={FileCheck2}
         chips={['Marked', 'Notes']}
         accent
-        className="bottom-[13%] left-[4%] w-[46%]"
+        className="bottom-[22%] left-[4%] w-[46%]"
       />
       <IllustrationCard
         title="Leaderboard"
         detail="Make performance visible when peer comparison matters."
         Icon={Trophy}
         chips={['Rank', 'Results']}
-        className="bottom-[6%] right-[7%] w-[41%]"
+        className="bottom-[15%] right-[7%] w-[41%]"
+      />
+      <IllustrationCard
+        title="Learning Resources"
+        detail="Articles and flash cards to support ongoing training."
+        Icon={BookOpen}
+        chips={['Articles', 'Flash Cards']}
+        className="bottom-[1%] left-1/2 -translate-x-1/2 w-[48%]"
       />
     </div>
   )

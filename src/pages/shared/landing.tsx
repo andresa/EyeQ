@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef } from 'react'
 import { Button, Typography } from 'antd'
 import {
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   ClipboardCheck,
   FileCheck2,
   Trophy,
-  UsersRound,
   type LucideIcon,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -33,9 +33,16 @@ const featureCards: Array<{
   {
     title: 'Keep employees organised',
     description:
-      'Manage your employee list in one place so the right people are always ready for assignment.',
+      'Manage your employee list in one place so the right people are always ready for training or assessment.',
     detailTags: ['Employee records', 'Assignment-ready'],
     kind: 'employees',
+  },
+  {
+    title: 'Share learning resources',
+    description:
+      'Publish articles and flash cards so employees can build knowledge at their own pace before or after tests.',
+    detailTags: ['Articles', 'Flash cards'],
+    kind: 'learning',
   },
   {
     title: 'Build structured tests',
@@ -73,22 +80,22 @@ const workflowSteps: Array<{
   kind: LandingGraphicKind
 }> = [
   {
+    title: 'Share resources',
+    description:
+      'Managers publish articles and flash cards so employees can study the material before being assessed.',
+    kind: 'learning',
+  },
+  {
     title: 'Create the test',
     description:
-      'Managers build a structured test that reflects the training outcome they want to measure.',
+      'Build a structured test that measures whether employees have absorbed the training material.',
     kind: 'tests',
   },
   {
-    title: 'Assign it to employees',
+    title: 'Assign and complete',
     description:
-      'The right employees receive the right test, with a workflow that is easy to track and repeat.',
+      'Employees receive their test, work through the questions, and submit when ready.',
     kind: 'assignments',
-  },
-  {
-    title: 'Complete and submit',
-    description:
-      'Employees work through their assigned tests and submit once they have finished.',
-    kind: 'employees',
   },
   {
     title: 'Mark and compare',
@@ -104,15 +111,15 @@ const heroHighlights: Array<{
   Icon: LucideIcon
 }> = [
   {
-    title: 'Manager-led control',
-    description: 'Create tests, assign them, and mark submissions from one workflow.',
-    Icon: ClipboardCheck,
+    title: 'Learning resources',
+    description:
+      'Publish articles and flash cards so employees can learn before being tested.',
+    Icon: BookOpen,
   },
   {
-    title: 'Employee-friendly delivery',
-    description:
-      'Employees see what is assigned, complete tests, and review marked results.',
-    Icon: UsersRound,
+    title: 'Manager-led testing',
+    description: 'Create tests, assign them, and mark submissions from one workflow.',
+    Icon: ClipboardCheck,
   },
   {
     title: 'Visible performance',
@@ -122,7 +129,7 @@ const heroHighlights: Array<{
 ]
 
 const proofPoints = [
-  'Results become visible after managers have completed the marking process.',
+  'Learning resources give employees a way to prepare before tests or reinforce knowledge after.',
   'Notes stay attached to submissions so feedback remains clear and actionable.',
   'Leaderboards give employees a simple view of peer performance when enabled.',
 ]
@@ -264,21 +271,21 @@ const LandingPage = () => {
             <div className="mx-auto flex max-w-[90rem] flex-col items-center justify-center gap-16 px-6 py-20 xl:grid xl:grid-cols-[1.05fr_0.95fr] xl:items-center xl:px-8 xl:py-24">
               <div>
                 <div className="inline-flex rounded-full border border-accent-100 bg-accent-50 px-4 py-2 text-sm font-semibold text-accent-700">
-                  Training workflows made easy
+                  Employee training made simple
                 </div>
 
                 <Typography.Title
                   level={1}
                   className="!mt-6 !max-w-3xl !text-5xl !font-semibold !leading-tight !tracking-tight md:!text-6xl text-center xl:text-left"
                 >
-                  Run staff training with clear assignments, consistent marking, and
-                  visible results.
+                  Train your team with learning resources, structured tests, and visible
+                  results.
                 </Typography.Title>
 
                 <Typography.Paragraph className="!mt-6 !max-w-2xl !text-lg !leading-8 !text-primary-600 text-center xl:text-left">
-                  EyeQ gives managers one place to organise employees, build tests, assign
-                  them with confidence, mark submissions with notes, and enable
-                  leaderboards that show employees how their results compare with peers.
+                  EyeQ gives managers one place to share articles and flash cards, build
+                  and assign tests, mark submissions with notes, and track employee
+                  performance through leaderboards.
                 </Typography.Paragraph>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center justify-center xl:justify-start">
@@ -304,15 +311,14 @@ const LandingPage = () => {
                   <div className="flex items-start gap-3 text-primary-700">
                     <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent-700" />
                     <span>
-                      Managers control the full training workflow from test setup to
-                      marked results.
+                      Share articles and flash cards so employees can learn before being
+                      assessed.
                     </span>
                   </div>
                   <div className="flex items-start gap-3 text-primary-700">
                     <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent-700" />
                     <span>
-                      Employees get a clear experience for completing tests and reviewing
-                      feedback.
+                      Build, assign, and mark tests from a single manager workflow.
                     </span>
                   </div>
                   <div className="flex items-start gap-3 text-primary-700">
@@ -357,12 +363,12 @@ const LandingPage = () => {
                   Feature Overview
                 </p>
                 <Typography.Title level={2} className="!mt-4 !text-4xl !font-semibold">
-                  Everything needed to manage the staff training cycle.
+                  Everything needed to train employees and measure results.
                 </Typography.Title>
                 <Typography.Paragraph className="!mt-4 !text-lg !leading-8 !text-primary-600">
-                  EyeQ is built around the workflow your teams already follow: organise
-                  employees, create tests, assign them, mark submissions, and make
-                  performance easy to understand.
+                  EyeQ covers the full employee training cycle: share learning resources,
+                  build tests, assign them, mark submissions, and make performance easy to
+                  understand.
                 </Typography.Paragraph>
               </div>
 
@@ -406,11 +412,11 @@ const LandingPage = () => {
                   Workflow
                 </p>
                 <Typography.Title level={2} className="!mt-4 !text-4xl !font-semibold">
-                  Designed for managers, clear for employees.
+                  From learning to testing to results.
                 </Typography.Title>
                 <Typography.Paragraph className="!mt-4 !text-lg !leading-8 !text-primary-600">
-                  The experience stays focused from start to finish, so training is easier
-                  to deliver and easier to review.
+                  Employees learn through articles and flash cards, then demonstrate
+                  knowledge through tests that managers assign and mark.
                 </Typography.Paragraph>
               </div>
 
@@ -448,12 +454,12 @@ const LandingPage = () => {
                   Visibility After Marking
                 </p>
                 <Typography.Title level={2} className="!mt-4 !text-4xl !font-semibold">
-                  Make training progress easier to understand.
+                  Make training progress and test results easier to understand.
                 </Typography.Title>
                 <Typography.Paragraph className="!mt-4 !text-lg !leading-8 !text-primary-600">
                   Once submissions have been reviewed, employees can see marked results
-                  and compare performance through leaderboards. Managers stay in control
-                  of the process while teams get better visibility.
+                  and compare performance through leaderboards. Learning resources give
+                  them a path to improve, while managers stay in control of the process.
                 </Typography.Paragraph>
 
                 <div className="mt-8 space-y-4">
@@ -489,7 +495,7 @@ const LandingPage = () => {
                       <div>
                         <p className="font-heading text-xl font-semibold">EyeQ</p>
                         <p className="text-sm text-accent-100">
-                          One clear workflow for staff training and results
+                          Employee training, testing, and results in one place
                         </p>
                       </div>
                     </div>
@@ -498,13 +504,14 @@ const LandingPage = () => {
                       level={2}
                       className="!text-4xl !font-semibold !leading-tight !text-white"
                     >
-                      Bring staff training, marking, and leaderboards into one calm
-                      workflow.
+                      Bring learning resources, tests, marking, and leaderboards into one
+                      calm workflow.
                     </Typography.Title>
 
                     <Typography.Paragraph className="!mt-4 !max-w-xl !text-lg !leading-8 !text-accent-100">
-                      Sign in to continue managing employee training, reviewing
-                      submissions, and keeping performance visible in EyeQ.
+                      Sign in to continue training employees with articles and flash
+                      cards, assigning tests, reviewing submissions, and keeping
+                      performance visible in EyeQ.
                     </Typography.Paragraph>
                   </div>
 
