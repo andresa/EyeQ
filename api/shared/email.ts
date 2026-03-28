@@ -87,7 +87,35 @@ function stripHtml(subject: string, html: string): string {
     .trim()
 }
 
-const LOGO_URL = 'https://www.eyeqlearn.com/images/EyeQLogo-white-transparent-150px.png'
+const LOGO_WHITE_URL =
+  'https://www.eyeqlearn.com/images/EyeQLogo-white-transparent-150px.png'
+const LOGO_BLUE_URL =
+  'https://www.eyeqlearn.com/images/EyeQLogo-blue-transparent-150px.png'
+
+const EMAIL_DARK_MODE_STYLES = `
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      .eh { background: #f0f4f8 !important; border-bottom: 1px solid #d9e4ef !important; }
+      .logo-light { display: none !important; }
+      .logo-dark { display: inline-block !important; }
+      .eb { background: #1a1a2e !important; color: #e0e0e0 !important; border-color: #2a2a3e !important; }
+      .eb p, .eb td { color: #e0e0e0 !important; }
+      .eb .muted { color: #aaa !important; }
+      .eb a { color: #7eaacc !important; }
+      .eb hr { border-color: #2a2a3e !important; }
+      .eb .msg-box { background: #252540 !important; color: #e0e0e0 !important; }
+      .ecta { background: #1E3A5F !important; color: white !important; }
+    }
+  </style>`
+
+const emailHeader = `
+  <div class="eh" style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0; text-align: center;">
+    <img class="logo-light" src="${LOGO_WHITE_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
+    <img class="logo-dark" src="${LOGO_BLUE_URL}" alt="EyeQ" width="75" height="75" style="display: none;" />
+  </div>`
 
 /**
  * Send an enquiry from a landing page visitor to the EyeQ team.
@@ -114,36 +142,35 @@ export async function sendEnquiryEmail(params: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  ${EMAIL_DARK_MODE_STYLES}
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0; text-align: center;">
-    <img src="${LOGO_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
-  </div>
+  ${emailHeader}
 
-  <div style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
+  <div class="eb" style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
     <p style="font-size: 18px; margin-top: 0;">New enquiry from the landing page</p>
 
     <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
       <tr>
-        <td style="padding: 8px 12px; font-weight: 600; color: #666; width: 80px; vertical-align: top;">Name</td>
+        <td class="muted" style="padding: 8px 12px; font-weight: 600; color: #666; width: 80px; vertical-align: top;">Name</td>
         <td style="padding: 8px 12px;">${senderName}</td>
       </tr>
       <tr>
-        <td style="padding: 8px 12px; font-weight: 600; color: #666; vertical-align: top;">Email</td>
+        <td class="muted" style="padding: 8px 12px; font-weight: 600; color: #666; vertical-align: top;">Email</td>
         <td style="padding: 8px 12px;"><a href="mailto:${senderEmail}" style="color: #1E3A5F;">${senderEmail}</a></td>
       </tr>
     </table>
 
     <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 20px 0;">
 
-    <p style="font-weight: 600; color: #666; margin-bottom: 8px;">Message</p>
-    <div style="background: #F8F9FA; border-radius: 4px; padding: 16px; color: #333;">
+    <p class="muted" style="font-weight: 600; color: #666; margin-bottom: 8px;">Message</p>
+    <div class="msg-box" style="background: #F8F9FA; border-radius: 4px; padding: 16px; color: #333;">
       ${escapedMessage}
     </div>
 
     <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 25px 0;">
 
-    <p style="color: #999; font-size: 13px; margin-bottom: 0;">
+    <p class="muted" style="color: #999; font-size: 13px; margin-bottom: 0;">
       You can reply directly to ${senderName} at <a href="mailto:${senderEmail}" style="color: #1E3A5F;">${senderEmail}</a>.
     </p>
   </div>
@@ -174,21 +201,10 @@ export async function sendInvitationEmail(params: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
-  <style>
-    :root { color-scheme: light dark; }
-    @media (prefers-color-scheme: dark) {
-      .eh { background: #1E3A5F !important; }
-      .eb { background: #ffffff !important; }
-      .ecta { background: #1E3A5F !important; }
-    }
-  </style>
+  ${EMAIL_DARK_MODE_STYLES}
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div class="eh" style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0; text-align: center;">
-    <img src="${LOGO_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
-  </div>
+  ${emailHeader}
   
   <div class="eb" style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
     <p style="font-size: 18px; margin-top: 0;">Hi ${userName},</p>
@@ -210,14 +226,14 @@ export async function sendInvitationEmail(params: {
       </a>
     </div>
     
-    <p style="color: #666; font-size: 14px;">
+    <p class="muted" style="color: #666; font-size: 14px;">
       Or copy and paste this link into your browser:<br>
-      <span style="color: #1E3A5F; word-break: break-all;">${invitationUrl}</span>
+      <a style="color: #1E3A5F; word-break: break-all;">${invitationUrl}</a>
     </p>
     
     <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 25px 0;">
     
-    <p style="color: #999; font-size: 13px; margin-bottom: 0;">
+    <p class="muted" style="color: #999; font-size: 13px; margin-bottom: 0;">
       This invitation link will expire in ${expiresInDays} days.<br>
       If you didn't expect this invitation, you can safely ignore this email.
     </p>
@@ -248,21 +264,10 @@ export async function sendMagicLinkEmail(params: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
-  <style>
-    :root { color-scheme: light dark; }
-    @media (prefers-color-scheme: dark) {
-      .eh { background: #1E3A5F !important; }
-      .eb { background: #ffffff !important; }
-      .ecta { background: #1E3A5F !important; }
-    }
-  </style>
+  ${EMAIL_DARK_MODE_STYLES}
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div class="eh" style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0; text-align: center;">
-    <img src="${LOGO_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
-  </div>
+  ${emailHeader}
   
   <div class="eb" style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
     <p style="font-size: 18px; margin-top: 0;">Hi ${userName},</p>
@@ -282,14 +287,14 @@ export async function sendMagicLinkEmail(params: {
       </a>
     </div>
     
-    <p style="color: #666; font-size: 14px;">
+    <p class="muted" style="color: #666; font-size: 14px;">
       Or copy and paste this link into your browser:<br>
-      <span style="color: #1E3A5F; word-break: break-all;">${magicLinkUrl}</span>
+      <a style="color: #1E3A5F; word-break: break-all;">${magicLinkUrl}</a>
     </p>
     
     <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 25px 0;">
     
-    <p style="color: #999; font-size: 13px; margin-bottom: 0;">
+    <p class="muted" style="color: #999; font-size: 13px; margin-bottom: 0;">
       This login link will expire in ${expiresInMinutes} minutes.<br>
       If you didn't request this link, you can safely ignore this email.
     </p>
