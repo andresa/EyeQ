@@ -1,4 +1,4 @@
-import { App, DatePicker, Form, Input, Modal, Switch } from 'antd'
+import { App, DatePicker, Form, Input, Modal, Switch, Tooltip } from 'antd'
 import Selection from '../atoms/Selection'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
@@ -368,7 +368,17 @@ const UserModal = ({
 
         {/* Active toggle - only when editing */}
         {isEditing && (
-          <Form.Item name="isActive" valuePropName="checked">
+          <Form.Item
+            name="isActive"
+            valuePropName="checked"
+            extra={
+              <Tooltip title="Inactive users cannot log in and will be excluded from leaderboards. Users who are currently logged in will be signed out automatically.">
+                <span className="text-xs text-gray-400 underline decoration-dotted cursor-help">
+                  What does this do?
+                </span>
+              </Tooltip>
+            }
+          >
             <Switch
               checkedChildren="Active"
               unCheckedChildren="Inactive"

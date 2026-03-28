@@ -206,6 +206,8 @@ export async function getAuthenticatedUser(
 
   const { user, userType } = result
 
+  if (userType !== 'admin' && user.isActive === false) return null
+
   return {
     id: user.id as string,
     email: user.email as string,
@@ -283,6 +285,9 @@ export async function authenticateByToken(
   const result = await findUserByEmail(session.email)
   if (!result) return null
   const { user, userType } = result
+
+  if (userType !== 'admin' && user.isActive === false) return null
+
   return {
     id: user.id as string,
     email: user.email as string,
@@ -324,6 +329,16 @@ export const requestMagicLinkHandler = async (
     // For security, don't reveal if user exists or not
     // Just return success and don't send email
     console.log(`Magic link requested for unknown email: ${email}`)
+    return jsonResponse(200, {
+      success: true,
+      data: {
+        message: 'If an account exists with this email, a login link has been sent.',
+      },
+    })
+  }
+
+  if (result.userType !== 'admin' && result.user.isActive === false) {
+    console.log(`Magic link requested for inactive user: ${email}`)
     return jsonResponse(200, {
       success: true,
       data: {
@@ -434,6 +449,13 @@ export const verifyMagicLinkHandler = async (
     return jsonResponse(400, { success: false, error: 'User not found.' })
   }
 
+  if (result.userType !== 'admin' && result.user.isActive === false) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'Your account has been deactivated. Please contact your administrator.',
+    })
+  }
+
   // Create session
   const session = await createSession(
     result.user.id as string,
@@ -505,6 +527,14 @@ export const getSessionHandler = async (
   const result = await findUserByEmail(session.email)
   if (!result) {
     return jsonResponse(401, { success: false, error: 'User not found.' })
+  }
+
+  if (result.userType !== 'admin' && result.user.isActive === false) {
+    return jsonResponse(403, {
+      success: false,
+      error: 'Your account has been deactivated.',
+      code: 'ACCOUNT_DEACTIVATED',
+    })
   }
 
   // Get company name if applicable

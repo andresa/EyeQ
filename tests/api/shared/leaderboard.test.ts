@@ -588,7 +588,7 @@ describe('getLeaderboardHandler', () => {
     expect(response.jsonBody?.data?.entries).toHaveLength(0)
   })
 
-  it('shows Unknown Employee for deleted employees', async () => {
+  it('excludes deleted employees from leaderboard', async () => {
     resetContainers()
     const board = { type: 'top_average_score', period: 'month', displayLimit: 'full' }
     settingsContainer.items.query.mockReturnValue({
@@ -613,7 +613,7 @@ describe('getLeaderboardHandler', () => {
     })
     const response = await getLeaderboardHandler(request)
 
-    expect(response.jsonBody?.data?.entries[0].employeeName).toBe('Unknown Employee')
+    expect(response.jsonBody?.data?.entries).toHaveLength(0)
   })
 
   it('limits to top 5 when displayLimit is top5', async () => {
@@ -753,6 +753,41 @@ describe('getLeaderboardHandler', () => {
 
     expect(response.status).toBe(200)
     expect(response.jsonBody?.data?.board).toEqual(boards[1])
+  })
+
+  it('excludes inactive employees from leaderboard', async () => {
+    resetContainers()
+    const board = { type: 'top_average_score', period: 'month', displayLimit: 'full' }
+    settingsContainer.items.query.mockReturnValue({
+      fetchAll: vi.fn().mockResolvedValue({
+        resources: [{ id: 's1', companyId: 'c1', boards: [board] }],
+      }),
+    })
+    usersContainer.items.query.mockReturnValue({
+      fetchAll: vi.fn().mockResolvedValue({
+        resources: [{ id: 'e1', firstName: 'Active', lastName: 'User' }],
+      }),
+    })
+    testsContainer.items.query.mockReturnValue({
+      fetchAll: vi.fn().mockResolvedValue({ resources: [{ id: 't1' }] }),
+    })
+    instancesContainer.items.query.mockReturnValue({
+      fetchAll: vi.fn().mockResolvedValue({
+        resources: [
+          { employeeId: 'e1', score: 90 },
+          { employeeId: 'e_inactive', score: 100 },
+        ],
+      }),
+    })
+
+    const request = mockRequest({
+      query: { companyId: 'c1', boardIndex: '0' },
+    })
+    const response = await getLeaderboardHandler(request)
+
+    const entries = response.jsonBody?.data?.entries
+    expect(entries).toHaveLength(1)
+    expect(entries[0].employeeName).toBe('Active User')
   })
 
   it('rounds average scores to 2 decimal places', async () => {

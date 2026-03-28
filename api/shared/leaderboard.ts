@@ -323,7 +323,7 @@ export const getLeaderboardHandler = async (
   const { resources: employees } = await usersContainer.items
     .query({
       query:
-        "SELECT c.id, c.firstName, c.middleName, c.lastName FROM c WHERE c.companyId = @companyId AND c.role = 'employee'",
+        "SELECT c.id, c.firstName, c.middleName, c.lastName FROM c WHERE c.companyId = @companyId AND c.role = 'employee' AND c.isActive = true",
       parameters: [{ name: '@companyId', value: companyId }],
     })
     .fetchAll()
@@ -377,8 +377,10 @@ export const getLeaderboardHandler = async (
     })
     .fetchAll()
 
-  // Aggregate and rank
-  const allEntries = aggregateScores(instances, employeeMap, board.type)
+  // Aggregate and rank (only employees present in the active-employee map)
+  const allEntries = aggregateScores(instances, employeeMap, board.type).filter((e) =>
+    employeeMap.has(e.employeeId),
+  )
 
   // Pagination
   let offset = parseInt(request.query.get('offset') ?? '0', 10)

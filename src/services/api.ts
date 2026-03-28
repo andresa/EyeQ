@@ -60,6 +60,16 @@ const handleResponse = async <T>(response: Response): Promise<ApiResponse<T>> =>
     return { success: false, error: 'Invalid response from server.' }
   }
 
+  if (
+    response.status === 401 ||
+    (response.status === 403 && data.code === 'ACCOUNT_DEACTIVATED')
+  ) {
+    clearSessionToken()
+    window.dispatchEvent(
+      new CustomEvent('session-expired', { detail: { reason: data.error } }),
+    )
+  }
+
   if (!response.ok || !data.success) {
     const errorMessage = data.error || `Request failed with status ${response.status}.`
     return { success: false, error: errorMessage }

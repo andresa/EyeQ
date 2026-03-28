@@ -107,5 +107,71 @@ describe('services/api', () => {
         expect.objectContaining({ method: 'POST', body: '{"name":"A"}' }),
       )
     })
+
+    it('dispatches session-expired event on 401 response', async () => {
+      const handler = vi.fn()
+      window.addEventListener('session-expired', handler)
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: async () =>
+          JSON.stringify({ success: false, error: 'Session expired or invalid.' }),
+      } as Response)
+
+      const result = await apiRequest('/test')
+
+      expect(result.success).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+      expect(getSessionToken()).toBeNull()
+
+      window.removeEventListener('session-expired', handler)
+    })
+
+    it('dispatches session-expired event on 403 with ACCOUNT_DEACTIVATED code', async () => {
+      setSessionToken('my-token')
+      const handler = vi.fn()
+      window.addEventListener('session-expired', handler)
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: async () =>
+          JSON.stringify({
+            success: false,
+            error: 'Your account has been deactivated.',
+            code: 'ACCOUNT_DEACTIVATED',
+          }),
+      } as Response)
+
+      const result = await apiRequest('/test')
+
+      expect(result.success).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+      expect(getSessionToken()).toBeNull()
+
+      window.removeEventListener('session-expired', handler)
+    })
+
+    it('does not dispatch session-expired event for other 403 errors', async () => {
+      setSessionToken('my-token')
+      const handler = vi.fn()
+      window.addEventListener('session-expired', handler)
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: async () =>
+          JSON.stringify({ success: false, error: 'You do not have permission.' }),
+      } as Response)
+
+      const result = await apiRequest('/test')
+
+      expect(result.success).toBe(false)
+      expect(handler).not.toHaveBeenCalled()
+      expect(getSessionToken()).toBe('my-token')
+
+      window.removeEventListener('session-expired', handler)
+    })
   })
 })
