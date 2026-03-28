@@ -87,6 +87,8 @@ function stripHtml(subject: string, html: string): string {
     .trim()
 }
 
+const LOGO_URL = 'https://www.eyeqlearn.com/images/EyeQLogo-white-transparent-150px.png'
+
 /**
  * Send an invitation email to a user (employee or manager).
  */
@@ -107,13 +109,23 @@ export async function sendInvitationEmail(params: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      .eh { background: #1E3A5F !important; }
+      .eb { background: #ffffff !important; }
+      .ecta { background: #1E3A5F !important; }
+    }
+  </style>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to EyeQ!</h1>
+  <div class="eh" style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0; text-align: center;">
+    <img src="${LOGO_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
   </div>
   
-  <div style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
+  <div class="eb" style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
     <p style="font-size: 18px; margin-top: 0;">Hi ${userName},</p>
     
     <p>You've been invited to join <strong>${companyName}</strong> on EyeQ.</p>
@@ -121,7 +133,7 @@ export async function sendInvitationEmail(params: {
     <p>Click the button below to accept your invitation and set up your account:</p>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${invitationUrl}" 
+      <a href="${invitationUrl}" class="ecta"
          style="background: #1E3A5F; 
                 color: white; 
                 padding: 14px 30px; 
@@ -171,19 +183,29 @@ export async function sendMagicLinkEmail(params: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    :root { color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      .eh { background: #1E3A5F !important; }
+      .eb { background: #ffffff !important; }
+      .ecta { background: #1E3A5F !important; }
+    }
+  </style>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">EyeQ Login</h1>
+  <div class="eh" style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0; text-align: center;">
+    <img src="${LOGO_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
   </div>
   
-  <div style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
+  <div class="eb" style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
     <p style="font-size: 18px; margin-top: 0;">Hi ${userName},</p>
     
     <p>Click the button below to log in to your EyeQ account:</p>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${magicLinkUrl}" 
+      <a href="${magicLinkUrl}" class="ecta"
          style="background: #1E3A5F; 
                 color: white; 
                 padding: 14px 30px; 
