@@ -51,6 +51,7 @@ interface UserModalProps {
 interface FormValues {
   companyId: string
   firstName: string
+  middleName?: string
   lastName: string
   email: string
   phone?: string
@@ -92,6 +93,7 @@ const UserModal = ({
         form.setFieldsValue({
           companyId: editingUser.companyId,
           firstName: editingUser.firstName,
+          middleName: 'middleName' in editingUser ? editingUser.middleName : undefined,
           lastName: editingUser.lastName,
           email: editingUser.email,
           phone: editingUser.phone,
@@ -131,6 +133,7 @@ const UserModal = ({
         if (userType === 'manager') {
           const response = await updateManager(editingUser.id, editingUser.companyId, {
             firstName: values.firstName,
+            middleName: values.middleName,
             lastName: values.lastName,
             email: values.email,
             phone: values.phone,
@@ -147,6 +150,7 @@ const UserModal = ({
           const updateFn = isAdmin ? adminUpdateEmployee : managerUpdateEmployee
           const response = await updateFn(editingUser.id, editingUser.companyId, {
             firstName: values.firstName,
+            middleName: values.middleName,
             lastName: values.lastName,
             email: values.email,
             phone: values.phone,
@@ -167,6 +171,7 @@ const UserModal = ({
           const response = await createManager({
             companyId: effectiveCompanyId,
             firstName: values.firstName,
+            middleName: values.middleName,
             lastName: values.lastName,
             email: values.email,
             phone: values.phone,
@@ -198,6 +203,7 @@ const UserModal = ({
             const response = await adminCreateEmployee({
               companyId: effectiveCompanyId,
               firstName: values.firstName,
+              middleName: values.middleName,
               lastName: values.lastName,
               email: values.email,
               phone: values.phone,
@@ -230,6 +236,7 @@ const UserModal = ({
               employees: [
                 {
                   firstName: values.firstName,
+                  middleName: values.middleName,
                   lastName: values.lastName,
                   email: values.email,
                   phone: values.phone,
@@ -301,6 +308,10 @@ const UserModal = ({
           rules={[{ required: true, message: 'Enter first name.' }]}
         >
           <Input aria-label="First name" />
+        </Form.Item>
+
+        <Form.Item name="middleName" label="Middle name">
+          <Input aria-label="Middle name" />
         </Form.Item>
 
         <Form.Item

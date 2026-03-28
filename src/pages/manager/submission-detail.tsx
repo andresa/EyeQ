@@ -35,6 +35,7 @@ import {
   resolveAnswer,
 } from './submission-utils'
 import QuestionImage from '../../components/atoms/QuestionImage'
+import { formatUserName } from '../../utils/formatUserName'
 
 const TAB_VIEW = 'view'
 const TAB_MARK = 'mark'
@@ -99,7 +100,7 @@ const SubmissionDetailPage = () => {
   const employeeMap = useMemo(
     () =>
       (employees || []).reduce<Record<string, string>>((map, employee) => {
-        map[employee.id] = `${employee.firstName} ${employee.lastName}`
+        map[employee.id] = formatUserName(employee)
         return map
       }, {}),
     [employees],

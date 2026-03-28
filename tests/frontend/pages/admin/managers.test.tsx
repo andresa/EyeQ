@@ -87,6 +87,43 @@ describe('AdminManagersPage', () => {
     })
   })
 
+  it('renders manager with middle name', async () => {
+    vi.mocked(listCompanies).mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 'c1',
+          name: 'Acme Corp',
+          createdAt: '2025-01-01T00:00:00Z',
+          isActive: true,
+        },
+      ],
+    })
+    vi.mocked(listManagers).mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 'm2',
+          companyId: 'c1',
+          firstName: 'Bob',
+          middleName: 'Lee',
+          lastName: 'Taylor',
+          email: 'bob@t.com',
+          role: 'manager',
+          createdAt: '2025-01-01T00:00:00Z',
+          isActive: true,
+          invitationStatus: 'accepted' as const,
+        },
+      ],
+    })
+
+    render(<AdminManagersPage />, { wrapper: Wrapper })
+
+    await waitFor(() => {
+      expect(screen.getByText('Bob Lee Taylor')).toBeInTheDocument()
+    })
+  })
+
   it('renders Add manager button', async () => {
     setup()
     render(<AdminManagersPage />, { wrapper: Wrapper })

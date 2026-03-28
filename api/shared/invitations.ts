@@ -1,7 +1,7 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from './cosmos.js'
 import { jsonResponse, parseJsonBody } from './http.js'
-import { createId, nowIso } from './utils.js'
+import { createId, nowIso, formatUserName } from './utils.js'
 import {
   getAuthenticatedUser,
   requireManager,
@@ -311,7 +311,7 @@ export const sendInvitationHandler = async (
       userType: 'employee',
       companyId: body.companyId,
       companyName: company.name,
-      userName: `${employee.firstName} ${employee.lastName}`,
+      userName: formatUserName(employee),
       invitedEmail: body.invitedEmail,
       sentByUserId: user!.id,
     })
@@ -502,7 +502,7 @@ export const sendManagerInvitationHandler = async (
       userType: 'manager',
       companyId: body.companyId,
       companyName: company.name,
-      userName: `${manager.firstName} ${manager.lastName}`,
+      userName: formatUserName(manager),
       invitedEmail: body.invitedEmail,
       sentByUserId: user!.id,
     })

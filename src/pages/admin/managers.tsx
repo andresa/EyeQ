@@ -21,6 +21,7 @@ import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import UserModal from '../../components/molecules/UserModal'
 import { UserStar } from 'lucide-react'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
+import { formatUserName } from '../../utils/formatUserName'
 
 const roleColors: Record<string, string> = {
   manager: 'blue',
@@ -100,7 +101,7 @@ const AdminManagersPage = () => {
 
     modal.confirm({
       title: 'Delete manager',
-      content: `Are you sure you want to delete ${manager.firstName} ${manager.lastName}? This action cannot be undone.`,
+      content: `Are you sure you want to delete ${formatUserName(manager)}? This action cannot be undone.`,
       okText: 'Delete',
       okButtonProps: { danger: true },
       onOk: async () => {
@@ -109,7 +110,7 @@ const AdminManagersPage = () => {
           message.error(response.error || 'Failed to delete manager')
           return
         }
-        message.success(`${manager.firstName} ${manager.lastName} has been deleted`)
+        message.success(`${formatUserName(manager)} has been deleted`)
         refetch()
       },
     })
@@ -205,7 +206,7 @@ const AdminManagersPage = () => {
           columns={[
             {
               title: 'Name',
-              render: (_, record) => `${record.firstName} ${record.lastName}`,
+              render: (_, record) => formatUserName(record),
             },
             {
               title: 'Email',

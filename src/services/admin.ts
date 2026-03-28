@@ -39,6 +39,7 @@ export const deleteCompany = (companyId: string): Promise<ApiResponse<{ id: stri
 export const createManager = (payload: {
   companyId: string
   firstName: string
+  middleName?: string
   lastName: string
   email: string
   phone?: string
@@ -105,6 +106,7 @@ export const sendManagerInvitation = (
 export const createEmployee = (payload: {
   companyId: string
   firstName: string
+  middleName?: string
   lastName: string
   email: string
   phone?: string

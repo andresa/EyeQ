@@ -16,6 +16,7 @@ export interface CompanyUser {
   id: string
   companyId: string
   firstName: string
+  middleName?: string
   lastName: string
   email: string
   phone?: string

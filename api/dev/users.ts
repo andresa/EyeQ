@@ -13,6 +13,7 @@ interface DevUser {
   id: string
   email: string
   firstName: string
+  middleName?: string
   lastName: string
   companyId?: string
   role?: string
@@ -37,7 +38,7 @@ export const getDevUsersHandler = async (): Promise<HttpResponseInit> => {
     const adminsContainer = await getContainer(ADMINS_CONTAINER, ADMINS_PARTITION_KEY)
     const { resources: admins } = await adminsContainer.items
       .query({
-        query: 'SELECT c.id, c.email, c.firstName, c.lastName FROM c',
+        query: 'SELECT c.id, c.email, c.firstName, c.middleName, c.lastName FROM c',
       })
       .fetchAll()
 
@@ -46,7 +47,7 @@ export const getDevUsersHandler = async (): Promise<HttpResponseInit> => {
     const { resources: allUsers } = await usersContainer.items
       .query({
         query:
-          'SELECT c.id, c.email, c.firstName, c.lastName, c.companyId, c.role FROM c WHERE c.isActive = true',
+          'SELECT c.id, c.email, c.firstName, c.middleName, c.lastName, c.companyId, c.role FROM c WHERE c.isActive = true',
       })
       .fetchAll()
 

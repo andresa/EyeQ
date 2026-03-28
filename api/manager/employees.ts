@@ -1,7 +1,7 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
-import { createId, nowIso } from '../shared/utils.js'
+import { createId, nowIso, formatUserName } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 import { createInvitationRecord } from '../shared/invitations.js'
 import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
@@ -13,6 +13,7 @@ type InvitationStatus = 'none' | 'pending' | 'accepted'
 
 interface EmployeeInput {
   firstName?: string
+  middleName?: string
   lastName?: string
   email: string // Required - email is now mandatory
   phone?: string
@@ -28,6 +29,7 @@ interface EmployeesBody {
 
 interface EmployeeUpdateBody {
   firstName?: string
+  middleName?: string
   lastName?: string
   email?: string
   phone?: string
@@ -56,7 +58,7 @@ export const listEmployeesHandler = async (
 
   if (nameFilter) {
     whereClause +=
-      " AND (CONTAINS(LOWER(c.firstName), LOWER(@name)) OR CONTAINS(LOWER(c.lastName), LOWER(@name)) OR CONTAINS(LOWER(CONCAT(c.firstName, ' ', c.lastName)), LOWER(@name)))"
+      " AND (CONTAINS(LOWER(c.firstName), LOWER(@name)) OR CONTAINS(LOWER(c.middleName), LOWER(@name)) OR CONTAINS(LOWER(c.lastName), LOWER(@name)) OR CONTAINS(LOWER(CONCAT(c.firstName, ' ', c.lastName)), LOWER(@name)))"
     parameters.push({ name: '@name', value: nameFilter })
   }
 
@@ -176,6 +178,7 @@ export const createEmployeesHandler = async (
       id: createId('user'),
       companyId: body.companyId,
       firstName: employee.firstName,
+      middleName: employee.middleName,
       lastName: employee.lastName,
       email: normalizedEmail,
       phone: employee.phone,
@@ -200,7 +203,9 @@ export const createEmployeesHandler = async (
           userType: 'employee',
           companyId: body.companyId,
           companyName: company.name,
-          userName: `${employee.firstName} ${employee.lastName}`,
+          userName: formatUserName(
+            employee as { firstName: string; middleName?: string; lastName: string },
+          ),
           invitedEmail: normalizedEmail,
           sentByUserId: user!.id,
         })
@@ -282,6 +287,7 @@ export const updateEmployeeHandler = async (
   const updated = {
     ...existing,
     firstName: body.firstName ?? existing.firstName,
+    middleName: body.middleName ?? existing.middleName,
     lastName: body.lastName ?? existing.lastName,
     email: body.email ?? existing.email,
     phone: body.phone ?? existing.phone,

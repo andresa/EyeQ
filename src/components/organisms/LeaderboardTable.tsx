@@ -1,4 +1,4 @@
-import { Button, Empty, Pagination, Spin, Table, Typography } from 'antd'
+import { Button, Empty, Pagination, Spin, Table, Tag, Typography } from 'antd'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -14,6 +14,11 @@ interface LeaderboardTableProps {
 const BOARD_TYPE_LABELS: Record<string, string> = {
   top_average_score: 'Top Average Score',
   top_single_test_score: 'Top Single-Test Score',
+}
+
+const PERIOD_LABELS: Record<string, string> = {
+  week: 'weekly',
+  month: 'monthly',
 }
 
 const MIN_PERIOD_OFFSET = -3
@@ -88,9 +93,12 @@ const LeaderboardTable = ({ companyId, boardIndex, board }: LeaderboardTableProp
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <Typography.Title level={5} className="!mb-0">
-          {BOARD_TYPE_LABELS[board.type] ?? board.type}
-        </Typography.Title>
+        <div className="flex items-center gap-2">
+          <Typography.Title level={5} className="!mb-0">
+            {BOARD_TYPE_LABELS[board.type] ?? board.type}
+          </Typography.Title>
+          <Tag color="blue">{PERIOD_LABELS[board.period] ?? board.period}</Tag>
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-3">

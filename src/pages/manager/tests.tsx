@@ -20,6 +20,7 @@ import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { formatDateTime } from '../../utils/date'
 import dayjs from 'dayjs'
 import { FlaskConical } from 'lucide-react'
+import { formatUserName } from '../../utils/formatUserName'
 
 const ManagerTestsPage = () => {
   const navigate = useNavigate()
@@ -125,6 +126,7 @@ const ManagerTestsPage = () => {
         return
       }
       message.success('Test assigned')
+      queryClient.invalidateQueries({ queryKey: ['manager', 'testInstances'] })
     } catch (error) {
       console.error(error)
       message.error('Unable to assign test')
@@ -326,7 +328,7 @@ const ManagerTestsPage = () => {
                     .includes(input.toLowerCase()),
               }}
               options={(employees || []).map((employee) => ({
-                label: `${employee.firstName} ${employee.lastName}`,
+                label: formatUserName(employee),
                 value: employee.id,
               }))}
               className="w-full"

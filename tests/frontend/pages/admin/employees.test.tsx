@@ -94,6 +94,43 @@ describe('AdminEmployeesPage', () => {
     })
   })
 
+  it('renders employee with middle name', async () => {
+    vi.mocked(listCompanies).mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 'c1',
+          name: 'Acme Corp',
+          createdAt: '2025-01-01T00:00:00Z',
+          isActive: true,
+        },
+      ],
+    })
+    vi.mocked(listEmployees).mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 'e2',
+          companyId: 'c1',
+          firstName: 'Jane',
+          middleName: 'Marie',
+          lastName: 'Doe',
+          email: 'jane@t.com',
+          role: 'employee',
+          createdAt: '2025-01-01T00:00:00Z',
+          isActive: true,
+          invitationStatus: 'accepted' as const,
+        },
+      ],
+    })
+
+    render(<AdminEmployeesPage />, { wrapper: Wrapper })
+
+    await waitFor(() => {
+      expect(screen.getByText('Jane Marie Doe')).toBeInTheDocument()
+    })
+  })
+
   it('calls listCompanies and listEmployees', async () => {
     setup()
     render(<AdminEmployeesPage />, { wrapper: Wrapper })

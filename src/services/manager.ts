@@ -34,6 +34,7 @@ export const sendInvitation = (
 
 interface CreateEmployeeInput {
   firstName: string
+  middleName?: string
   lastName: string
   email: string
   phone?: string

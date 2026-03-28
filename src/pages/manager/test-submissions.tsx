@@ -24,6 +24,7 @@ import {
   subWeeks,
 } from 'date-fns'
 import { ScrollText } from 'lucide-react'
+import { formatUserName } from '../../utils/formatUserName'
 
 const SubmissionsPage = () => {
   const { testId } = useParams()
@@ -74,7 +75,7 @@ const SubmissionsPage = () => {
   const employeeMap = useMemo(
     () =>
       (employees || []).reduce<Record<string, string>>((map, employee) => {
-        map[employee.id] = `${employee.firstName} ${employee.lastName}`
+        map[employee.id] = formatUserName(employee)
         return map
       }, {}),
     [employees],
@@ -193,7 +194,7 @@ const SubmissionsPage = () => {
             value={employeeFilter}
             onChange={setEmployeeFilter}
             options={(employees || []).map((employee) => ({
-              label: `${employee.firstName} ${employee.lastName}`,
+              label: formatUserName(employee),
               value: employee.id,
             }))}
             placeholder="All employees"

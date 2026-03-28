@@ -26,6 +26,7 @@ import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import UserModal from '../../components/molecules/UserModal'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { Users } from 'lucide-react'
+import { formatUserName } from '../../utils/formatUserName'
 
 const roleColors: Record<UserRole, string> = {
   admin: 'red',
@@ -143,7 +144,7 @@ const ManagerEmployeesPage = () => {
 
     modal.confirm({
       title: 'Delete employee',
-      content: `Are you sure you want to delete ${employee.firstName} ${employee.lastName}? This action cannot be undone.`,
+      content: `Are you sure you want to delete ${formatUserName(employee)}? This action cannot be undone.`,
       okText: 'Delete',
       okButtonProps: { danger: true },
       onOk: async () => {
@@ -152,7 +153,7 @@ const ManagerEmployeesPage = () => {
           message.error(response.error || 'Failed to delete employee')
           return
         }
-        message.success(`${employee.firstName} ${employee.lastName} has been deleted`)
+        message.success(`${formatUserName(employee)} has been deleted`)
         refetch()
       },
     })
@@ -224,7 +225,7 @@ const ManagerEmployeesPage = () => {
           columns={[
             {
               title: 'Name',
-              render: (_, record) => `${record.firstName} ${record.lastName}`,
+              render: (_, record) => formatUserName(record),
             },
             {
               title: 'Email',
@@ -304,7 +305,7 @@ const ManagerEmployeesPage = () => {
 
       {/* Send Invitation Modal */}
       <Modal
-        title={`Send invitation to ${invitingEmployee?.firstName} ${invitingEmployee?.lastName}`}
+        title={`Send invitation to ${invitingEmployee ? formatUserName(invitingEmployee) : ''}`}
         open={inviteModalOpen}
         onOk={onSendInvitation}
         onCancel={closeInviteModal}

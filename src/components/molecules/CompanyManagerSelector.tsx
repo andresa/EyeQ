@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { listCompaniesShared, listManagersShared } from '../../services/shared'
 import type { Company, Manager } from '../../types'
 import { useSession } from '../../hooks/useSession'
+import { formatUserName } from '../../utils/formatUserName'
 
 interface CompanyManagerSelectorProps {
   onSelectionChange?: (companyId: string | null, managerId: string | null) => void
@@ -71,7 +72,7 @@ const CompanyManagerSelector = ({ onSelectionChange }: CompanyManagerSelectorPro
           allowClear
           disabled={!companyId}
           options={(managers || []).map((manager: Manager) => ({
-            label: `${manager.firstName} ${manager.lastName}`,
+            label: formatUserName(manager),
             value: manager.id,
           }))}
           aria-label="Select manager"
