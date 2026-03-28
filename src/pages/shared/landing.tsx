@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { Button, Typography } from 'antd'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { App as AntApp, Button, Form, Input, Modal, Typography } from 'antd'
 import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
   ClipboardCheck,
   FileCheck2,
+  Mail,
   Trophy,
   type LucideIcon,
 } from 'lucide-react'
@@ -17,12 +18,19 @@ import {
   PerformanceIllustration,
   type LandingGraphicKind,
 } from '../../components/organisms/LandingIllustrations'
+import { apiRequest } from '../../services/api'
 
 const loginButtonClass =
   '!rounded-full !border-accent-700 !bg-accent-700 text-white !px-5 !font-semibold hover:!border-accent-800 hover:!bg-accent-800 hover:!text-white'
 
 const whiteButtonClass =
   '!rounded-full !border-white !bg-white !px-5 !font-semibold !text-accent-700 hover:!border-accent-50 hover:!bg-accent-50'
+
+const outlineButtonClass =
+  'inline-flex items-center justify-center gap-2 rounded-full border border-primary-200 px-5 py-3 text-sm font-semibold text-primary-700 transition hover:border-accent-200 hover:text-accent-700'
+
+const whiteOutlineButtonClass =
+  '!rounded-full !border-white/30 !bg-transparent !px-5 !font-semibold !text-white hover:!border-white/60 hover:!bg-white/10'
 
 const featureCards: Array<{
   title: string
@@ -74,37 +82,6 @@ const featureCards: Array<{
   },
 ]
 
-const workflowSteps: Array<{
-  title: string
-  description: string
-  kind: LandingGraphicKind
-}> = [
-  {
-    title: 'Share resources',
-    description:
-      'Managers publish articles and flash cards so employees can study the material before being assessed.',
-    kind: 'learning',
-  },
-  {
-    title: 'Create the test',
-    description:
-      'Build a structured test that measures whether employees have absorbed the training material.',
-    kind: 'tests',
-  },
-  {
-    title: 'Assign and complete',
-    description:
-      'Employees receive their test, work through the questions, and submit when ready.',
-    kind: 'assignments',
-  },
-  {
-    title: 'Mark and compare',
-    description:
-      'Managers review submissions, leave notes, and make results visible through leaderboards.',
-    kind: 'marking',
-  },
-]
-
 const heroHighlights: Array<{
   title: string
   description: string
@@ -134,21 +111,22 @@ const proofPoints = [
   'Leaderboards give employees a simple view of peer performance when enabled.',
 ]
 
-type LandingSectionId = 'features' | 'workflow' | 'visibility'
+type LandingSectionId = 'features' | 'visibility'
 
 const LandingPage = () => {
   const navigate = useNavigate()
+  const { message } = AntApp.useApp()
+  const [form] = Form.useForm()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const featuresRef = useRef<HTMLElement>(null)
-  const workflowRef = useRef<HTMLElement>(null)
   const visibilityRef = useRef<HTMLElement>(null)
+  const [enquiryOpen, setEnquiryOpen] = useState(false)
+  const [enquiryLoading, setEnquiryLoading] = useState(false)
 
   const getSectionRef = (section: LandingSectionId) => {
     switch (section) {
       case 'features':
         return featuresRef
-      case 'workflow':
-        return workflowRef
       case 'visibility':
         return visibilityRef
     }
@@ -187,7 +165,7 @@ const LandingPage = () => {
     const handleHashScroll = (behavior: ScrollBehavior) => {
       const section = window.location.hash.replace('#', '') as LandingSectionId
 
-      if (!section || !['features', 'workflow', 'visibility'].includes(section)) {
+      if (!section || !['features', 'visibility'].includes(section)) {
         return
       }
 
@@ -203,6 +181,35 @@ const LandingPage = () => {
 
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [scrollToSection])
+
+  const handleEnquirySubmit = async () => {
+    try {
+      const values = await form.validateFields()
+      setEnquiryLoading(true)
+
+      const result = await apiRequest('/shared/enquiry', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          message: values.message,
+          _hp: values._hp,
+        }),
+      })
+
+      if (result.success) {
+        message.success("Your enquiry has been sent. We'll be in touch soon.")
+        form.resetFields()
+        setEnquiryOpen(false)
+      } else {
+        message.error(result.error || 'Something went wrong. Please try again.')
+      }
+    } catch {
+      // validation failed — antd shows inline errors
+    } finally {
+      setEnquiryLoading(false)
+    }
+  }
 
   return (
     <div
@@ -238,13 +245,6 @@ const LandingPage = () => {
                 onClick={() => scrollToSection('features')}
               >
                 Features
-              </button>
-              <button
-                type="button"
-                className="transition hover:text-accent-700"
-                onClick={() => scrollToSection('workflow')}
-              >
-                Workflow
               </button>
               <button
                 type="button"
@@ -299,10 +299,11 @@ const LandingPage = () => {
 
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center rounded-full border border-primary-200 px-5 py-3 text-sm font-semibold text-primary-700 transition hover:border-accent-200 hover:text-accent-700"
-                    onClick={() => scrollToSection('workflow')}
+                    className={outlineButtonClass}
+                    onClick={() => setEnquiryOpen(true)}
                   >
-                    See how it works
+                    <Mail className="h-4 w-4" />
+                    Enquire
                   </button>
                 </div>
 
@@ -401,48 +402,10 @@ const LandingPage = () => {
           </section>
 
           <section
-            ref={workflowRef}
-            id="workflow"
+            ref={visibilityRef}
+            id="visibility"
             className="scroll-mt-24 border-y border-primary-100 bg-primary-50/80"
           >
-            <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-              <div className="max-w-2xl">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent-700">
-                  Workflow
-                </p>
-                <Typography.Title level={2} className="!mt-4 !text-4xl !font-semibold">
-                  From learning to testing to results.
-                </Typography.Title>
-                <Typography.Paragraph className="!mt-4 !text-lg !leading-8 !text-primary-600">
-                  Employees learn through articles and flash cards, then demonstrate
-                  knowledge through tests that managers assign and mark.
-                </Typography.Paragraph>
-              </div>
-
-              <div className="mt-12 grid gap-5 lg:grid-cols-4">
-                {workflowSteps.map(({ title, description, kind }, index) => (
-                  <div
-                    key={title}
-                    className="rounded-[28px] border border-white/80 bg-white/90 p-6 shadow-sm"
-                  >
-                    <div className="mb-6 flex items-center justify-between gap-4">
-                      <span className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-500">
-                        0{index + 1}
-                      </span>
-                      <FeatureGraphic kind={kind} />
-                    </div>
-
-                    <p className="text-xl font-semibold text-primary-900">{title}</p>
-                    <p className="mt-3 text-base leading-7 text-primary-600">
-                      {description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section ref={visibilityRef} id="visibility" className="scroll-mt-24">
             <div className="mx-auto grid max-w-7xl gap-14 px-6 py-24 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:px-8">
               <div>
                 <PerformanceIllustration />
@@ -523,6 +486,14 @@ const LandingPage = () => {
                       Log In
                     </Button>
 
+                    <Button
+                      size="large"
+                      className={whiteOutlineButtonClass}
+                      onClick={() => setEnquiryOpen(true)}
+                    >
+                      Enquire
+                    </Button>
+
                     <p className="text-sm text-accent-100">
                       Existing users sign in at{' '}
                       <span className="font-semibold text-white">/login</span>
@@ -534,6 +505,57 @@ const LandingPage = () => {
           </section>
         </main>
       </div>
+
+      <Modal
+        title="Send us an enquiry"
+        open={enquiryOpen}
+        onOk={handleEnquirySubmit}
+        onCancel={() => {
+          setEnquiryOpen(false)
+          form.resetFields()
+        }}
+        okText="Send enquiry"
+        confirmLoading={enquiryLoading}
+      >
+        <p className="mb-4 text-primary-600">
+          Leave your details and a message and we&apos;ll get back to you.
+        </p>
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="name"
+            label="Name"
+            rules={[{ required: true, message: 'Enter your name.' }]}
+          >
+            <Input placeholder="Your name" aria-label="Name" />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Enter your email address.' },
+              { type: 'email', message: 'Enter a valid email address.' },
+            ]}
+          >
+            <Input placeholder="you@example.com" aria-label="Email" />
+          </Form.Item>
+          <Form.Item
+            name="message"
+            label="Message"
+            rules={[{ required: true, message: 'Enter a message.' }]}
+          >
+            <Input.TextArea
+              rows={4}
+              maxLength={2000}
+              showCount
+              placeholder="How can we help?"
+              aria-label="Message"
+            />
+          </Form.Item>
+          <Form.Item name="_hp" className="!hidden" aria-hidden="true">
+            <Input tabIndex={-1} autoComplete="off" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

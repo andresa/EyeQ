@@ -90,6 +90,71 @@ function stripHtml(subject: string, html: string): string {
 const LOGO_URL = 'https://www.eyeqlearn.com/images/EyeQLogo-white-transparent-150px.png'
 
 /**
+ * Send an enquiry from a landing page visitor to the EyeQ team.
+ */
+export async function sendEnquiryEmail(params: {
+  recipientEmail: string
+  senderName: string
+  senderEmail: string
+  message: string
+}): Promise<string> {
+  const { recipientEmail, senderName, senderEmail, message } = params
+
+  const subject = `EyeQ Enquiry from ${senderName}`
+
+  const escapedMessage = message
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>')
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0; text-align: center;">
+    <img src="${LOGO_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
+  </div>
+
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #E5E5E5; border-top: none; border-radius: 0 0 4px 4px;">
+    <p style="font-size: 18px; margin-top: 0;">New enquiry from the landing page</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+      <tr>
+        <td style="padding: 8px 12px; font-weight: 600; color: #666; width: 80px; vertical-align: top;">Name</td>
+        <td style="padding: 8px 12px;">${senderName}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px 12px; font-weight: 600; color: #666; vertical-align: top;">Email</td>
+        <td style="padding: 8px 12px;"><a href="mailto:${senderEmail}" style="color: #1E3A5F;">${senderEmail}</a></td>
+      </tr>
+    </table>
+
+    <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 20px 0;">
+
+    <p style="font-weight: 600; color: #666; margin-bottom: 8px;">Message</p>
+    <div style="background: #F8F9FA; border-radius: 4px; padding: 16px; color: #333;">
+      ${escapedMessage}
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #E5E5E5; margin: 25px 0;">
+
+    <p style="color: #999; font-size: 13px; margin-bottom: 0;">
+      You can reply directly to ${senderName} at <a href="mailto:${senderEmail}" style="color: #1E3A5F;">${senderEmail}</a>.
+    </p>
+  </div>
+</body>
+</html>
+`.trim()
+
+  return sendEmail(recipientEmail, subject, htmlContent)
+}
+
+/**
  * Send an invitation email to a user (employee or manager).
  */
 export async function sendInvitationEmail(params: {
