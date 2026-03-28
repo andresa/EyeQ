@@ -9,6 +9,7 @@ import {
 import { verifyMagicLink } from '../../services/shared'
 import { useSession } from '../../hooks/useSession'
 import { getDashboardRoute } from '../../utils/auth'
+import { EyeQLogo } from '../../components/molecules/EyeQLogo'
 
 const { Title } = Typography
 
@@ -72,6 +73,9 @@ const VerifyPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700">
         <Card className="w-full max-w-md text-center shadow-2xl">
+          <div className="flex justify-center mb-4">
+            <EyeQLogo size="medium" />
+          </div>
           <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
           <Title level={4} className="mt-4">
             Verifying your login...
@@ -86,6 +90,9 @@ const VerifyPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 p-4">
         <Card className="w-full max-w-md shadow-2xl">
+          <div className="flex justify-center mb-2">
+            <EyeQLogo size="medium" />
+          </div>
           <Result
             status="success"
             icon={<CheckCircleOutlined />}
@@ -112,6 +119,9 @@ const VerifyPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 p-4">
       <Card className="w-full max-w-md shadow-2xl">
+        <div className="flex justify-center mb-2">
+          <EyeQLogo size="medium" />
+        </div>
         <Result
           status="error"
           icon={<CloseCircleOutlined />}

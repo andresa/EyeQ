@@ -11,6 +11,7 @@ type UserRole = 'employee' | 'manager' | 'admin'
 interface ManagerBody {
   companyId?: string
   firstName?: string
+  middleName?: string
   lastName?: string
   email?: string
   phone?: string
@@ -88,6 +89,7 @@ export const createManagerHandler = async (
     id: createId('user'),
     companyId: body.companyId,
     firstName: body.firstName,
+    middleName: body.middleName,
     lastName: body.lastName,
     email: body.email,
     phone: body.phone,
@@ -145,6 +147,7 @@ export const updateManagerHandler = async (
   const updated = {
     ...existing,
     firstName: body.firstName ?? existing.firstName,
+    middleName: body.middleName ?? existing.middleName,
     lastName: body.lastName ?? existing.lastName,
     email: body.email ?? existing.email,
     phone: body.phone ?? existing.phone,

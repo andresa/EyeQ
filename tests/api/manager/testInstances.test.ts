@@ -82,6 +82,47 @@ describe('manager/testInstances', () => {
       expect(response.jsonBody?.data).toEqual(instances)
     })
 
+    it('expires stale instances in non-paginated results', async () => {
+      setup()
+      const instances = [
+        {
+          id: 'i1',
+          testId: 't1',
+          employeeId: 'e1',
+          status: 'assigned',
+          expiresAt: '2020-01-01T00:00:00Z',
+        },
+        {
+          id: 'i2',
+          testId: 't1',
+          employeeId: 'e2',
+          status: 'completed',
+          expiresAt: '2020-01-01T00:00:00Z',
+        },
+      ]
+      mockContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: instances }),
+      })
+      const replaceFn = vi.fn().mockResolvedValue({})
+      mockContainer.item.mockReturnValue({
+        read: vi.fn(),
+        replace: replaceFn,
+        delete: vi.fn(),
+      })
+
+      const request = mockRequest({ query: { testId: 't1' } })
+      const response = await listTestInstancesHandler(request)
+
+      expect(response.status).toBe(200)
+      const data = response.jsonBody?.data as { id: string; status: string }[]
+      expect(data[0].status).toBe('expired')
+      expect(data[1].status).toBe('completed')
+      expect(replaceFn).toHaveBeenCalledTimes(1)
+      expect(replaceFn).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'i1', status: 'expired' }),
+      )
+    })
+
     it('returns 400 when neither testId nor companyId provided', async () => {
       setup()
       const request = mockRequest({})
@@ -162,6 +203,42 @@ describe('manager/testInstances', () => {
       const response = await getTestInstanceResultsHandler(request)
 
       expect(response.status).toBe(400)
+    })
+
+    it('expires a stale instance and returns corrected status', async () => {
+      setup()
+      const instance = {
+        id: 'i1',
+        testId: 't1',
+        employeeId: 'e1',
+        status: 'assigned',
+        expiresAt: '2020-01-01T00:00:00Z',
+      }
+      mockContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [instance] }),
+      })
+      const replaceFn = vi.fn().mockResolvedValue({})
+      mockContainer.item.mockReturnValue({
+        read: vi.fn(),
+        replace: replaceFn,
+        delete: vi.fn(),
+      })
+      const test = { id: 't1', name: 'Test', companyId: 'c1' }
+      testsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [test] }),
+      })
+      responsesContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+      })
+
+      const request = mockRequest({ params: { instanceId: 'i1' } })
+      const response = await getTestInstanceResultsHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody?.data?.instance?.status).toBe('expired')
+      expect(replaceFn).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'i1', status: 'expired' }),
+      )
     })
   })
 

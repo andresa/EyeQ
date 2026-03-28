@@ -141,6 +141,33 @@ describe('manager/employees', () => {
       expect(response.jsonBody?.data).toHaveLength(1)
     })
 
+    it('stores middleName in batch create', async () => {
+      setup()
+      const request = mockRequest({
+        method: 'POST',
+        body: {
+          companyId: 'c1',
+          employees: [
+            {
+              firstName: 'John',
+              middleName: 'Michael',
+              lastName: 'S',
+              email: 'johnm@t.com',
+              sendInvitation: false,
+            },
+          ],
+        },
+      })
+      const response = await createEmployeesHandler(request)
+
+      expect(response.status).toBe(201)
+      expect(response.jsonBody?.data?.[0]).toMatchObject({
+        firstName: 'John',
+        middleName: 'Michael',
+        lastName: 'S',
+      })
+    })
+
     it('returns 400 when employees missing', async () => {
       setup()
       const request = mockRequest({ method: 'POST', body: { companyId: 'c1' } })
@@ -200,6 +227,35 @@ describe('manager/employees', () => {
       const response = await updateEmployeeHandler(request)
 
       expect(response.status).toBe(200)
+    })
+
+    it('persists middleName on update', async () => {
+      setup()
+      const existing = {
+        id: 'e1',
+        companyId: 'c1',
+        firstName: 'Old',
+        middleName: 'M',
+        lastName: 'Name',
+        role: 'employee',
+        isActive: true,
+      }
+      mockContainer.item.mockReturnValue({
+        read: vi.fn().mockResolvedValue({ resource: existing }),
+        replace: vi.fn().mockResolvedValue({}),
+        delete: vi.fn(),
+      })
+
+      const request = mockRequest({
+        method: 'PUT',
+        params: { employeeId: 'e1' },
+        query: { companyId: 'c1' },
+        body: { middleName: 'NewMiddle' },
+      })
+      const response = await updateEmployeeHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody?.data).toMatchObject({ middleName: 'NewMiddle' })
     })
 
     it('returns 403 when manager tries to change role', async () => {

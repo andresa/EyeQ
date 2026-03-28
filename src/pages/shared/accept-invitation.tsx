@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons'
 import { validateInvitation, acceptInvitation } from '../../services/shared'
 import { useSession } from '../../hooks/useSession'
+import { EyeQLogo } from '../../components/molecules/EyeQLogo'
 import type { InvitationValidation } from '../../types'
 
 const { Title, Text, Paragraph } = Typography
@@ -158,8 +159,8 @@ const AcceptInvitationPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-accent-700 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <div className="text-center mb-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-accent-500 to-accent-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl text-white font-bold">EyeQ</span>
+          <div className="flex justify-center mx-auto mb-4">
+            <EyeQLogo size="medium" />
           </div>
           <Title level={2} className="mb-2">
             You&apos;re Invited!

@@ -256,6 +256,35 @@ describe('employee/testInstances', () => {
 
       expect(response.status).toBe(403)
     })
+
+    it('returns 409 and marks instance as expired when expiresAt is in the past', async () => {
+      setup()
+      const instance = {
+        id: 'i1',
+        testId: 't1',
+        employeeId: 'emp_1',
+        status: 'assigned',
+        expiresAt: '2020-01-01T00:00:00Z',
+      }
+      instancesContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [instance] }),
+      })
+      const replaceFn = vi.fn().mockResolvedValue({})
+      instancesContainer.item.mockReturnValue({
+        read: vi.fn(),
+        replace: replaceFn,
+        delete: vi.fn(),
+      })
+
+      const request = mockRequest({ method: 'POST', params: { instanceId: 'i1' } })
+      const response = await openTestInstanceHandler(request)
+
+      expect(response.status).toBe(409)
+      expect(response.jsonBody?.error).toBe('This test has expired.')
+      expect(replaceFn).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'expired' }),
+      )
+    })
   })
 
   describe('saveTestResponsesHandler', () => {
@@ -313,6 +342,39 @@ describe('employee/testInstances', () => {
       const response = await saveTestResponsesHandler(request)
 
       expect(response.status).toBe(409)
+    })
+
+    it('returns 409 and marks instance as expired when expiresAt is in the past', async () => {
+      setup()
+      const instance = {
+        id: 'i1',
+        testId: 't1',
+        employeeId: 'emp_1',
+        status: 'in-progress',
+        expiresAt: '2020-01-01T00:00:00Z',
+      }
+      instancesContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [instance] }),
+      })
+      const replaceFn = vi.fn().mockResolvedValue({})
+      instancesContainer.item.mockReturnValue({
+        read: vi.fn(),
+        replace: replaceFn,
+        delete: vi.fn(),
+      })
+
+      const request = mockRequest({
+        method: 'POST',
+        params: { instanceId: 'i1' },
+        body: { responses: [{ questionId: 'q1', answer: 'a' }] },
+      })
+      const response = await saveTestResponsesHandler(request)
+
+      expect(response.status).toBe(409)
+      expect(response.jsonBody?.error).toBe('This test has expired.')
+      expect(replaceFn).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'expired' }),
+      )
     })
   })
 
@@ -383,6 +445,42 @@ describe('employee/testInstances', () => {
       const response = await submitTestInstanceHandler(request)
 
       expect(response.status).toBe(409)
+    })
+
+    it('returns 409 and marks instance as expired when expiresAt is in the past', async () => {
+      setup()
+      const instance = {
+        id: 'i1',
+        testId: 't1',
+        employeeId: 'emp_1',
+        status: 'in-progress',
+        expiresAt: '2020-01-01T00:00:00Z',
+      }
+      instancesContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [instance] }),
+      })
+      const replaceFn = vi.fn().mockResolvedValue({})
+      instancesContainer.item.mockReturnValue({
+        read: vi.fn(),
+        replace: replaceFn,
+        delete: vi.fn(),
+      })
+
+      const request = mockRequest({
+        method: 'POST',
+        params: { instanceId: 'i1' },
+        body: {
+          responses: [{ questionId: 'q1', answer: 'a' }],
+          completedAt: '2025-06-01T00:00:00Z',
+        },
+      })
+      const response = await submitTestInstanceHandler(request)
+
+      expect(response.status).toBe(409)
+      expect(response.jsonBody?.error).toBe('This test has expired.')
+      expect(replaceFn).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'expired' }),
+      )
     })
   })
 

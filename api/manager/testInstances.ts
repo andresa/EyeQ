@@ -5,6 +5,7 @@ import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/ht
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 import { DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from '../shared/pagination.js'
+import { type TestInstanceDoc, expireInstance } from '../shared/testInstanceExpiry.js'
 
 const normalisePageLimit = (limit?: string | null) => {
   const parsed = limit ? Number.parseInt(limit, 10) : DEFAULT_PAGE_LIMIT
@@ -62,6 +63,18 @@ const fetchOffsetPaginatedResults = async <T>(
     total: typeof total === 'number' ? total : undefined,
     nextCursor,
   }
+}
+
+const expireStaleInstances = async <T extends TestInstanceDoc>(
+  container: Awaited<ReturnType<typeof getContainer>>,
+  instances: T[],
+): Promise<T[]> => {
+  const results: T[] = []
+  for (const instance of instances) {
+    const wasExpired = await expireInstance(container, instance)
+    results.push(wasExpired ? { ...instance, status: 'expired' } : instance)
+  }
+  return results
 }
 
 export const listTestInstancesHandler = async (
@@ -131,11 +144,19 @@ export const listTestInstancesHandler = async (
         limit,
         cursor,
       )
-      return paginatedJsonResponse(200, page)
+      const corrected = await expireStaleInstances(
+        container,
+        page.items as TestInstanceDoc[],
+      )
+      return paginatedJsonResponse(200, { ...page, items: corrected })
     }
 
     const { resources } = await container.items.query(querySpec.pageQuery).fetchAll()
-    return jsonResponse(200, { success: true, data: resources })
+    const corrected = await expireStaleInstances(
+      container,
+      resources as TestInstanceDoc[],
+    )
+    return jsonResponse(200, { success: true, data: corrected })
   }
 
   const companyId = request.query.get('companyId')
@@ -174,11 +195,16 @@ export const listTestInstancesHandler = async (
       limit,
       cursor,
     )
-    return paginatedJsonResponse(200, page)
+    const corrected = await expireStaleInstances(
+      container,
+      page.items as TestInstanceDoc[],
+    )
+    return paginatedJsonResponse(200, { ...page, items: corrected })
   }
 
   const { resources } = await container.items.query(querySpec.pageQuery).fetchAll()
-  return jsonResponse(200, { success: true, data: resources })
+  const corrected = await expireStaleInstances(container, resources as TestInstanceDoc[])
+  return jsonResponse(200, { success: true, data: corrected })
 }
 
 interface MarkBody {
@@ -210,6 +236,11 @@ export const getTestInstanceResultsHandler = async (
   const instance = resources[0]
   if (!instance) {
     return jsonResponse(404, { success: false, error: 'Test instance not found.' })
+  }
+
+  const wasExpired = await expireInstance(instanceContainer, instance as TestInstanceDoc)
+  if (wasExpired) {
+    instance.status = 'expired'
   }
 
   const testContainer = await getContainer('tests', '/companyId')

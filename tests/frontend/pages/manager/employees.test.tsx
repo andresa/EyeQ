@@ -101,6 +101,32 @@ describe('ManagerEmployeesPage', () => {
     expect(screen.getByText('Alice Jones')).toBeInTheDocument()
   })
 
+  it('renders employee with middle name', async () => {
+    vi.mocked(listEmployees).mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 'e3',
+          companyId: 'c1',
+          firstName: 'Bob',
+          middleName: 'Lee',
+          lastName: 'Taylor',
+          email: 'bob@t.com',
+          role: 'employee',
+          createdAt: '2025-01-01T00:00:00Z',
+          isActive: true,
+          invitationStatus: 'accepted' as const,
+        },
+      ],
+    })
+
+    render(<ManagerEmployeesPage />, { wrapper: Wrapper })
+
+    await waitFor(() => {
+      expect(screen.getByText('Bob Lee Taylor')).toBeInTheDocument()
+    })
+  })
+
   it('renders Add Employee button', async () => {
     setup()
     render(<ManagerEmployeesPage />, { wrapper: Wrapper })

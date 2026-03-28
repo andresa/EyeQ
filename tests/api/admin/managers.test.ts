@@ -109,6 +109,29 @@ describe('admin/managers', () => {
       })
     })
 
+    it('stores middleName when provided', async () => {
+      setup()
+      const request = mockRequest({
+        method: 'POST',
+        body: {
+          companyId: 'c1',
+          firstName: 'Jane',
+          middleName: 'Marie',
+          lastName: 'Doe',
+          email: 'janem@t.com',
+        },
+      })
+
+      const response = await createManagerHandler(request)
+
+      expect(response.status).toBe(201)
+      expect(response.jsonBody?.data).toMatchObject({
+        firstName: 'Jane',
+        middleName: 'Marie',
+        lastName: 'Doe',
+      })
+    })
+
     it('returns 400 when required fields missing', async () => {
       setup()
       const request = mockRequest({ method: 'POST', body: { companyId: 'c1' } })
@@ -195,6 +218,31 @@ describe('admin/managers', () => {
       const response = await updateManagerHandler(request)
 
       expect(response.status).toBe(400)
+    })
+
+    it('persists middleName on update', async () => {
+      setup()
+      const existing = {
+        id: 'm1',
+        companyId: 'c1',
+        firstName: 'Old',
+        lastName: 'Name',
+        middleName: 'M',
+        role: 'manager',
+        isActive: true,
+      }
+      mockRead.mockResolvedValue({ resource: existing })
+
+      const request = mockRequest({
+        method: 'PUT',
+        params: { managerId: 'm1' },
+        query: { companyId: 'c1' },
+        body: { middleName: 'Updated' },
+      })
+      const response = await updateManagerHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody?.data).toMatchObject({ middleName: 'Updated' })
     })
   })
 

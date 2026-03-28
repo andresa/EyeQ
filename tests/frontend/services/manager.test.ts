@@ -72,6 +72,21 @@ describe('services/manager', () => {
     )
   })
 
+  it('createEmployees includes middleName in payload', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await createEmployees({
+      companyId: 'c1',
+      employees: [{ firstName: 'J', middleName: 'M', lastName: 'S', email: 'j@t.com' }],
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/manager/employees',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"middleName":"M"'),
+      }),
+    )
+  })
+
   it('updateEmployee calls PUT with companyId', async () => {
     mockApiRequest.mockResolvedValue({ success: true })
     await updateEmployee('e1', 'c1', { firstName: 'U' })

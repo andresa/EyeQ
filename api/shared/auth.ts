@@ -1,7 +1,7 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from './cosmos.js'
 import { jsonResponse, parseJsonBody } from './http.js'
-import { createId, nowIso } from './utils.js'
+import { createId, nowIso, formatUserName } from './utils.js'
 import { sendMagicLinkEmail } from './email.js'
 import {
   USERS_CONTAINER,
@@ -17,6 +17,7 @@ export interface AuthenticatedUser {
   id: string
   email: string
   firstName: string
+  middleName?: string
   lastName: string
   role: UserRole
   companyId: string
@@ -209,6 +210,7 @@ export async function getAuthenticatedUser(
     id: user.id as string,
     email: user.email as string,
     firstName: user.firstName as string,
+    middleName: (user.middleName as string) || undefined,
     lastName: user.lastName as string,
     role: (user.role as UserRole) || userType,
     companyId: (user.companyId as string) || '',
@@ -285,6 +287,7 @@ export async function authenticateByToken(
     id: user.id as string,
     email: user.email as string,
     firstName: user.firstName as string,
+    middleName: (user.middleName as string) || undefined,
     lastName: user.lastName as string,
     role: (user.role as UserRole) || userType,
     companyId: (user.companyId as string) || '',
@@ -347,7 +350,9 @@ export const requestMagicLinkHandler = async (
 
   // Send email
   const verifyUrl = `${APP_BASE_URL}/auth/verify?token=${token}`
-  const userName = `${result.user.firstName} ${result.user.lastName}`
+  const userName = formatUserName(
+    result.user as { firstName: string; middleName?: string; lastName: string },
+  )
 
   try {
     await sendMagicLinkEmail({
@@ -445,6 +450,7 @@ export const verifyMagicLinkHandler = async (
         id: result.user.id,
         email: result.user.email,
         firstName: result.user.firstName,
+        middleName: result.user.middleName || undefined,
         lastName: result.user.lastName,
         role: result.user.role || result.userType,
         companyId: result.user.companyId || '',
@@ -521,6 +527,7 @@ export const getSessionHandler = async (
         id: result.user.id,
         email: result.user.email,
         firstName: result.user.firstName,
+        middleName: result.user.middleName || undefined,
         lastName: result.user.lastName,
         role: result.user.role || result.userType,
         companyId: result.user.companyId || '',

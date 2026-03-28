@@ -1,7 +1,7 @@
 import { app, type HttpRequest, type HttpResponseInit } from '@azure/functions'
 import { getContainer } from './cosmos.js'
 import { jsonResponse, parseJsonBody } from './http.js'
-import { createId, nowIso } from './utils.js'
+import { createId, nowIso, formatUserName } from './utils.js'
 import { getAuthenticatedUser, requireManager, requireRole } from './auth.js'
 import { USERS_CONTAINER, USERS_PARTITION_KEY } from './userTypes.js'
 
@@ -323,14 +323,14 @@ export const getLeaderboardHandler = async (
   const { resources: employees } = await usersContainer.items
     .query({
       query:
-        "SELECT c.id, c.firstName, c.lastName FROM c WHERE c.companyId = @companyId AND c.role = 'employee'",
+        "SELECT c.id, c.firstName, c.middleName, c.lastName FROM c WHERE c.companyId = @companyId AND c.role = 'employee'",
       parameters: [{ name: '@companyId', value: companyId }],
     })
     .fetchAll()
 
   const employeeMap = new Map<string, string>()
   for (const emp of employees) {
-    employeeMap.set(emp.id, `${emp.firstName} ${emp.lastName}`)
+    employeeMap.set(emp.id, formatUserName(emp))
   }
 
   // Get test IDs for the company

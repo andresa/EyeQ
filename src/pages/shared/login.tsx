@@ -19,6 +19,7 @@ import {
   type DevUsersResponse,
 } from '../../services/shared'
 import { EyeQLogo } from '../../components/molecules/EyeQLogo'
+import { formatUserName } from '../../utils/formatUserName'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -118,7 +119,7 @@ const LoginPage = () => {
 
   const formatUserOption = (user: DevUser) => ({
     value: user.id,
-    label: `${user.firstName} ${user.lastName}${user.email ? ` (${user.email})` : ''}`,
+    label: `${formatUserName(user)}${user.email ? ` (${user.email})` : ''}`,
   })
 
   if (isLoading) {

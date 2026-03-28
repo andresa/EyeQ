@@ -80,6 +80,24 @@ describe('services/admin', () => {
     )
   })
 
+  it('createManager includes middleName in payload', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await createManager({
+      companyId: 'c1',
+      firstName: 'J',
+      middleName: 'M',
+      lastName: 'D',
+      email: 'j@t.com',
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/management/managers',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"middleName":"M"'),
+      }),
+    )
+  })
+
   it('updateManager calls PUT with companyId query', async () => {
     mockApiRequest.mockResolvedValue({ success: true })
     await updateManager('m1', 'c1', { firstName: 'U' })
@@ -136,6 +154,24 @@ describe('services/admin', () => {
     expect(mockApiRequest).toHaveBeenCalledWith(
       '/management/employees',
       expect.objectContaining({ method: 'POST' }),
+    )
+  })
+
+  it('createEmployee includes middleName in payload', async () => {
+    mockApiRequest.mockResolvedValue({ success: true })
+    await createEmployee({
+      companyId: 'c1',
+      firstName: 'J',
+      middleName: 'M',
+      lastName: 'S',
+      email: 'j@t.com',
+    })
+    expect(mockApiRequest).toHaveBeenCalledWith(
+      '/management/employees',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"middleName":"M"'),
+      }),
     )
   })
 

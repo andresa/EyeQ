@@ -11,6 +11,7 @@ type UserRole = 'employee' | 'manager' | 'admin'
 interface EmployeeBody {
   companyId?: string
   firstName?: string
+  middleName?: string
   lastName?: string
   email?: string
   phone?: string
@@ -106,6 +107,7 @@ export const createEmployeeHandler = async (
     id: createId('user'),
     companyId: body.companyId,
     firstName: body.firstName,
+    middleName: body.middleName,
     lastName: body.lastName,
     email: body.email.toLowerCase(),
     phone: body.phone,
@@ -163,6 +165,7 @@ export const updateEmployeeHandler = async (
   const updated = {
     ...existing,
     firstName: body.firstName ?? existing.firstName,
+    middleName: body.middleName ?? existing.middleName,
     lastName: body.lastName ?? existing.lastName,
     email: body.email ?? existing.email,
     phone: body.phone ?? existing.phone,

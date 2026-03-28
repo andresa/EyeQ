@@ -26,6 +26,7 @@ export interface UserProfile {
   id: UUID
   email: string
   firstName: string
+  middleName?: string
   lastName: string
   role: UserRole
   companyId: UUID
@@ -61,6 +62,7 @@ export interface Manager {
   id: UUID
   companyId: UUID
   firstName: string
+  middleName?: string
   lastName: string
   email?: string // Optional - can be set via invitation acceptance
   phone?: string
@@ -78,6 +80,7 @@ export interface Employee {
   id: UUID
   companyId: UUID
   firstName: string
+  middleName?: string
   lastName: string
   email?: string // Now optional - set via invitation acceptance
   phone?: string

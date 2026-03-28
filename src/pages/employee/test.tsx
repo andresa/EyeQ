@@ -13,7 +13,7 @@ import {
 } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
 import RichText from '../../components/atoms/RichText'
 import {
@@ -99,9 +99,10 @@ const buildFormValues = (
 interface TestFormProps {
   instanceId: string
   data: TestInstanceDetails
+  onExpired: () => void
 }
 
-const TestForm = ({ instanceId, data }: TestFormProps) => {
+const TestForm = ({ instanceId, data, onExpired }: TestFormProps) => {
   const navigate = useNavigate()
   const { message } = App.useApp()
   const [form] = Form.useForm()
@@ -211,8 +212,9 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
   useEffect(() => {
     openTestInstance(instanceId).then((res) => {
       if (res.success && res.data?.openedAt) setOpenedAt(res.data.openedAt)
+      if (!res.success) onExpired()
     })
-  }, [instanceId])
+  }, [instanceId, onExpired])
 
   // Auto-save on value changes
   useEffect(() => {
@@ -236,13 +238,17 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
         setSaveStatus('saved')
       } else {
         setSaveStatus('idle')
+        if (result.error?.includes('expired')) {
+          message.error('This test has expired.')
+          onExpired()
+        }
       }
     }, AUTO_SAVE_DELAY_MS)
 
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [watchedValues, instanceId, buildResponses])
+  }, [watchedValues, instanceId, buildResponses, message, onExpired])
 
   const validateSectionRequired = async (sectionIndex: number) => {
     const section = sections[sectionIndex]
@@ -312,6 +318,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
       })
       if (!response.success) {
         message.error(response.error || 'Unable to submit test')
+        if (response.error?.includes('expired')) onExpired()
         return
       }
       message.success('Test submitted')
@@ -468,6 +475,7 @@ const TestForm = ({ instanceId, data }: TestFormProps) => {
 const EmployeeTestPage = () => {
   const { instanceId } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['employee', 'testInstance', instanceId],
@@ -480,6 +488,12 @@ const EmployeeTestPage = () => {
       return response.data
     },
   })
+
+  const handleExpired = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: ['employee', 'testInstance', instanceId],
+    })
+  }, [queryClient, instanceId])
 
   if (isLoading || !data) {
     return (
@@ -557,7 +571,14 @@ const EmployeeTestPage = () => {
     )
   }
 
-  return <TestForm key={instanceId} instanceId={instanceId!} data={data} />
+  return (
+    <TestForm
+      key={instanceId}
+      instanceId={instanceId!}
+      data={data}
+      onExpired={handleExpired}
+    />
+  )
 }
 
 export default EmployeeTestPage
