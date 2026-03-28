@@ -2,6 +2,8 @@ import {
   App,
   Button,
   Card,
+  Drawer,
+  Grid,
   Input,
   Modal,
   Segmented,
@@ -13,10 +15,11 @@ import {
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Circle, CircleCheck, CircleX, Info, MessageSquare } from 'lucide-react'
+import { Circle, CircleCheck, CircleX, History, Info, MessageSquare } from 'lucide-react'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import RichText from '../../components/atoms/RichText'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
+import SubmissionHistoryColumn from '../../components/molecules/SubmissionHistoryColumn'
 import {
   fetchTestInstanceResults,
   listEmployees,
@@ -31,7 +34,6 @@ import {
   type MarkState,
   resolveAnswer,
 } from './submission-utils'
-import StatusBadge from '../../components/atoms/StatusBadge'
 import QuestionImage from '../../components/atoms/QuestionImage'
 
 const TAB_VIEW = 'view'
@@ -53,6 +55,9 @@ const SubmissionDetailPage = () => {
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [submitConfirmLoading, setSubmitConfirmLoading] = useState(false)
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false)
+  const screens = Grid.useBreakpoint()
+  const isMobile = !screens.md
 
   const { data, isLoading } = useQuery({
     queryKey: ['manager', 'testInstanceResults', instanceId],
@@ -491,42 +496,68 @@ const SubmissionDetailPage = () => {
     },
   ]
 
+  const employeeName = employeeMap[data.instance.employeeId] || data.instance.employeeId
+
+  const historyColumn = (
+    <SubmissionHistoryColumn instance={data.instance} employeeName={employeeName} />
+  )
+
   return (
     <ManagerLayout
       pageHeading={
-        <StandardPageHeading title={data.test.name} backTo={testSubmissionsPath} />
+        <StandardPageHeading
+          title={data.test.name}
+          backTo={testSubmissionsPath}
+          actions={
+            isMobile ? (
+              <Button
+                type="text"
+                icon={<History size={18} />}
+                onClick={() => setHistoryDrawerOpen(true)}
+                aria-label="History"
+              />
+            ) : undefined
+          }
+        />
       }
     >
-      <div className="flex flex-col gap-6 w-full">
-        <Card>
-          <div className="flex justify-between">
-            <div className="flex items-center gap-1">
-              <Typography.Text strong>Employee:</Typography.Text>
-              <Typography.Text>
-                {employeeMap[data.instance.employeeId] || data.instance.employeeId}
-              </Typography.Text>
-            </div>
-            <div className="flex items-center gap-1">
-              <Typography.Text strong>Status:</Typography.Text>
-              <StatusBadge status={data.instance.status} />
-            </div>
+      <div className="flex flex-row h-full min-h-0 -m-6">
+        <div className="flex-1 min-w-0 overflow-y-auto p-6" data-main-scroll>
+          <div className="flex flex-col gap-6 w-full max-w-7xl">
+            <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} />
+            <Modal
+              title="Unmarked questions"
+              open={submitConfirmOpen}
+              onOk={() => doSubmitMarks()}
+              onCancel={() => setSubmitConfirmOpen(false)}
+              okText="Submit anyway"
+              cancelText="Cancel"
+              confirmLoading={submitConfirmLoading}
+            >
+              <Typography.Paragraph>
+                {unmarkedCount} question{unmarkedCount === 1 ? '' : 's'} have not been
+                marked yet. Are you sure you want to submit?
+              </Typography.Paragraph>
+            </Modal>
           </div>
-        </Card>
-        <Tabs activeKey={activeTab} onChange={handleTabChange} items={tabItems} />
-        <Modal
-          title="Unmarked questions"
-          open={submitConfirmOpen}
-          onOk={() => doSubmitMarks()}
-          onCancel={() => setSubmitConfirmOpen(false)}
-          okText="Submit anyway"
-          cancelText="Cancel"
-          confirmLoading={submitConfirmLoading}
-        >
-          <Typography.Paragraph>
-            {unmarkedCount} question{unmarkedCount === 1 ? '' : 's'} have not been marked
-            yet. Are you sure you want to submit?
-          </Typography.Paragraph>
-        </Modal>
+        </div>
+
+        {isMobile ? (
+          <Drawer
+            title="History"
+            placement="right"
+            open={historyDrawerOpen}
+            onClose={() => setHistoryDrawerOpen(false)}
+            size={320}
+            styles={{ body: { padding: '12px' } }}
+          >
+            {historyColumn}
+          </Drawer>
+        ) : (
+          <div className="w-[300px] shrink-0 border-l border-gray-200 overflow-y-auto p-4">
+            {historyColumn}
+          </div>
+        )}
       </div>
     </ManagerLayout>
   )
