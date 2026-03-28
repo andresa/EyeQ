@@ -5,6 +5,11 @@ import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/ht
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireEmployee } from '../shared/auth.js'
 import { paginatedQuery } from '../shared/pagination.js'
+import {
+  EXPIRABLE_STATUSES,
+  type TestInstanceDoc,
+  expireInstance,
+} from '../shared/testInstanceExpiry.js'
 
 interface ResponseBody {
   questionId: string
@@ -21,15 +26,22 @@ interface SaveBody {
   responses?: ResponseBody[]
 }
 
-const EXPIRABLE_STATUSES = ['assigned', 'opened', 'in-progress']
+const EXPIRED_RESPONSE = jsonResponse(409, {
+  success: false,
+  error: 'This test has expired.',
+})
 
-interface TestInstanceDoc {
-  id: string
-  employeeId: string
-  testId: string
-  status: string
-  expiresAt?: string | null
-  [key: string]: unknown
+const expireAndReject = async (
+  container: {
+    item: (
+      id: string,
+      partitionKey: string,
+    ) => { replace: (doc: unknown) => Promise<unknown> }
+  },
+  instance: TestInstanceDoc,
+): Promise<HttpResponseInit | null> => {
+  const expired = await expireInstance(container, instance)
+  return expired ? EXPIRED_RESPONSE : null
 }
 
 const countQuestions = (sections: { components?: { type?: string }[] }[] | undefined) => {
@@ -317,6 +329,9 @@ export const openTestInstanceHandler = async (
     })
   }
 
+  const expiredResponse = await expireAndReject(instanceContainer, instance)
+  if (expiredResponse) return expiredResponse
+
   if (instance.status === 'opened' || instance.status === 'in-progress') {
     return jsonResponse(200, { success: true, data: instance })
   }
@@ -369,6 +384,9 @@ export const saveTestResponsesHandler = async (
       error: 'You can only save your own test instances.',
     })
   }
+
+  const expiredResponse = await expireAndReject(instanceContainer, instance)
+  if (expiredResponse) return expiredResponse
 
   if (
     instance.status === 'completed' ||
@@ -434,9 +452,13 @@ export const submitTestInstanceHandler = async (
     })
   }
 
+  const expiredResponse = await expireAndReject(instanceContainer, instance)
+  if (expiredResponse) return expiredResponse
+
   if (
     instance.status === 'completed' ||
     instance.status === 'marked' ||
+    instance.status === 'expired' ||
     instance.status === 'timed-out'
   ) {
     return jsonResponse(409, {
