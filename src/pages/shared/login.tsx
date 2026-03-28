@@ -23,7 +23,7 @@ import { formatUserName } from '../../utils/formatUserName'
 
 const LoginPage = () => {
   const navigate = useNavigate()
-  const { userProfile, isLoading, isAuthenticated, login } = useSession()
+  const { userProfile, isLoading, isAuthenticated, login, profileError } = useSession()
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -154,6 +154,10 @@ const LoginPage = () => {
             </div>
 
             {/* Dev Login Section */}
+            {profileError && !success && (
+              <Alert type="warning" message={profileError} showIcon />
+            )}
+
             {showDevLogin && !success && (
               <>
                 <div className="rounded-lg border p-4 bg-accent-700">

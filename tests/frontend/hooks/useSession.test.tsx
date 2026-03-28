@@ -131,4 +131,66 @@ describe('useSession', () => {
     expect(mockClearSessionToken).toHaveBeenCalled()
     expect(result.current.userProfile).toBeNull()
   })
+
+  it('clears session when session-expired event fires', async () => {
+    mockGetSessionToken.mockReturnValue('token')
+    const profile = {
+      id: 'u1',
+      email: 'a@t.com',
+      firstName: 'A',
+      lastName: 'B',
+      role: 'employee' as const,
+      companyId: 'c1',
+      userType: 'employee' as const,
+    }
+    mockGetSession.mockResolvedValue({
+      success: true,
+      data: { session: { expiresAt: '2099-01-01' }, user: profile },
+    })
+
+    const { result } = renderHook(() => useSession(), { wrapper })
+    await waitFor(() => expect(result.current.userProfile).toEqual(profile))
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('session-expired', {
+          detail: { reason: 'Your account has been deactivated.' },
+        }),
+      )
+    })
+
+    expect(mockClearSessionToken).toHaveBeenCalled()
+    expect(result.current.userProfile).toBeNull()
+    expect(result.current.isAuthenticated).toBe(false)
+  })
+
+  it('sets profileError when session-expired event fires', async () => {
+    mockGetSessionToken.mockReturnValue('token')
+    const profile = {
+      id: 'u1',
+      email: 'a@t.com',
+      firstName: 'A',
+      lastName: 'B',
+      role: 'manager' as const,
+      companyId: 'c1',
+      userType: 'manager' as const,
+    }
+    mockGetSession.mockResolvedValue({
+      success: true,
+      data: { session: { expiresAt: '2099-01-01' }, user: profile },
+    })
+
+    const { result } = renderHook(() => useSession(), { wrapper })
+    await waitFor(() => expect(result.current.userProfile).toEqual(profile))
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('session-expired', {
+          detail: { reason: 'Your account has been deactivated.' },
+        }),
+      )
+    })
+
+    expect(result.current.profileError).toBe('Your account has been deactivated.')
+  })
 })

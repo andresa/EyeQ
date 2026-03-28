@@ -224,6 +224,30 @@ describe('shared/auth', () => {
       expect(response.status).toBe(200)
       expect(magicLinksContainer.items.create).toHaveBeenCalledOnce()
     })
+
+    it('returns 200 but does not send email for inactive user', async () => {
+      setup()
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'e1',
+              email: 'emp@test.com',
+              firstName: 'E',
+              lastName: 'F',
+              role: 'employee',
+              isActive: false,
+            },
+          ],
+        }),
+      })
+
+      const request = mockRequest({ method: 'POST', body: { email: 'emp@test.com' } })
+      const response = await requestMagicLinkHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(magicLinksContainer.items.create).not.toHaveBeenCalled()
+    })
   })
 
   describe('verifyMagicLinkHandler', () => {
@@ -287,6 +311,107 @@ describe('shared/auth', () => {
       expect(response.status).toBe(400)
       expect(response.jsonBody?.error).toContain('expired')
     })
+
+    it('returns 403 for inactive user', async () => {
+      setup()
+      magicLinksContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'ml1',
+              email: 'emp@t.com',
+              token: 'tok',
+              expiresAt: '2099-01-01T00:00:00Z',
+            },
+          ],
+        }),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'e1',
+              email: 'emp@t.com',
+              firstName: 'E',
+              lastName: 'F',
+              role: 'employee',
+              companyId: 'c1',
+              isActive: false,
+            },
+          ],
+        }),
+      })
+
+      const request = mockRequest({ method: 'POST', body: { token: 'tok' } })
+      const response = await verifyMagicLinkHandler(request)
+
+      expect(response.status).toBe(403)
+      expect(response.jsonBody?.error).toContain('deactivated')
+    })
+
+    it('returns 200 for active user', async () => {
+      setup()
+      magicLinksContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'ml1',
+              email: 'emp@t.com',
+              token: 'tok',
+              expiresAt: '2099-01-01T00:00:00Z',
+            },
+          ],
+        }),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'e1',
+              email: 'emp@t.com',
+              firstName: 'E',
+              lastName: 'F',
+              role: 'employee',
+              companyId: 'c1',
+              isActive: true,
+            },
+          ],
+        }),
+      })
+
+      const request = mockRequest({ method: 'POST', body: { token: 'tok' } })
+      const response = await verifyMagicLinkHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody?.data?.token).toBeDefined()
+    })
+
+    it('returns 200 for admin regardless of isActive', async () => {
+      setup()
+      magicLinksContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'ml1',
+              email: 'admin@t.com',
+              token: 'tok',
+              expiresAt: '2099-01-01T00:00:00Z',
+            },
+          ],
+        }),
+      })
+      adminsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [{ id: 'a1', email: 'admin@t.com', firstName: 'A', lastName: 'B' }],
+        }),
+      })
+
+      const request = mockRequest({ method: 'POST', body: { token: 'tok' } })
+      const response = await verifyMagicLinkHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody?.data?.token).toBeDefined()
+    })
   })
 
   describe('logoutHandler', () => {
@@ -336,6 +461,87 @@ describe('shared/auth', () => {
       const response = await getSessionHandler(request)
 
       expect(response.status).toBe(401)
+    })
+
+    it('returns 403 for inactive user with valid session', async () => {
+      setup()
+      const session = {
+        id: 's1',
+        token: 'tok',
+        email: 'emp@t.com',
+        expiresAt: '2099-01-01T00:00:00Z',
+        lastUsedAt: '2025-01-01',
+      }
+      sessionsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [session] }),
+      })
+      sessionsContainer.item.mockReturnValue({
+        read: vi.fn().mockResolvedValue({ resource: session }),
+        replace: vi.fn().mockResolvedValue({}),
+        delete: vi.fn(),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'e1',
+              email: 'emp@t.com',
+              firstName: 'E',
+              lastName: 'F',
+              role: 'employee',
+              companyId: 'c1',
+              isActive: false,
+            },
+          ],
+        }),
+      })
+
+      const request = mockRequest({ headers: { 'x-session-token': 'tok' } })
+      const response = await getSessionHandler(request)
+
+      expect(response.status).toBe(403)
+      expect(response.jsonBody?.error).toContain('deactivated')
+      expect(response.jsonBody?.code).toBe('ACCOUNT_DEACTIVATED')
+    })
+
+    it('returns 200 for active user with valid session', async () => {
+      setup()
+      const session = {
+        id: 's1',
+        token: 'tok',
+        email: 'emp@t.com',
+        expiresAt: '2099-01-01T00:00:00Z',
+        lastUsedAt: '2025-01-01',
+      }
+      sessionsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [session] }),
+      })
+      sessionsContainer.item.mockReturnValue({
+        read: vi.fn().mockResolvedValue({ resource: session }),
+        replace: vi.fn().mockResolvedValue({}),
+        delete: vi.fn(),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'e1',
+              email: 'emp@t.com',
+              firstName: 'E',
+              lastName: 'F',
+              role: 'employee',
+              companyId: 'c1',
+              isActive: true,
+            },
+          ],
+        }),
+      })
+
+      const request = mockRequest({ headers: { 'x-session-token': 'tok' } })
+      const response = await getSessionHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody?.data?.user?.id).toBe('e1')
     })
   })
 })

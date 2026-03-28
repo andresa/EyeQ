@@ -92,6 +92,11 @@ const ManagerTestsPage = () => {
     })
   }, [allTests])
 
+  const activeEmployees = useMemo(
+    () => (employees || []).filter((e) => e.isActive),
+    [employees],
+  )
+
   const openAssign = (testId?: string) => {
     setAssignTestId(testId ?? '')
     setSelectedEmployees([])
@@ -308,8 +313,8 @@ const ManagerTestsPage = () => {
                 type="link"
                 size="small"
                 className="p-0 h-auto"
-                onClick={() => setSelectedEmployees((employees || []).map((e) => e.id))}
-                disabled={!employees?.length}
+                onClick={() => setSelectedEmployees(activeEmployees.map((e) => e.id))}
+                disabled={!activeEmployees.length}
               >
                 Select all
               </Button>
@@ -327,7 +332,7 @@ const ManagerTestsPage = () => {
                     .toLowerCase()
                     .includes(input.toLowerCase()),
               }}
-              options={(employees || []).map((employee) => ({
+              options={activeEmployees.map((employee) => ({
                 label: formatUserName(employee),
                 value: employee.id,
               }))}

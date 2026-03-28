@@ -1,4 +1,4 @@
-import { Button, Dropdown, Table } from 'antd'
+import { Button, Dropdown, Table, Typography } from 'antd'
 import Selection from '../../components/atoms/Selection'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
@@ -258,7 +258,12 @@ const SubmissionsPage = () => {
             {
               title: 'Employee',
               dataIndex: 'employeeId',
-              render: (value: string) => employeeMap[value] || value,
+              render: (value: string) =>
+                employeeMap[value] || (
+                  <Typography.Text type="secondary" italic>
+                    Deleted user
+                  </Typography.Text>
+                ),
             },
             {
               title: 'Status',

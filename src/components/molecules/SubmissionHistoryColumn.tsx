@@ -13,7 +13,7 @@ import StatusBadge from '../atoms/StatusBadge'
 
 interface SubmissionHistoryColumnProps {
   instance: TestInstance
-  employeeName: string
+  employeeName: React.ReactNode
 }
 
 const ICON_SIZE = 18

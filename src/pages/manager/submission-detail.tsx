@@ -497,7 +497,11 @@ const SubmissionDetailPage = () => {
     },
   ]
 
-  const employeeName = employeeMap[data.instance.employeeId] || data.instance.employeeId
+  const employeeName = employeeMap[data.instance.employeeId] || (
+    <Typography.Text type="secondary" italic>
+      Deleted user
+    </Typography.Text>
+  )
 
   const historyColumn = (
     <SubmissionHistoryColumn instance={data.instance} employeeName={employeeName} />

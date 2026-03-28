@@ -242,7 +242,9 @@ const AdminEmployeesPage = () => {
             {
               title: 'Active',
               dataIndex: 'isActive',
-              render: (value) => (value ? 'Yes' : 'No'),
+              render: (value) => (
+                <Tag color={value ? 'blue' : 'red'}>{value ? 'Yes' : 'No'}</Tag>
+              ),
             },
             {
               title: 'Actions',

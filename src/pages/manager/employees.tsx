@@ -268,7 +268,9 @@ const ManagerEmployeesPage = () => {
               title: 'Active',
               dataIndex: 'isActive',
               width: 100,
-              render: (value) => (value ? 'Yes' : 'No'),
+              render: (value) => (
+                <Tag color={value ? 'blue' : 'red'}>{value ? 'Yes' : 'No'}</Tag>
+              ),
             },
             {
               title: 'Actions',

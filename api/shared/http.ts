@@ -5,6 +5,7 @@ export interface ApiResult<T> {
   success: boolean
   data?: T
   error?: string
+  code?: string
 }
 
 export interface PaginatedApiResult<T> extends ApiResult<T[]> {

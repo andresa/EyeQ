@@ -1,4 +1,4 @@
-import { App, Button, Dropdown, Form, Input, Modal, Switch, Table } from 'antd'
+import { App, Button, Dropdown, Form, Input, Modal, Switch, Table, Tag } from 'antd'
 import type { MenuProps } from 'antd'
 import { EllipsisOutlined } from '@ant-design/icons'
 import { useState } from 'react'
@@ -131,7 +131,9 @@ const AdminCompaniesPage = () => {
             {
               title: 'Active',
               dataIndex: 'isActive',
-              render: (value: boolean) => (value ? 'Yes' : 'No'),
+              render: (value: boolean) => (
+                <Tag color={value ? 'blue' : 'red'}>{value ? 'Yes' : 'No'}</Tag>
+              ),
             },
             {
               title: 'Actions',

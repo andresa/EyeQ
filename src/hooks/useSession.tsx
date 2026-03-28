@@ -62,6 +62,18 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
     fetchUserProfile()
   }, [fetchUserProfile])
 
+  // Auto-logout when the API layer detects a 401 or account deactivation
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const reason = (e as CustomEvent).detail?.reason
+      clearSessionToken()
+      setUserProfile(null)
+      setProfileError(reason || 'Session expired')
+    }
+    window.addEventListener('session-expired', handler)
+    return () => window.removeEventListener('session-expired', handler)
+  }, [])
+
   const login = useCallback(
     (token: string, user?: UserProfile) => {
       setSessionToken(token)
