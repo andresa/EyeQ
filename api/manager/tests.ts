@@ -4,6 +4,7 @@ import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/ht
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 import { paginatedQuery } from '../shared/pagination.js'
+import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
 
 interface TestSettings {
   allowBackNavigation: boolean
@@ -189,6 +190,32 @@ export const assignTestHandler = async (
     return jsonResponse(403, {
       success: false,
       error: 'You can only assign tests from your own company.',
+    })
+  }
+
+  // Reject inactive employees
+  const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
+  const { resources: employees } = await usersContainer.items
+    .query({
+      query: `SELECT c.id, c.isActive FROM c WHERE ARRAY_CONTAINS(@ids, c.id) AND c.companyId = @companyId`,
+      parameters: [
+        { name: '@ids', value: body.employeeIds },
+        { name: '@companyId', value: test.companyId },
+      ],
+    })
+    .fetchAll()
+
+  const employeeMap = new Map(
+    employees.map((e: { id: string; isActive: boolean }) => [e.id, e]),
+  )
+  const inactiveIds = body.employeeIds.filter((id) => {
+    const emp = employeeMap.get(id)
+    return emp && emp.isActive === false
+  })
+  if (inactiveIds.length > 0) {
+    return jsonResponse(400, {
+      success: false,
+      error: `Cannot assign test to inactive employee${inactiveIds.length > 1 ? 's' : ''}.`,
     })
   }
 

@@ -3,10 +3,12 @@ import { createMockContainer, mockRequest } from '../../helpers/api-helpers'
 
 const { container: mockContainer } = createMockContainer()
 const instancesContainer = createMockContainer().container
+const usersContainer = createMockContainer().container
 
 vi.mock('../../../api/shared/cosmos', () => ({
   getContainer: vi.fn().mockImplementation((name: string) => {
     if (name === 'testInstances') return Promise.resolve(instancesContainer)
+    if (name === 'users') return Promise.resolve(usersContainer)
     return Promise.resolve(mockContainer)
   }),
 }))
@@ -57,6 +59,10 @@ function setup(overrides: { isManager?: boolean } = {}) {
   })
 
   instancesContainer.items.create.mockResolvedValue({ resource: {} })
+
+  usersContainer.items.query.mockReturnValue({
+    fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+  })
 }
 
 describe('manager/tests', () => {
@@ -223,11 +229,19 @@ describe('manager/tests', () => {
   })
 
   describe('assignTestHandler', () => {
-    it('returns 201 when assigning to employees', async () => {
+    it('returns 201 when assigning to active employees', async () => {
       setup()
       const test = { id: 't1', companyId: 'c1', managerId: 'mgr_1' }
       mockContainer.items.query.mockReturnValue({
         fetchAll: vi.fn().mockResolvedValue({ resources: [test] }),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            { id: 'e1', isActive: true },
+            { id: 'e2', isActive: true },
+          ],
+        }),
       })
 
       const request = mockRequest({
@@ -240,6 +254,33 @@ describe('manager/tests', () => {
       expect(response.status).toBe(201)
       expect(response.jsonBody?.data).toHaveLength(2)
       expect(instancesContainer.items.create).toHaveBeenCalledTimes(2)
+    })
+
+    it('returns 400 when assigning to an inactive employee', async () => {
+      setup()
+      const test = { id: 't1', companyId: 'c1', managerId: 'mgr_1' }
+      mockContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [test] }),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            { id: 'e1', isActive: true },
+            { id: 'e2', isActive: false },
+          ],
+        }),
+      })
+
+      const request = mockRequest({
+        method: 'POST',
+        params: { testId: 't1' },
+        body: { employeeIds: ['e1', 'e2'] },
+      })
+      const response = await assignTestHandler(request)
+
+      expect(response.status).toBe(400)
+      expect(response.jsonBody?.error).toContain('inactive')
+      expect(instancesContainer.items.create).not.toHaveBeenCalled()
     })
 
     it('returns 400 when employeeIds missing', async () => {
