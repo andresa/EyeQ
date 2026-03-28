@@ -1,7 +1,19 @@
-import { App, Button, Card, Input, Modal, Radio, Spin, Tag, Tabs, Typography } from 'antd'
+import {
+  App,
+  Button,
+  Card,
+  Input,
+  Modal,
+  Segmented,
+  Spin,
+  Tabs,
+  Tooltip,
+  Typography,
+} from 'antd'
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { Circle, CircleCheck, CircleX, Info, MessageSquare } from 'lucide-react'
 import ManagerLayout from '../../layouts/ManagerLayout'
 import RichText from '../../components/atoms/RichText'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
@@ -40,6 +52,7 @@ const SubmissionDetailPage = () => {
   const [marksOverrides, setMarksOverrides] = useState<Record<string, MarkState>>({})
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [submitConfirmLoading, setSubmitConfirmLoading] = useState(false)
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set())
 
   const { data, isLoading } = useQuery({
     queryKey: ['manager', 'testInstanceResults', instanceId],
@@ -111,6 +124,20 @@ const SubmissionDetailPage = () => {
     })
     return initial
   }, [data, responseMap])
+
+  useEffect(() => {
+    const withNotes = new Set<string>()
+    for (const [id, mark] of Object.entries(initialMarks)) {
+      if (mark.note) withNotes.add(id)
+    }
+    if (withNotes.size > 0) {
+      setExpandedNotes((prev) => {
+        const next = new Set(prev)
+        for (const id of withNotes) next.add(id)
+        return next
+      })
+    }
+  }, [initialMarks])
 
   const marks = useMemo(
     () => ({
@@ -319,67 +346,129 @@ const SubmissionDetailPage = () => {
                   const response = responseMap.get(component.id)
                   const mark = marks[component.id]
                   const correctAnswer = mark?.correctAnswer ?? null
-                  const isCorrectValue = mark?.isCorrect ?? false
                   const correctAnswerLabel = formatCorrectAnswer(component, correctAnswer)
 
                   return (
-                    <Card key={component.id} type="inner">
-                      <div className="flex flex-col gap-4 w-full">
-                        <div className="flex flex-col gap-1">
+                    <Card
+                      key={component.id}
+                      type="inner"
+                      style={{
+                        borderLeft:
+                          mark?.isCorrect === true
+                            ? '3px solid #52c41a'
+                            : mark?.isCorrect === false
+                              ? '3px solid #ff4d4f'
+                              : '3px solid #faad14',
+                      }}
+                    >
+                      <div className="flex flex-col md:flex-row gap-6 w-full">
+                        <div className="flex flex-col gap-2 flex-1 min-w-0">
                           <Typography.Text strong>
                             <RichText content={component.title} />
                           </Typography.Text>
                           <Typography.Paragraph type="secondary">
                             <RichText content={component.description} />
                           </Typography.Paragraph>
-                        </div>
-                        <div className="max-w-[400px]">
-                          <QuestionImage imageId={component.imageId} />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <Typography.Text strong>Employee answer</Typography.Text>
-                          <Typography.Text>
-                            {resolveAnswer(component, response)}
-                          </Typography.Text>
-                        </div>
-                        {correctAnswerLabel ? (
+                          <div className="max-w-[400px]">
+                            <QuestionImage imageId={component.imageId} />
+                          </div>
                           <div className="flex flex-col gap-1">
-                            <Typography.Text strong>Correct answer</Typography.Text>
-                            <Typography.Text type="secondary">
-                              {correctAnswerLabel}
+                            <Typography.Text strong>Employee answer</Typography.Text>
+                            <Typography.Text>
+                              {resolveAnswer(component, response)}
                             </Typography.Text>
                           </div>
-                        ) : null}
-                        <div className="flex gap-4">
-                          {isCorrectValue ? (
-                            <Tag color="green">Correct</Tag>
+                          {correctAnswerLabel ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <Typography.Text strong>Correct answer</Typography.Text>
+                                <Tooltip title="This answer was provided as the correct answer when the question was created.">
+                                  <Info size={16} className="text-gray-400" />
+                                </Tooltip>
+                              </div>
+                              <Typography.Text type="secondary">
+                                {correctAnswerLabel}
+                              </Typography.Text>
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className="flex flex-col gap-3 shrink-0 self-start">
+                          <Segmented
+                            value={
+                              mark?.isCorrect === true
+                                ? 'correct'
+                                : mark?.isCorrect === false
+                                  ? 'incorrect'
+                                  : 'unmarked'
+                            }
+                            onChange={(val) =>
+                              updateMark(component.id, {
+                                isCorrect:
+                                  val === 'correct'
+                                    ? true
+                                    : val === 'incorrect'
+                                      ? false
+                                      : null,
+                              })
+                            }
+                            options={[
+                              {
+                                label: (
+                                  <div className="flex items-center gap-1.5">
+                                    <CircleCheck size={14} />
+                                    Correct
+                                  </div>
+                                ),
+                                value: 'correct',
+                              },
+                              {
+                                label: (
+                                  <div className="flex items-center gap-1.5">
+                                    <CircleX size={14} />
+                                    Incorrect
+                                  </div>
+                                ),
+                                value: 'incorrect',
+                              },
+                              {
+                                label: (
+                                  <div className="flex items-center gap-1.5">
+                                    <Circle size={14} />
+                                    Unmarked
+                                  </div>
+                                ),
+                                value: 'unmarked',
+                              },
+                            ]}
+                          />
+                          {expandedNotes.has(component.id) || mark?.note ? (
+                            <Input.TextArea
+                              rows={2}
+                              placeholder="Add note (optional)"
+                              value={mark?.note}
+                              // eslint-disable-next-line jsx-a11y/no-autofocus
+                              autoFocus={!mark?.note}
+                              onChange={(event) =>
+                                updateMark(component.id, {
+                                  note: event.target.value,
+                                })
+                              }
+                            />
                           ) : (
-                            <Tag color="red">Incorrect</Tag>
+                            <Button
+                              type="link"
+                              className="self-start !px-0"
+                              icon={<MessageSquare size={14} />}
+                              onClick={() =>
+                                setExpandedNotes((prev) =>
+                                  new Set(prev).add(component.id),
+                                )
+                              }
+                            >
+                              Add note
+                            </Button>
                           )}
                         </div>
-                        <Radio.Group
-                          value={mark?.isCorrect ?? undefined}
-                          onChange={(event) =>
-                            updateMark(component.id, {
-                              isCorrect: event.target.value,
-                            })
-                          }
-                        >
-                          <div className="flex gap-4">
-                            <Radio value={true}>Correct</Radio>
-                            <Radio value={false}>Incorrect</Radio>
-                          </div>
-                        </Radio.Group>
-                        <Input.TextArea
-                          rows={2}
-                          placeholder="Add note (optional)"
-                          value={mark?.note}
-                          onChange={(event) =>
-                            updateMark(component.id, {
-                              note: event.target.value,
-                            })
-                          }
-                        />
                       </div>
                     </Card>
                   )
@@ -387,7 +476,12 @@ const SubmissionDetailPage = () => {
               </div>
             </Card>
           ))}
-          <div className="flex gap-4 justify-end">
+          <div className="flex items-center justify-between">
+            <Typography.Text type="secondary">
+              {unmarkedCount > 0
+                ? `${unmarkedCount} question${unmarkedCount === 1 ? '' : 's'} remaining`
+                : 'All questions marked'}
+            </Typography.Text>
             <Button type="primary" onClick={handleSubmit}>
               Submit Marks
             </Button>
