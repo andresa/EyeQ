@@ -87,8 +87,6 @@ function stripHtml(subject: string, html: string): string {
     .trim()
 }
 
-const LOGO_WHITE_URL =
-  'https://www.eyeqlearn.com/images/EyeQLogo-white-transparent-150px.png'
 const LOGO_BLUE_URL =
   'https://www.eyeqlearn.com/images/EyeQLogo-blue-transparent-150px.png'
 
@@ -98,9 +96,6 @@ const EMAIL_DARK_MODE_STYLES = `
   <style>
     :root { color-scheme: light dark; }
     @media (prefers-color-scheme: dark) {
-      .eh { background: #f0f4f8 !important; border-bottom: 1px solid #d9e4ef !important; }
-      .logo-light { display: none !important; }
-      .logo-dark { display: inline-block !important; }
       .eb { background: #1a1a2e !important; color: #e0e0e0 !important; border-color: #2a2a3e !important; }
       .eb p, .eb td { color: #e0e0e0 !important; }
       .eb .muted { color: #aaa !important; }
@@ -112,9 +107,8 @@ const EMAIL_DARK_MODE_STYLES = `
   </style>`
 
 const emailHeader = `
-  <div class="eh" style="background: #1E3A5F; padding: 30px; border-radius: 4px 4px 0 0; text-align: center;">
-    <img class="logo-light" src="${LOGO_WHITE_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
-    <img class="logo-dark" src="${LOGO_BLUE_URL}" alt="EyeQ" width="75" height="75" style="display: none;" />
+  <div class="eh" style="background: #f0f4f8; padding: 30px; border-radius: 4px 4px 0 0; text-align: center; border-bottom: 1px solid #d9e4ef;">
+    <img src="${LOGO_BLUE_URL}" alt="EyeQ" width="75" height="75" style="display: inline-block;" />
   </div>`
 
 /**
