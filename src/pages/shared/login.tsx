@@ -152,12 +152,10 @@ const LoginPage = () => {
                   : 'Enter your email to sign in'}
               </Typography.Text>
             </div>
-
-            {/* Dev Login Section */}
+            Dev Login Section
             {profileError && !success && (
               <Alert type="warning" message={profileError} showIcon />
             )}
-
             {showDevLogin && !success && (
               <>
                 <div className="rounded-lg border p-4 bg-accent-700">
@@ -222,7 +220,6 @@ const LoginPage = () => {
                 </Divider>
               </>
             )}
-
             {success ? (
               <div className="text-center py-4">
                 <CheckCircleOutlined
@@ -240,12 +237,14 @@ const LoginPage = () => {
                 </Button>
               </div>
             ) : (
-              <Form onFinish={handleSubmit} layout="vertical">
-                {error && (
-                  <Alert type="error" message={error} showIcon className="mb-4" />
-                )}
-
-                <Form.Item label="Email address" required className="mb-4">
+              <div>
+                {error && <Alert type="error" title={error} showIcon className="mb-4" />}
+                <Form.Item
+                  label="Email address"
+                  layout="vertical"
+                  required
+                  className="mb-4"
+                >
                   <Input
                     size="large"
                     type="email"
@@ -261,27 +260,27 @@ const LoginPage = () => {
                     autoCapitalize="none"
                     // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus={!showDevLogin}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSubmit()
+                    }}
                   />
                 </Form.Item>
-
                 <Button
                   type="primary"
-                  htmlType="submit"
                   size="large"
                   block
                   loading={isSubmitting}
+                  onClick={handleSubmit}
                 >
                   Send Login Link
                 </Button>
-              </Form>
+              </div>
             )}
-
             <Divider className="my-2">
               <Typography.Text type="secondary" className="text-xs">
                 Passwordless authentication
               </Typography.Text>
             </Divider>
-
             <Typography.Text type="secondary" className="text-center text-xs block">
               By signing in, you agree to our terms of service and privacy policy.
             </Typography.Text>
