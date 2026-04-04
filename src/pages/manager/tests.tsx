@@ -14,7 +14,8 @@ import {
   listEmployees,
   listTests,
 } from '../../services/manager'
-import type { Employee, TestTemplate } from '../../types'
+import { listManagersShared } from '../../services/shared'
+import type { Employee, Manager, TestTemplate } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { formatDateTime } from '../../utils/date'
@@ -85,6 +86,23 @@ const ManagerTestsPage = () => {
       return response.data
     },
   })
+
+  const { data: managers } = useQuery({
+    queryKey: ['shared', 'managers', companyId],
+    queryFn: async () => {
+      if (!companyId) return [] as Manager[]
+      const response = await listManagersShared(companyId)
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Unable to load managers')
+      }
+      return response.data
+    },
+  })
+
+  const managerMap = useMemo(
+    () => new Map((managers || []).map((m) => [m.id, m])),
+    [managers],
+  )
 
   const sortedTests = useMemo(() => {
     return (allTests || []).slice().sort((a, b) => {
@@ -246,10 +264,13 @@ const ManagerTestsPage = () => {
           columns={[
             { title: 'Name', dataIndex: 'name' },
             {
-              title: 'Sections',
-              width: 100,
-              align: 'center',
-              render: (_, record) => record.sections.length,
+              title: 'Created by',
+              dataIndex: 'managerId',
+              width: 200,
+              render: (managerId: string) => {
+                const manager = managerMap.get(managerId)
+                return manager ? formatUserName(manager) : '—'
+              },
             },
             {
               title: 'Created on',

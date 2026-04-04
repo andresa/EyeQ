@@ -285,7 +285,7 @@ const ArticlesTabContent = ({ companyId }: { companyId: string }) => {
               ),
           },
           {
-            title: 'Created',
+            title: 'Created on',
             dataIndex: 'createdAt',
             width: 180,
             render: (value: string) => formatDateTime(value),
@@ -662,7 +662,7 @@ const FlashCardsTabContent = ({ companyId }: { companyId: string }) => {
               ),
           },
           {
-            title: 'Created',
+            title: 'Created on',
             dataIndex: 'createdAt',
             width: 180,
             render: (value: string) => formatDateTime(value),
