@@ -46,10 +46,11 @@ export const acceptInvitation = (
  */
 export const requestMagicLink = (
   email: string,
+  _hp?: string,
 ): Promise<ApiResponse<{ message: string }>> =>
   apiRequest('/auth/magic-link', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, ...(_hp ? { _hp } : {}) }),
   })
 
 /**

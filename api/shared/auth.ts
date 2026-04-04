@@ -306,6 +306,7 @@ export async function authenticateByToken(
 
 interface MagicLinkRequest {
   email: string
+  _hp?: string
 }
 
 /**
@@ -319,6 +320,15 @@ export const requestMagicLinkHandler = async (
 
   if (!body?.email) {
     return jsonResponse(400, { success: false, error: 'Email is required.' })
+  }
+
+  if (body._hp) {
+    return jsonResponse(200, {
+      success: true,
+      data: {
+        message: 'If an account exists with this email, a login link has been sent.',
+      },
+    })
   }
 
   const email = body.email.toLowerCase().trim()

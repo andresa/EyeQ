@@ -208,6 +208,27 @@ describe('shared/auth', () => {
       expect(response.status).toBe(200)
     })
 
+    it('silently returns 200 without creating magic link when honeypot is filled', async () => {
+      setup()
+      adminsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            { id: 'a1', email: 'admin@test.com', firstName: 'A', lastName: 'B' },
+          ],
+        }),
+      })
+
+      const request = mockRequest({
+        method: 'POST',
+        body: { email: 'admin@test.com', _hp: 'bot-filled' },
+      })
+      const response = await requestMagicLinkHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody?.success).toBe(true)
+      expect(magicLinksContainer.items.create).not.toHaveBeenCalled()
+    })
+
     it('returns 200 and creates magic link for known user', async () => {
       setup()
       adminsContainer.items.query.mockReturnValue({
