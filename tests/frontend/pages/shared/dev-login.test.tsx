@@ -112,12 +112,15 @@ describe('DevLoginPage', () => {
       success: true,
       data: {
         token: 'test-token',
+        expiresAt: '2099-01-01T00:00:00Z',
         user: {
           id: 'a1',
           role: 'admin',
           firstName: 'Alice',
           lastName: 'Admin',
           email: 'admin@test.com',
+          companyId: 'company-1',
+          userType: 'admin',
         },
       },
     })
