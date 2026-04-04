@@ -88,6 +88,17 @@ describe('admin/employees', () => {
       expect(response.status).toBe(200)
       expect(response.jsonBody?.data).toEqual(employees)
     })
+
+    it('excludes soft-deleted employees from query', async () => {
+      setup()
+      mockFetchAll.mockResolvedValue({ resources: [] })
+
+      const request = mockRequest({ query: { companyId: 'c1' } })
+      await listAllEmployeesHandler(request)
+
+      const queryArg = mockQuery.mock.calls[0][0]
+      expect(queryArg.query).toContain('isDeleted')
+    })
   })
 
   describe('createEmployeeHandler', () => {
@@ -241,6 +252,31 @@ describe('admin/employees', () => {
 
       expect(response.status).toBe(200)
       expect(response.jsonBody?.data).toMatchObject({ middleName: 'NewMiddle' })
+    })
+
+    it('returns 404 when trying to update a soft-deleted employee', async () => {
+      setup()
+      const existing = {
+        id: 'e1',
+        companyId: 'c1',
+        firstName: 'Old',
+        lastName: 'N',
+        role: 'employee',
+        isActive: true,
+        isDeleted: true,
+        deletedAt: '2025-01-01T00:00:00.000Z',
+      }
+      mockRead.mockResolvedValue({ resource: existing })
+
+      const request = mockRequest({
+        method: 'PUT',
+        params: { employeeId: 'e1' },
+        query: { companyId: 'c1' },
+        body: { firstName: 'Updated' },
+      })
+      const response = await updateEmployeeHandler(request)
+
+      expect(response.status).toBe(404)
     })
   })
 })

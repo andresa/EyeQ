@@ -73,6 +73,8 @@ export interface Manager {
   isActive: boolean
   invitationStatus?: InvitationStatus
   invitedEmail?: string // Email where invitation was sent
+  isDeleted?: boolean
+  deletedAt?: string
 }
 
 export type InvitationStatus = 'none' | 'pending' | 'accepted'
@@ -92,6 +94,8 @@ export interface Employee {
   isActive: boolean
   invitationStatus?: InvitationStatus
   invitedEmail?: string // Email where invitation was sent
+  isDeleted?: boolean
+  deletedAt?: string
 }
 
 export interface Invitation {

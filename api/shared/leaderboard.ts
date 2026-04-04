@@ -3,7 +3,7 @@ import { getContainer } from './cosmos.js'
 import { jsonResponse, parseJsonBody } from './http.js'
 import { createId, nowIso, formatUserName } from './utils.js'
 import { getAuthenticatedUser, requireManager, requireRole } from './auth.js'
-import { USERS_CONTAINER, USERS_PARTITION_KEY } from './userTypes.js'
+import { USERS_CONTAINER, USERS_PARTITION_KEY, NOT_DELETED_FILTER } from './userTypes.js'
 
 // ============================================================================
 // Types
@@ -322,8 +322,7 @@ export const getLeaderboardHandler = async (
   const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
   const { resources: employees } = await usersContainer.items
     .query({
-      query:
-        "SELECT c.id, c.firstName, c.middleName, c.lastName FROM c WHERE c.companyId = @companyId AND c.role = 'employee' AND c.isActive = true",
+      query: `SELECT c.id, c.firstName, c.middleName, c.lastName FROM c WHERE c.companyId = @companyId AND c.role = 'employee' AND c.isActive = true AND ${NOT_DELETED_FILTER}`,
       parameters: [{ name: '@companyId', value: companyId }],
     })
     .fetchAll()

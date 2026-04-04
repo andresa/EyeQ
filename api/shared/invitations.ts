@@ -9,7 +9,7 @@ import {
   createSession,
 } from './auth.js'
 import { sendInvitationEmail } from './email.js'
-import { USERS_CONTAINER, USERS_PARTITION_KEY } from './userTypes.js'
+import { USERS_CONTAINER, USERS_PARTITION_KEY, NOT_DELETED_FILTER } from './userTypes.js'
 
 export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked'
 export type InvitationUserType = 'employee' | 'manager'
@@ -181,7 +181,7 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
   // Check if email is already used by another user in the container
   const { resources: existingUsers } = await userContainer.items
     .query({
-      query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
+      query: `SELECT * FROM c WHERE LOWER(c.email) = @email AND ${NOT_DELETED_FILTER}`,
       parameters: [{ name: '@email', value: acceptedEmail }],
     })
     .fetchAll()
@@ -196,7 +196,7 @@ export async function acceptInvitationAndCreateSession(token: string): Promise<{
   // Update user with the accepted email
   const { resource: user } = await userContainer.item(userId, invitation.companyId).read()
 
-  if (!user) {
+  if (!user || user.isDeleted) {
     return {
       success: false,
       error: 'User record not found.',
@@ -291,7 +291,7 @@ export const sendInvitationHandler = async (
     .item(employeeId, body.companyId)
     .read()
 
-  if (!employee) {
+  if (!employee || employee.isDeleted) {
     return jsonResponse(404, { success: false, error: 'Employee not found.' })
   }
 
@@ -482,7 +482,7 @@ export const sendManagerInvitationHandler = async (
     .item(managerId, body.companyId)
     .read()
 
-  if (!manager) {
+  if (!manager || manager.isDeleted) {
     return jsonResponse(404, { success: false, error: 'Manager not found.' })
   }
 

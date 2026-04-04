@@ -85,6 +85,17 @@ describe('admin/managers', () => {
 
       expect(response.status).toBe(400)
     })
+
+    it('excludes soft-deleted managers from query', async () => {
+      setup()
+      mockFetchAll.mockResolvedValue({ resources: [] })
+
+      const request = mockRequest({ query: { companyId: 'c1' } })
+      await listManagersHandler(request)
+
+      const queryArg = mockQuery.mock.calls[0][0]
+      expect(queryArg.query).toContain('isDeleted')
+    })
   })
 
   describe('createManagerHandler', () => {
@@ -247,7 +258,7 @@ describe('admin/managers', () => {
   })
 
   describe('deleteManagerHandler', () => {
-    it('returns 200 on successful delete', async () => {
+    it('returns 200 and soft-deletes the manager', async () => {
       setup()
       const existing = { id: 'm1', companyId: 'c1', role: 'manager' }
       mockRead.mockResolvedValue({ resource: existing })
@@ -261,6 +272,11 @@ describe('admin/managers', () => {
 
       expect(response.status).toBe(200)
       expect(response.jsonBody?.data).toEqual({ id: 'm1' })
+      expect(mockReplace).toHaveBeenCalledOnce()
+      const replaced = mockReplace.mock.calls[0][0]
+      expect(replaced.isDeleted).toBe(true)
+      expect(replaced.deletedAt).toBeDefined()
+      expect(mockDeleteFn).not.toHaveBeenCalled()
     })
 
     it('returns 404 when manager not found', async () => {
@@ -271,6 +287,51 @@ describe('admin/managers', () => {
         query: { companyId: 'c1' },
       })
       const response = await deleteManagerHandler(request)
+
+      expect(response.status).toBe(404)
+    })
+
+    it('returns 404 when manager is already soft-deleted', async () => {
+      setup()
+      const existing = {
+        id: 'm1',
+        companyId: 'c1',
+        role: 'manager',
+        isDeleted: true,
+        deletedAt: '2025-01-01T00:00:00.000Z',
+      }
+      mockRead.mockResolvedValue({ resource: existing })
+
+      const request = mockRequest({
+        method: 'DELETE',
+        params: { managerId: 'm1' },
+        query: { companyId: 'c1' },
+      })
+      const response = await deleteManagerHandler(request)
+
+      expect(response.status).toBe(404)
+    })
+  })
+
+  describe('updateManagerHandler - soft-delete guard', () => {
+    it('returns 404 when trying to update a soft-deleted manager', async () => {
+      setup()
+      const existing = {
+        id: 'm1',
+        companyId: 'c1',
+        role: 'manager',
+        isDeleted: true,
+        deletedAt: '2025-01-01T00:00:00.000Z',
+      }
+      mockRead.mockResolvedValue({ resource: existing })
+
+      const request = mockRequest({
+        method: 'PUT',
+        params: { managerId: 'm1' },
+        query: { companyId: 'c1' },
+        body: { firstName: 'Updated' },
+      })
+      const response = await updateManagerHandler(request)
 
       expect(response.status).toBe(404)
     })

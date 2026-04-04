@@ -7,6 +7,7 @@ import {
   USERS_PARTITION_KEY,
   ADMINS_CONTAINER,
   ADMINS_PARTITION_KEY,
+  NOT_DELETED_FILTER,
 } from '../shared/userTypes.js'
 
 interface DevUser {
@@ -46,8 +47,7 @@ export const getDevUsersHandler = async (): Promise<HttpResponseInit> => {
     const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
     const { resources: allUsers } = await usersContainer.items
       .query({
-        query:
-          'SELECT c.id, c.email, c.firstName, c.middleName, c.lastName, c.companyId, c.role FROM c WHERE c.isActive = true',
+        query: `SELECT c.id, c.email, c.firstName, c.middleName, c.lastName, c.companyId, c.role FROM c WHERE c.isActive = true AND ${NOT_DELETED_FILTER}`,
       })
       .fetchAll()
 

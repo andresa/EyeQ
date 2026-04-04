@@ -3,7 +3,11 @@ import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
-import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
+import {
+  USERS_CONTAINER,
+  USERS_PARTITION_KEY,
+  NOT_DELETED_FILTER,
+} from '../shared/userTypes.js'
 import { paginatedQuery } from '../shared/pagination.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
@@ -28,7 +32,7 @@ export const listAllEmployeesHandler = async (
   const cursor = request.query.get('cursor')
   const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
-  let whereClause = 'FROM c WHERE c.role = @role'
+  let whereClause = `FROM c WHERE c.role = @role AND ${NOT_DELETED_FILTER}`
   const parameters: { name: string; value: string }[] = [
     { name: '@role', value: 'employee' },
   ]
@@ -91,7 +95,7 @@ export const createEmployeeHandler = async (
   const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
   const { resources: existing } = await container.items
     .query({
-      query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
+      query: `SELECT * FROM c WHERE LOWER(c.email) = @email AND ${NOT_DELETED_FILTER}`,
       parameters: [{ name: '@email', value: body.email.toLowerCase() }],
     })
     .fetchAll()
@@ -157,7 +161,7 @@ export const updateEmployeeHandler = async (
 
   // Fetch existing employee
   const { resource: existing } = await container.item(employeeId, companyId).read()
-  if (!existing) {
+  if (!existing || existing.isDeleted) {
     return jsonResponse(404, { success: false, error: 'Employee not found.' })
   }
 
