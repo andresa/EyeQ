@@ -208,6 +208,27 @@ describe('shared/auth', () => {
       expect(response.status).toBe(200)
     })
 
+    it('silently returns 200 without creating magic link when honeypot is filled', async () => {
+      setup()
+      adminsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            { id: 'a1', email: 'admin@test.com', firstName: 'A', lastName: 'B' },
+          ],
+        }),
+      })
+
+      const request = mockRequest({
+        method: 'POST',
+        body: { email: 'admin@test.com', _hp: 'bot-filled' },
+      })
+      const response = await requestMagicLinkHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(response.jsonBody?.success).toBe(true)
+      expect(magicLinksContainer.items.create).not.toHaveBeenCalled()
+    })
+
     it('returns 200 and creates magic link for known user', async () => {
       setup()
       adminsContainer.items.query.mockReturnValue({
@@ -243,6 +264,27 @@ describe('shared/auth', () => {
       })
 
       const request = mockRequest({ method: 'POST', body: { email: 'emp@test.com' } })
+      const response = await requestMagicLinkHandler(request)
+
+      expect(response.status).toBe(200)
+      expect(magicLinksContainer.items.create).not.toHaveBeenCalled()
+    })
+
+    it('returns 200 and does not send email for soft-deleted user (treated as not found)', async () => {
+      setup()
+      // With the isDeleted filter in findUserByEmail, a soft-deleted user
+      // should not be returned by the query, so the handler treats them as unknown
+      adminsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+      })
+
+      const request = mockRequest({
+        method: 'POST',
+        body: { email: 'deleted@test.com' },
+      })
       const response = await requestMagicLinkHandler(request)
 
       expect(response.status).toBe(200)
@@ -412,6 +454,35 @@ describe('shared/auth', () => {
       expect(response.status).toBe(200)
       expect(response.jsonBody?.data?.token).toBeDefined()
     })
+
+    it('returns 400 for soft-deleted user (treated as not found)', async () => {
+      setup()
+      magicLinksContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({
+          resources: [
+            {
+              id: 'ml1',
+              email: 'deleted@t.com',
+              token: 'tok',
+              expiresAt: '2099-01-01T00:00:00Z',
+            },
+          ],
+        }),
+      })
+      // Soft-deleted user is filtered out by the isDeleted clause, so query returns empty
+      adminsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+      })
+
+      const request = mockRequest({ method: 'POST', body: { token: 'tok' } })
+      const response = await verifyMagicLinkHandler(request)
+
+      expect(response.status).toBe(400)
+      expect(response.jsonBody?.error).toContain('User not found')
+    })
   })
 
   describe('logoutHandler', () => {
@@ -542,6 +613,38 @@ describe('shared/auth', () => {
 
       expect(response.status).toBe(200)
       expect(response.jsonBody?.data?.user?.id).toBe('e1')
+    })
+
+    it('returns 401 for soft-deleted user with valid session (user not found)', async () => {
+      setup()
+      const session = {
+        id: 's1',
+        token: 'tok',
+        email: 'deleted@t.com',
+        expiresAt: '2099-01-01T00:00:00Z',
+        lastUsedAt: '2025-01-01',
+      }
+      sessionsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [session] }),
+      })
+      sessionsContainer.item.mockReturnValue({
+        read: vi.fn().mockResolvedValue({ resource: session }),
+        replace: vi.fn().mockResolvedValue({}),
+        delete: vi.fn(),
+      })
+      // Soft-deleted user is filtered out by isDeleted clause
+      adminsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+      })
+      usersContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+      })
+
+      const request = mockRequest({ headers: { 'x-session-token': 'tok' } })
+      const response = await getSessionHandler(request)
+
+      expect(response.status).toBe(401)
+      expect(response.jsonBody?.error).toContain('User not found')
     })
   })
 })

@@ -85,6 +85,19 @@ describe('manager/employees', () => {
       expect(response.jsonBody?.data).toEqual(employees)
     })
 
+    it('excludes soft-deleted employees from query', async () => {
+      setup()
+      mockContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [] }),
+      })
+
+      const request = mockRequest({ query: { companyId: 'c1' } })
+      await listEmployeesHandler(request)
+
+      const queryArg = mockContainer.items.query.mock.calls[0][0]
+      expect(queryArg.query).toContain('isDeleted')
+    })
+
     it('returns 400 when companyId missing', async () => {
       setup()
       const request = mockRequest({})
@@ -300,13 +313,14 @@ describe('manager/employees', () => {
   })
 
   describe('deleteEmployeeHandler', () => {
-    it('returns 200 on successful delete', async () => {
+    it('returns 200 and soft-deletes the employee', async () => {
       setup()
       const existing = { id: 'e1', companyId: 'c1', role: 'employee' }
+      const replaceFn = vi.fn().mockResolvedValue({})
       mockContainer.item.mockReturnValue({
         read: vi.fn().mockResolvedValue({ resource: existing }),
-        replace: vi.fn(),
-        delete: vi.fn().mockResolvedValue({}),
+        replace: replaceFn,
+        delete: vi.fn(),
       })
 
       const request = mockRequest({
@@ -317,6 +331,10 @@ describe('manager/employees', () => {
       const response = await deleteEmployeeHandler(request)
 
       expect(response.status).toBe(200)
+      expect(replaceFn).toHaveBeenCalledOnce()
+      const replaced = replaceFn.mock.calls[0][0]
+      expect(replaced.isDeleted).toBe(true)
+      expect(replaced.deletedAt).toBeDefined()
     })
 
     it('returns 404 when employee not found', async () => {
@@ -327,6 +345,59 @@ describe('manager/employees', () => {
         query: { companyId: 'c1' },
       })
       const response = await deleteEmployeeHandler(request)
+
+      expect(response.status).toBe(404)
+    })
+
+    it('returns 404 when employee is already soft-deleted', async () => {
+      setup()
+      const existing = {
+        id: 'e1',
+        companyId: 'c1',
+        role: 'employee',
+        isDeleted: true,
+        deletedAt: '2025-01-01T00:00:00.000Z',
+      }
+      mockContainer.item.mockReturnValue({
+        read: vi.fn().mockResolvedValue({ resource: existing }),
+        replace: vi.fn(),
+        delete: vi.fn(),
+      })
+
+      const request = mockRequest({
+        method: 'DELETE',
+        params: { employeeId: 'e1' },
+        query: { companyId: 'c1' },
+      })
+      const response = await deleteEmployeeHandler(request)
+
+      expect(response.status).toBe(404)
+    })
+  })
+
+  describe('updateEmployeeHandler - soft-delete guard', () => {
+    it('returns 404 when trying to update a soft-deleted employee', async () => {
+      setup()
+      const existing = {
+        id: 'e1',
+        companyId: 'c1',
+        role: 'employee',
+        isDeleted: true,
+        deletedAt: '2025-01-01T00:00:00.000Z',
+      }
+      mockContainer.item.mockReturnValue({
+        read: vi.fn().mockResolvedValue({ resource: existing }),
+        replace: vi.fn(),
+        delete: vi.fn(),
+      })
+
+      const request = mockRequest({
+        method: 'PUT',
+        params: { employeeId: 'e1' },
+        query: { companyId: 'c1' },
+        body: { firstName: 'Updated' },
+      })
+      const response = await updateEmployeeHandler(request)
 
       expect(response.status).toBe(404)
     })

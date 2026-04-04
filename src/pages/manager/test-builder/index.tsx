@@ -289,7 +289,7 @@ const TestBuilderForm = ({
                 icon={<LibraryBig size={20} />}
                 onClick={() => setLibraryOpen(true)}
               >
-                Copy from library
+                Copy from Question Library
               </Button>
               {questionTypeLabels.map((item) => (
                 <Button

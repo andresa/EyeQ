@@ -8,6 +8,7 @@ import {
   USERS_PARTITION_KEY,
   ADMINS_CONTAINER,
   ADMINS_PARTITION_KEY,
+  NOT_DELETED_FILTER,
   type UserType,
 } from './userTypes.js'
 
@@ -87,7 +88,7 @@ async function findUserByEmail(
   const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
   const { resources: users } = await usersContainer.items
     .query({
-      query: 'SELECT * FROM c WHERE LOWER(c.email) = @email',
+      query: `SELECT * FROM c WHERE LOWER(c.email) = @email AND ${NOT_DELETED_FILTER}`,
       parameters: [{ name: '@email', value: normalizedEmail }],
     })
     .fetchAll()
@@ -306,6 +307,7 @@ export async function authenticateByToken(
 
 interface MagicLinkRequest {
   email: string
+  _hp?: string
 }
 
 /**
@@ -319,6 +321,15 @@ export const requestMagicLinkHandler = async (
 
   if (!body?.email) {
     return jsonResponse(400, { success: false, error: 'Email is required.' })
+  }
+
+  if (body._hp) {
+    return jsonResponse(200, {
+      success: true,
+      data: {
+        message: 'If an account exists with this email, a login link has been sent.',
+      },
+    })
   }
 
   const email = body.email.toLowerCase().trim()

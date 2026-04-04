@@ -8,6 +8,7 @@ import {
   USERS_PARTITION_KEY,
   ADMINS_CONTAINER,
   ADMINS_PARTITION_KEY,
+  NOT_DELETED_FILTER,
 } from '../shared/userTypes.js'
 
 type UserType = 'admin' | 'manager' | 'employee'
@@ -58,7 +59,7 @@ export const devLoginHandler = async (
       const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
       const { resources } = await container.items
         .query({
-          query: 'SELECT * FROM c WHERE c.id = @id',
+          query: `SELECT * FROM c WHERE c.id = @id AND ${NOT_DELETED_FILTER}`,
           parameters: [{ name: '@id', value: userId }],
         })
         .fetchAll()

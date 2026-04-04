@@ -27,6 +27,7 @@ import {
   submitTestInstanceHandler,
   timeoutTestInstanceHandler,
   getEmployeeTestInstanceResultsHandler,
+  stripCorrectAnswers,
 } from '../../../api/employee/testInstances'
 import { getAuthenticatedUser, requireEmployee } from '../../../api/shared/auth'
 
@@ -67,6 +68,62 @@ function setup() {
     replace: vi.fn().mockResolvedValue({}),
     delete: vi.fn(),
   })
+}
+
+const testWithAnswers = {
+  id: 't1',
+  name: 'Test',
+  sections: [
+    {
+      id: 's1',
+      title: 'Section 1',
+      components: [
+        {
+          id: 'c_info',
+          type: 'info',
+          title: 'Welcome',
+          description: 'Read carefully',
+          required: false,
+        },
+        {
+          id: 'c_sc',
+          type: 'single_choice',
+          title: 'Pick one',
+          description: 'desc',
+          required: true,
+          options: [
+            { id: 'opt_1', label: 'A' },
+            { id: 'opt_2', label: 'B' },
+          ],
+          correctAnswer: 'opt_1',
+          saveToLibrary: true,
+          addToFlashCards: true,
+          categoryId: 'cat_1',
+          imageId: 'img_1',
+        },
+        {
+          id: 'c_mc',
+          type: 'multiple_choice',
+          title: 'Pick many',
+          description: '',
+          required: true,
+          options: [
+            { id: 'opt_3', label: 'X' },
+            { id: 'opt_4', label: 'Y' },
+          ],
+          correctAnswer: ['opt_3', 'opt_4'],
+        },
+        {
+          id: 'c_text',
+          type: 'text',
+          title: 'Explain',
+          description: '',
+          required: false,
+        },
+      ],
+    },
+  ],
+  settings: { allowBackNavigation: false },
 }
 
 describe('employee/testInstances', () => {
@@ -160,22 +217,76 @@ describe('employee/testInstances', () => {
   })
 
   describe('getTestInstanceDetailsHandler', () => {
-    it('returns 200 with instance details', async () => {
+    it('returns 200 with instance details and strips correctAnswer', async () => {
       setup()
       const instance = { id: 'i1', testId: 't1', employeeId: 'emp_1' }
       instancesContainer.items.query.mockReturnValue({
         fetchAll: vi.fn().mockResolvedValue({ resources: [instance] }),
       })
-      const test = { id: 't1', name: 'Test' }
       testsContainer.items.query.mockReturnValue({
-        fetchAll: vi.fn().mockResolvedValue({ resources: [test] }),
+        fetchAll: vi.fn().mockResolvedValue({ resources: [testWithAnswers] }),
       })
 
       const request = mockRequest({ params: { instanceId: 'i1' } })
       const response = await getTestInstanceDetailsHandler(request)
 
       expect(response.status).toBe(200)
-      expect(response.jsonBody?.data).toMatchObject({ instance, test })
+      expect(response.jsonBody?.data?.instance).toEqual(instance)
+      const returnedTest = response.jsonBody?.data?.test
+      expect(returnedTest.id).toBe('t1')
+      expect(returnedTest.name).toBe('Test')
+
+      for (const section of returnedTest.sections) {
+        for (const component of section.components) {
+          expect(component).not.toHaveProperty('correctAnswer')
+          expect(component).not.toHaveProperty('saveToLibrary')
+          expect(component).not.toHaveProperty('addToFlashCards')
+          expect(component).not.toHaveProperty('categoryId')
+        }
+      }
+    })
+
+    it('preserves all non-sensitive component fields', async () => {
+      setup()
+      const instance = { id: 'i1', testId: 't1', employeeId: 'emp_1' }
+      instancesContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [instance] }),
+      })
+      testsContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [testWithAnswers] }),
+      })
+
+      const request = mockRequest({ params: { instanceId: 'i1' } })
+      const response = await getTestInstanceDetailsHandler(request)
+      const components = response.jsonBody?.data?.test.sections[0].components
+
+      const scComponent = components.find((c: { id: string }) => c.id === 'c_sc')
+      expect(scComponent).toMatchObject({
+        id: 'c_sc',
+        type: 'single_choice',
+        title: 'Pick one',
+        description: 'desc',
+        required: true,
+        imageId: 'img_1',
+        options: [
+          { id: 'opt_1', label: 'A' },
+          { id: 'opt_2', label: 'B' },
+        ],
+      })
+
+      const infoComponent = components.find((c: { id: string }) => c.id === 'c_info')
+      expect(infoComponent).toMatchObject({
+        id: 'c_info',
+        type: 'info',
+        title: 'Welcome',
+      })
+
+      const textComponent = components.find((c: { id: string }) => c.id === 'c_text')
+      expect(textComponent).toMatchObject({
+        id: 'c_text',
+        type: 'text',
+        title: 'Explain',
+      })
     })
 
     it('returns 404 when instance not found', async () => {
@@ -529,22 +640,32 @@ describe('employee/testInstances', () => {
   })
 
   describe('getEmployeeTestInstanceResultsHandler', () => {
-    it('returns 200 with results', async () => {
+    it('returns 200 with results and strips correctAnswer', async () => {
       setup()
       const instance = { id: 'i1', testId: 't1', employeeId: 'emp_1' }
       instancesContainer.items.query.mockReturnValue({
         fetchAll: vi.fn().mockResolvedValue({ resources: [instance] }),
       })
-      const test = { id: 't1', name: 'Test' }
       testsContainer.items.query.mockReturnValue({
-        fetchAll: vi.fn().mockResolvedValue({ resources: [test] }),
+        fetchAll: vi.fn().mockResolvedValue({ resources: [testWithAnswers] }),
       })
 
       const request = mockRequest({ params: { instanceId: 'i1' } })
       const response = await getEmployeeTestInstanceResultsHandler(request)
 
       expect(response.status).toBe(200)
-      expect(response.jsonBody?.data).toMatchObject({ instance, test })
+      expect(response.jsonBody?.data?.instance).toEqual(instance)
+      const returnedTest = response.jsonBody?.data?.test
+      expect(returnedTest.id).toBe('t1')
+
+      for (const section of returnedTest.sections) {
+        for (const component of section.components) {
+          expect(component).not.toHaveProperty('correctAnswer')
+          expect(component).not.toHaveProperty('saveToLibrary')
+          expect(component).not.toHaveProperty('addToFlashCards')
+          expect(component).not.toHaveProperty('categoryId')
+        }
+      }
     })
 
     it('returns 404 when instance not found', async () => {
@@ -553,6 +674,75 @@ describe('employee/testInstances', () => {
       const response = await getEmployeeTestInstanceResultsHandler(request)
 
       expect(response.status).toBe(404)
+    })
+  })
+
+  describe('stripCorrectAnswers', () => {
+    it('strips correctAnswer from single_choice and multiple_choice components', () => {
+      const result = stripCorrectAnswers(testWithAnswers)
+      const components = result.sections[0].components as Record<string, unknown>[]
+      const sc = components.find((c) => c.id === 'c_sc')
+      const mc = components.find((c) => c.id === 'c_mc')
+      expect(sc).not.toHaveProperty('correctAnswer')
+      expect(mc).not.toHaveProperty('correctAnswer')
+    })
+
+    it('strips manager-only fields: saveToLibrary, addToFlashCards, categoryId', () => {
+      const result = stripCorrectAnswers(testWithAnswers)
+      const components = result.sections[0].components as Record<string, unknown>[]
+      const sc = components.find((c) => c.id === 'c_sc')
+      expect(sc).not.toHaveProperty('saveToLibrary')
+      expect(sc).not.toHaveProperty('addToFlashCards')
+      expect(sc).not.toHaveProperty('categoryId')
+    })
+
+    it('preserves all other fields', () => {
+      const result = stripCorrectAnswers(testWithAnswers)
+      const components = result.sections[0].components as Record<string, unknown>[]
+      const sc = components.find((c) => c.id === 'c_sc')
+      expect(sc).toMatchObject({
+        id: 'c_sc',
+        type: 'single_choice',
+        title: 'Pick one',
+        description: 'desc',
+        required: true,
+        imageId: 'img_1',
+        options: [
+          { id: 'opt_1', label: 'A' },
+          { id: 'opt_2', label: 'B' },
+        ],
+      })
+      expect(result).toHaveProperty('id', 't1')
+      expect(result).toHaveProperty('name', 'Test')
+      expect(result).toHaveProperty('settings', { allowBackNavigation: false })
+    })
+
+    it('handles empty sections array', () => {
+      const result = stripCorrectAnswers({ id: 't2', sections: [] })
+      expect(result.sections).toEqual([])
+    })
+
+    it('handles undefined sections', () => {
+      const result = stripCorrectAnswers({ id: 't3' })
+      expect(result.sections).toEqual([])
+    })
+
+    it('handles components without correctAnswer (info and text types)', () => {
+      const result = stripCorrectAnswers(testWithAnswers)
+      const components = result.sections[0].components as Record<string, unknown>[]
+      const info = components.find((c) => c.id === 'c_info')
+      const text = components.find((c) => c.id === 'c_text')
+      expect(info).toMatchObject({ id: 'c_info', type: 'info', title: 'Welcome' })
+      expect(text).toMatchObject({ id: 'c_text', type: 'text', title: 'Explain' })
+    })
+
+    it('handles sections with empty components array', () => {
+      const test = {
+        id: 't4',
+        sections: [{ id: 's1', title: 'Empty', components: [] }],
+      }
+      const result = stripCorrectAnswers(test)
+      expect(result.sections[0].components).toEqual([])
     })
   })
 })

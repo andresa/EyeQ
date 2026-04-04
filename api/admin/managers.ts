@@ -3,7 +3,11 @@ import { getContainer } from '../shared/cosmos.js'
 import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/http.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireAdmin } from '../shared/auth.js'
-import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
+import {
+  USERS_CONTAINER,
+  USERS_PARTITION_KEY,
+  NOT_DELETED_FILTER,
+} from '../shared/userTypes.js'
 import { paginatedQuery } from '../shared/pagination.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
@@ -33,10 +37,8 @@ export const listManagersHandler = async (
     { name: '@companyId', value: companyId },
     { name: '@role', value: 'manager' },
   ]
-  const query =
-    'SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role ORDER BY c.createdAt DESC'
-  const countQuery =
-    'SELECT VALUE COUNT(1) FROM c WHERE c.companyId = @companyId AND c.role = @role'
+  const query = `SELECT * FROM c WHERE c.companyId = @companyId AND c.role = @role AND ${NOT_DELETED_FILTER} ORDER BY c.createdAt DESC`
+  const countQuery = `SELECT VALUE COUNT(1) FROM c WHERE c.companyId = @companyId AND c.role = @role AND ${NOT_DELETED_FILTER}`
 
   const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
@@ -139,7 +141,7 @@ export const updateManagerHandler = async (
 
   // Fetch existing manager
   const { resource: existing } = await container.item(managerId, companyId).read()
-  if (!existing || existing.role !== 'manager') {
+  if (!existing || existing.role !== 'manager' || existing.isDeleted) {
     return jsonResponse(404, { success: false, error: 'Manager not found.' })
   }
 
@@ -198,12 +200,14 @@ export const deleteManagerHandler = async (
 
   // Fetch existing manager to verify it exists and is a manager
   const { resource: existing } = await container.item(managerId, companyId).read()
-  if (!existing || existing.role !== 'manager') {
+  if (!existing || existing.role !== 'manager' || existing.isDeleted) {
     return jsonResponse(404, { success: false, error: 'Manager not found.' })
   }
 
-  // Delete the manager
-  await container.item(managerId, companyId).delete()
+  // Soft-delete the manager
+  existing.isDeleted = true
+  existing.deletedAt = new Date().toISOString()
+  await container.item(managerId, companyId).replace(existing)
   return jsonResponse(200, { success: true, data: { id: managerId } })
 }
 

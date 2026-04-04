@@ -28,6 +28,8 @@ export interface CompanyUser {
   isActive: boolean
   invitationStatus?: InvitationStatus
   invitedEmail?: string
+  isDeleted?: boolean
+  deletedAt?: string
 }
 
 /**
@@ -41,3 +43,9 @@ export const USERS_PARTITION_KEY = '/companyId'
  */
 export const ADMINS_CONTAINER = 'admins'
 export const ADMINS_PARTITION_KEY = '/id'
+
+/**
+ * Cosmos DB SQL filter clause to exclude soft-deleted users.
+ * Handles both new records (isDeleted = false) and legacy records (field not defined).
+ */
+export const NOT_DELETED_FILTER = '(NOT IS_DEFINED(c.isDeleted) OR c.isDeleted = false)'

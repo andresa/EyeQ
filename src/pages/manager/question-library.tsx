@@ -428,7 +428,7 @@ const QuestionLibraryPage = () => {
                 ),
             },
             {
-              title: 'Created',
+              title: 'Created on',
               dataIndex: 'createdAt',
               width: 180,
               render: (v: string) => formatDateTime(v),

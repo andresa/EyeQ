@@ -44,6 +44,27 @@ const expireAndReject = async (
   return expired ? EXPIRED_RESPONSE : null
 }
 
+const SENSITIVE_FIELDS = [
+  'correctAnswer',
+  'saveToLibrary',
+  'addToFlashCards',
+  'categoryId',
+] as const
+
+export const stripCorrectAnswers = (test: Record<string, unknown>) => ({
+  ...test,
+  sections: ((test.sections as Array<Record<string, unknown>>) || []).map((section) => ({
+    ...section,
+    components: ((section.components as Array<Record<string, unknown>>) || []).map(
+      (component) => {
+        const cleaned = { ...component }
+        for (const field of SENSITIVE_FIELDS) delete cleaned[field]
+        return cleaned
+      },
+    ),
+  })),
+})
+
 const countQuestions = (sections: { components?: { type?: string }[] }[] | undefined) => {
   if (!Array.isArray(sections)) return 0
   return sections.reduce(
@@ -257,7 +278,10 @@ export const getTestInstanceDetailsHandler = async (
     })
     .fetchAll()
 
-  return jsonResponse(200, { success: true, data: { instance, test, responses } })
+  return jsonResponse(200, {
+    success: true,
+    data: { instance, test: stripCorrectAnswers(test), responses },
+  })
 }
 
 const upsertResponses = async (instanceId: string, responses: ResponseBody[]) => {
@@ -563,7 +587,10 @@ export const getEmployeeTestInstanceResultsHandler = async (
     })
     .fetchAll()
 
-  return jsonResponse(200, { success: true, data: { instance, test, responses } })
+  return jsonResponse(200, {
+    success: true,
+    data: { instance, test: stripCorrectAnswers(test), responses },
+  })
 }
 
 app.http('employeeTestInstances', {

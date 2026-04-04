@@ -4,7 +4,11 @@ import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/ht
 import { createId, nowIso, formatUserName } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 import { createInvitationRecord } from '../shared/invitations.js'
-import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
+import {
+  USERS_CONTAINER,
+  USERS_PARTITION_KEY,
+  NOT_DELETED_FILTER,
+} from '../shared/userTypes.js'
 import { paginatedQuery } from '../shared/pagination.js'
 
 type UserRole = 'employee' | 'manager' | 'admin'
@@ -50,7 +54,7 @@ export const listEmployeesHandler = async (
   const limit = request.query.get('limit')
   const cursor = request.query.get('cursor')
 
-  let whereClause = 'FROM c WHERE c.companyId = @companyId AND c.role = @role'
+  let whereClause = `FROM c WHERE c.companyId = @companyId AND c.role = @role AND ${NOT_DELETED_FILTER}`
   const parameters: { name: string; value: string }[] = [
     { name: '@companyId', value: companyId },
     { name: '@role', value: 'employee' },
@@ -141,8 +145,7 @@ export const createEmployeesHandler = async (
   // Check for existing emails in the database (across all users, not just employees)
   const { resources: existing } = await container.items
     .query({
-      query:
-        'SELECT * FROM c WHERE c.companyId = @companyId AND ARRAY_CONTAINS(@emails, c.email)',
+      query: `SELECT * FROM c WHERE c.companyId = @companyId AND ARRAY_CONTAINS(@emails, c.email) AND ${NOT_DELETED_FILTER}`,
       parameters: [
         { name: '@companyId', value: body.companyId },
         { name: '@emails', value: normalizedEmails },
@@ -279,7 +282,7 @@ export const updateEmployeeHandler = async (
 
   // Fetch existing employee
   const { resource: existing } = await container.item(employeeId, companyId).read()
-  if (!existing) {
+  if (!existing || existing.isDeleted) {
     return jsonResponse(404, { success: false, error: 'Employee not found.' })
   }
 
@@ -355,14 +358,16 @@ export const deleteEmployeeHandler = async (
 
   const container = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
 
-  // Fetch existing employee to verify it exists
+  // Fetch existing employee to verify it exists and isn't already deleted
   const { resource: existing } = await container.item(employeeId, companyId).read()
-  if (!existing) {
+  if (!existing || existing.isDeleted) {
     return jsonResponse(404, { success: false, error: 'Employee not found.' })
   }
 
-  // Delete the employee
-  await container.item(employeeId, companyId).delete()
+  // Soft-delete the employee
+  existing.isDeleted = true
+  existing.deletedAt = new Date().toISOString()
+  await container.item(employeeId, companyId).replace(existing)
   return jsonResponse(200, { success: true, data: { id: employeeId } })
 }
 

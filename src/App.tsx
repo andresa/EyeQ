@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { Spin } from 'antd'
 import LandingPage from './pages/shared/landing'
 import LoginPage from './pages/shared/login'
+import DevLoginPage from './pages/shared/dev-login'
 import VerifyPage from './pages/shared/verify'
 import AcceptInvitationPage from './pages/shared/accept-invitation'
 import EmployeeDashboard from './pages/employee'
@@ -50,6 +51,7 @@ const App = () => {
         element={isSignedIn ? <Navigate to={dashboardRoute} replace /> : <LandingPage />}
       />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/dev-login" element={<DevLoginPage />} />
       <Route path="/auth/verify" element={<VerifyPage />} />
       <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
 

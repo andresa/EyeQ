@@ -4,7 +4,11 @@ import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/ht
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
 import { paginatedQuery } from '../shared/pagination.js'
-import { USERS_CONTAINER, USERS_PARTITION_KEY } from '../shared/userTypes.js'
+import {
+  USERS_CONTAINER,
+  USERS_PARTITION_KEY,
+  NOT_DELETED_FILTER,
+} from '../shared/userTypes.js'
 
 interface TestSettings {
   allowBackNavigation: boolean
@@ -197,7 +201,7 @@ export const assignTestHandler = async (
   const usersContainer = await getContainer(USERS_CONTAINER, USERS_PARTITION_KEY)
   const { resources: employees } = await usersContainer.items
     .query({
-      query: `SELECT c.id, c.isActive FROM c WHERE ARRAY_CONTAINS(@ids, c.id) AND c.companyId = @companyId`,
+      query: `SELECT c.id, c.isActive FROM c WHERE ARRAY_CONTAINS(@ids, c.id) AND c.companyId = @companyId AND ${NOT_DELETED_FILTER}`,
       parameters: [
         { name: '@ids', value: body.employeeIds },
         { name: '@companyId', value: test.companyId },
