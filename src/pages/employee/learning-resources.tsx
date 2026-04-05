@@ -443,7 +443,7 @@ const EmployeeLearningResourcesPage = () => {
       <EmployeeLayout pageHeading={heading}>
         <Alert
           type="error"
-          message="Account not found"
+          title="Account not found"
           description={profileError}
           showIcon
         />

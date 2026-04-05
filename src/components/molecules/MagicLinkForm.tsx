@@ -65,9 +65,9 @@ const MagicLinkForm = ({ profileError }: MagicLinkFormProps) => {
 
   return (
     <>
-      {profileError && <Alert type="warning" message={profileError} showIcon />}
+      {profileError && <Alert type="warning" title={profileError} showIcon />}
       <div>
-        {error && <Alert type="error" message={error} showIcon className="mb-4" />}
+        {error && <Alert type="error" title={error} showIcon className="mb-4" />}
         {/* Honeypot: doubles as iOS 26 QuickType workaround and anti-spam trap */}
         <div
           aria-hidden="true"
