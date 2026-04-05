@@ -222,10 +222,12 @@ const SubmissionHistoryColumn = ({
               <Typography.Text type="secondary">Status:</Typography.Text>
               <StatusBadge status={instance.status} />
             </div>
-            <div className="flex items-center gap-1">
-              <Typography.Text type="secondary">Score:</Typography.Text>
-              <ScoreTag instance={instance} />
-            </div>
+            {instance.status === 'marked' && instance.score != null && (
+              <div className="flex items-center gap-1">
+                <Typography.Text type="secondary">Score:</Typography.Text>
+                <ScoreTag instance={instance} />
+              </div>
+            )}
           </div>
           {instance.expiresAt &&
             ['assigned', 'opened', 'in-progress'].includes(instance.status) && (
