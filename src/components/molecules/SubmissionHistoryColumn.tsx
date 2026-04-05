@@ -10,6 +10,7 @@ import {
 import type { TimelineItemProps } from 'antd'
 import type { TestInstance } from '../../types'
 import StatusBadge from '../atoms/StatusBadge'
+import ScoreTag from '../atoms/ScoreTag'
 
 interface SubmissionHistoryColumnProps {
   instance: TestInstance
@@ -216,8 +217,15 @@ const SubmissionHistoryColumn = ({
       <Card size="small" className="shrink-0">
         <div className="flex flex-col gap-1">
           <Typography.Text strong>{employeeName}</Typography.Text>
-          <div>
-            <StatusBadge status={instance.status} />
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              <Typography.Text type="secondary">Status:</Typography.Text>
+              <StatusBadge status={instance.status} />
+            </div>
+            <div className="flex items-center gap-1">
+              <Typography.Text type="secondary">Score:</Typography.Text>
+              <ScoreTag instance={instance} />
+            </div>
           </div>
           {instance.expiresAt &&
             ['assigned', 'opened', 'in-progress'].includes(instance.status) && (

@@ -368,15 +368,17 @@ const SubmissionDetailPage = () => {
                       }}
                     >
                       <div className="flex flex-col md:flex-row gap-6 w-full">
-                        <div className="flex flex-col gap-2 flex-1 min-w-0">
-                          <Typography.Text strong>
-                            <RichText content={component.title} />
-                          </Typography.Text>
-                          <Typography.Paragraph type="secondary">
-                            <RichText content={component.description} />
-                          </Typography.Paragraph>
-                          <div className="max-w-[400px]">
-                            <QuestionImage imageId={component.imageId} />
+                        <div className="flex flex-col gap-3 flex-1 min-w-0">
+                          <div className="flex flex-col gap-1">
+                            <Typography.Text strong>
+                              <RichText content={component.title} />
+                            </Typography.Text>
+                            <Typography.Paragraph type="secondary">
+                              <RichText content={component.description} />
+                            </Typography.Paragraph>
+                            <div className="max-w-[400px]">
+                              <QuestionImage imageId={component.imageId} />
+                            </div>
                           </div>
                           <div className="flex flex-col gap-1">
                             <Typography.Text strong>Employee answer</Typography.Text>
@@ -421,7 +423,7 @@ const SubmissionDetailPage = () => {
                               {
                                 label: (
                                   <div className="flex items-center gap-1.5">
-                                    <CircleCheck size={14} />
+                                    <CircleCheck size={14} className="text-green-500" />
                                     Correct
                                   </div>
                                 ),
@@ -430,7 +432,7 @@ const SubmissionDetailPage = () => {
                               {
                                 label: (
                                   <div className="flex items-center gap-1.5">
-                                    <CircleX size={14} />
+                                    <CircleX size={14} className="text-red-500" />
                                     Incorrect
                                   </div>
                                 ),
@@ -439,7 +441,7 @@ const SubmissionDetailPage = () => {
                               {
                                 label: (
                                   <div className="flex items-center gap-1.5">
-                                    <Circle size={14} />
+                                    <Circle size={14} className="text-yellow-500" />
                                     Unmarked
                                   </div>
                                 ),
