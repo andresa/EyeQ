@@ -8,6 +8,7 @@ import {
   Modal,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd'
 import Selection from '../../components/atoms/Selection'
@@ -35,7 +36,7 @@ import { useSession } from '../../hooks/useSession'
 import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import { formatDateTime } from '../../utils/date'
 import { createUUID } from '../../utils/uuid'
-import { LibraryBig, Trash2 } from 'lucide-react'
+import { Info, LibraryBig, Trash2 } from 'lucide-react'
 import { questionTypeLabels } from '../../utils/questions'
 import { QuestionTypeTag } from '../../components/organisms/QuestionTypeTag'
 import ImageUpload from '../../components/test-builder/ImageUpload'
@@ -594,14 +595,18 @@ const QuestionLibraryPage = () => {
                 )}
               </div>
             )}
-            {canAddToFlashCards(editing) && (
+            <div className="flex items-center">
               <Checkbox
                 checked={editing.addToFlashCards}
                 onChange={(e) => updateEditing({ addToFlashCards: e.target.checked })}
+                disabled={!canAddToFlashCards(editing)}
               >
                 Add to Flash Cards
               </Checkbox>
-            )}
+              <Tooltip title="Create a flash card from this question. Requires a choice question with a correct answer selected.">
+                <Info size={16} className="text-gray-400" />
+              </Tooltip>
+            </div>
           </div>
         )}
       </Modal>
