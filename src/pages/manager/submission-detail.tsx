@@ -494,12 +494,7 @@ const SubmissionDetailPage = () => {
               </div>
             </Card>
           ))}
-          <div className="flex items-center justify-between">
-            <Typography.Text type="secondary">
-              {unmarkedCount > 0
-                ? `${unmarkedCount} question${unmarkedCount === 1 ? '' : 's'} remaining`
-                : 'All questions marked'}
-            </Typography.Text>
+          <div className="flex justify-end">
             <Button type="primary" onClick={handleSubmit}>
               Submit Marks
             </Button>
