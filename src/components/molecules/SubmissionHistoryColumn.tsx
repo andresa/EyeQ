@@ -1,4 +1,4 @@
-import { Card, Timeline, Typography } from 'antd'
+import { Card, Progress, Timeline, Typography } from 'antd'
 import {
   CalendarPlus,
   FolderOpen,
@@ -12,9 +12,19 @@ import type { TestInstance } from '../../types'
 import StatusBadge from '../atoms/StatusBadge'
 import ScoreTag from '../atoms/ScoreTag'
 
+export interface LiveScore {
+  total: number
+  correct: number
+  incorrect: number
+  marked: number
+  percent: number
+}
+
 interface SubmissionHistoryColumnProps {
   instance: TestInstance
   employeeName: React.ReactNode
+  liveScore?: LiveScore
+  isMarking?: boolean
 }
 
 const ICON_SIZE = 18
@@ -209,6 +219,8 @@ function buildTimelineItems(instance: TestInstance): TimelineItemProps[] {
 const SubmissionHistoryColumn = ({
   instance,
   employeeName,
+  liveScore,
+  isMarking,
 }: SubmissionHistoryColumnProps) => {
   const items = buildTimelineItems(instance)
 
@@ -235,6 +247,34 @@ const SubmissionHistoryColumn = ({
                 Expires: {formatDateTime(instance.expiresAt)}
               </Typography.Text>
             )}
+          {isMarking && liveScore && (
+            <div className="flex flex-col items-center gap-1 pt-3 border-t border-gray-100 mt-2">
+              <Progress
+                type="circle"
+                size={80}
+                percent={liveScore.percent}
+                strokeColor={
+                  liveScore.percent >= 70
+                    ? '#52c41a'
+                    : liveScore.percent >= 50
+                      ? '#faad14'
+                      : '#ff4d4f'
+                }
+                format={() => `${liveScore.percent}%`}
+              />
+              <div className="flex gap-3 text-xs">
+                <Typography.Text type="success">
+                  {liveScore.correct} correct
+                </Typography.Text>
+                <Typography.Text type="danger">
+                  {liveScore.incorrect} incorrect
+                </Typography.Text>
+              </div>
+              <Typography.Text type="secondary" className="text-xs">
+                {liveScore.marked}/{liveScore.total} marked
+              </Typography.Text>
+            </div>
+          )}
         </div>
       </Card>
 

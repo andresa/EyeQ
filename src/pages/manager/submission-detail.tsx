@@ -161,6 +161,16 @@ const SubmissionDetailPage = () => {
     [marks],
   )
 
+  const liveScore = useMemo(() => {
+    const entries = Object.values(marks)
+    const total = entries.length
+    const correct = entries.filter((m) => m.isCorrect === true).length
+    const incorrect = entries.filter((m) => m.isCorrect === false).length
+    const marked = correct + incorrect
+    const percent = marked > 0 ? Math.round((correct / marked) * 100) : 0
+    return { total, correct, incorrect, marked, percent }
+  }, [marks])
+
   const updateMark = (questionId: string, updates: Partial<MarkState>) => {
     setMarksOverrides((prev) => ({
       ...prev,
@@ -506,7 +516,12 @@ const SubmissionDetailPage = () => {
   )
 
   const historyColumn = (
-    <SubmissionHistoryColumn instance={data.instance} employeeName={employeeName} />
+    <SubmissionHistoryColumn
+      instance={data.instance}
+      employeeName={employeeName}
+      liveScore={liveScore}
+      isMarking={activeTab === TAB_MARK}
+    />
   )
 
   return (
