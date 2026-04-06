@@ -91,6 +91,7 @@ const QuestionLibraryPage = () => {
   const [typeFilter, setTypeFilter] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [editing, setEditing] = useState<QuestionEditorState | null>(null)
+  const [pendingQuestions, setPendingQuestions] = useState<QuestionEditorState[]>([])
   const [saving, setSaving] = useState(false)
 
   const questionLibraryFilters = {
@@ -190,52 +191,56 @@ const QuestionLibraryPage = () => {
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
       .trim()
 
-  const handleSaveEdit = async () => {
-    if (!editing) return
-    const trimmedTitle = editing.title?.trim() ?? ''
-    if (!stripMarkdown(trimmedTitle)) {
+  const validateEditing = (): boolean => {
+    if (!editing) return false
+    if (!stripMarkdown(editing.title?.trim() ?? '')) {
       message.error('Title is required')
-      return
+      return false
     }
-    setSaving(true)
-    const isCreate = !editing.id
-    if (isCreate) {
-      if (!companyId || !managerId) {
-        message.error('Cannot create question: missing company or manager context')
-        setSaving(false)
-        return
-      }
-      const res = await createQuestionLibraryItems({
-        companyId,
-        managerId,
-        items: [
-          {
-            type: editing.type,
-            title: trimmedTitle,
-            description: editing.description,
-            required: editing.required,
-            options: editing.options,
-            correctAnswer: editing.correctAnswer,
-            categoryId: editing.categoryId,
-            imageId: editing.imageId,
-          },
-        ],
-      })
-      setSaving(false)
-      if (!res.success) {
-        message.error(res.error || 'Failed to create question')
-        return
-      }
-      message.success('Question created')
-    } else {
-      const itemId = editing.id
-      if (!itemId) {
-        setSaving(false)
-        message.error('Question id is missing')
-        return
-      }
+    if (!editing.id && (!companyId || !managerId)) {
+      message.error('Cannot create question: missing company or manager context')
+      return false
+    }
+    return true
+  }
 
-      const res = await updateQuestionLibraryItem(itemId, {
+  const handleSaveAndAddAnother = () => {
+    if (!validateEditing() || !editing) return
+    setPendingQuestions((prev) => [...prev, editing])
+    setEditing(defaultDraft())
+  }
+
+  const createFlashCardsForItems = async (items: QuestionEditorState[]) => {
+    const eligible = items.filter((q) => q.addToFlashCards && canAddToFlashCards(q))
+    if (eligible.length === 0) return
+
+    const flashCardResponse = await createFlashCards({
+      companyId: companyId!,
+      items: eligible.map((q) => ({
+        type: q.type as FlashCardType,
+        title: q.title.trim(),
+        options: q.options ?? [],
+        correctAnswer: q.correctAnswer!,
+        imageId: q.imageId,
+        categoryId: q.categoryId,
+      })),
+    })
+
+    if (!flashCardResponse.success) {
+      message.warning(
+        flashCardResponse.error || 'Questions saved, but flash cards were not created',
+      )
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    if (!validateEditing() || !editing) return
+
+    const trimmedTitle = editing.title?.trim() ?? ''
+    setSaving(true)
+
+    if (editing.id) {
+      const res = await updateQuestionLibraryItem(editing.id, {
         type: editing.type,
         title: trimmedTitle,
         description: editing.description,
@@ -251,28 +256,32 @@ const QuestionLibraryPage = () => {
         return
       }
       message.success('Question updated')
-    }
-
-    if (editing.addToFlashCards && canAddToFlashCards(editing)) {
-      const flashCardResponse = await createFlashCards({
+      await createFlashCardsForItems([editing])
+    } else {
+      const allItems = [...pendingQuestions, editing]
+      const res = await createQuestionLibraryItems({
         companyId: companyId!,
-        items: [
-          {
-            type: editing.type as FlashCardType,
-            title: trimmedTitle,
-            options: editing.options ?? [],
-            correctAnswer: editing.correctAnswer!,
-            imageId: editing.imageId,
-            categoryId: editing.categoryId,
-          },
-        ],
+        managerId: managerId!,
+        items: allItems.map((q) => ({
+          type: q.type,
+          title: q.title.trim(),
+          description: q.description,
+          required: q.required,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          categoryId: q.categoryId,
+          imageId: q.imageId,
+        })),
       })
-
-      if (!flashCardResponse.success) {
-        message.warning(
-          flashCardResponse.error || 'Question saved, but the flash card was not created',
-        )
+      setSaving(false)
+      if (!res.success) {
+        message.error(res.error || 'Failed to create questions')
+        return
       }
+      const count = allItems.length
+      message.success(`${count} question${count > 1 ? 's' : ''} created`)
+      await createFlashCardsForItems(allItems)
+      setPendingQuestions([])
     }
 
     setEditing(null)
@@ -280,6 +289,23 @@ const QuestionLibraryPage = () => {
     queryClient.invalidateQueries({
       queryKey: ['manager-learning-resources-flash-cards'],
     })
+  }
+
+  const handleCancel = () => {
+    if (pendingQuestions.length > 0) {
+      modal.confirm({
+        title: 'Discard queued questions?',
+        content: `You have ${pendingQuestions.length} unsaved question(s) that will be lost.`,
+        okText: 'Discard',
+        okButtonProps: { danger: true },
+        onOk: () => {
+          setPendingQuestions([])
+          setEditing(null)
+        },
+      })
+    } else {
+      setEditing(null)
+    }
   }
 
   const updateEditing = (updates: Partial<QuestionEditorState>) => {
@@ -380,7 +406,10 @@ const QuestionLibraryPage = () => {
           </div>
           <Button
             type="primary"
-            onClick={() => setEditing(defaultDraft())}
+            onClick={() => {
+              setPendingQuestions([])
+              setEditing(defaultDraft())
+            }}
             disabled={!companyId || !managerId}
           >
             Create Question
@@ -457,18 +486,38 @@ const QuestionLibraryPage = () => {
       <Modal
         title={editing?.id ? 'Edit Question' : 'Create Question'}
         open={!!editing}
-        onCancel={() => setEditing(null)}
+        onCancel={handleCancel}
         onOk={handleSaveEdit}
         confirmLoading={saving}
         okText="Save"
         width={600}
+        footer={
+          editing && !editing.id ? (
+            <div className="flex items-center justify-between">
+              <Typography.Text type="secondary" className="text-sm">
+                {pendingQuestions.length > 0
+                  ? `${pendingQuestions.length} question(s) queued`
+                  : ''}
+              </Typography.Text>
+              <div className="flex gap-2">
+                <Button onClick={handleCancel}>Cancel</Button>
+                <Button onClick={handleSaveAndAddAnother}>Save & Add Another</Button>
+                <Button type="primary" onClick={handleSaveEdit} loading={saving}>
+                  {pendingQuestions.length > 0
+                    ? `Save All (${pendingQuestions.length + 1})`
+                    : 'Save'}
+                </Button>
+              </div>
+            </div>
+          ) : undefined
+        }
       >
         {editing && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Title</Typography.Text>
               <RichTextEditor
-                key={`${editing.id ?? 'new'}-title`}
+                key={`${editing.id ?? `new-${pendingQuestions.length}`}-title`}
                 value={editing.title}
                 onChange={(title) => updateEditing({ title })}
                 placeholder="Question title"
@@ -502,7 +551,7 @@ const QuestionLibraryPage = () => {
             <div className="flex flex-col gap-1">
               <Typography.Text strong>Description</Typography.Text>
               <RichTextEditor
-                key={`${editing.id ?? 'new'}-desc`}
+                key={`${editing.id ?? `new-${pendingQuestions.length}`}-desc`}
                 value={editing.description ?? ''}
                 onChange={(description) => updateEditing({ description })}
                 placeholder="Description"
