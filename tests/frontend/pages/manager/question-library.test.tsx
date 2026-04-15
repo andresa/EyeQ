@@ -118,6 +118,14 @@ async function fillTitle(title: string) {
   await userEvent.type(input, title)
 }
 
+async function fillOptions(labels: string[] = ['A', 'B']) {
+  const inputs = screen.getAllByLabelText('Option label')
+  for (let i = 0; i < labels.length && i < inputs.length; i++) {
+    await userEvent.clear(inputs[i])
+    await userEvent.type(inputs[i], labels[i])
+  }
+}
+
 describe('QuestionLibraryPage – bulk add', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -136,6 +144,7 @@ describe('QuestionLibraryPage – bulk add', () => {
     await openCreateModal()
 
     await fillTitle('Question 1')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: 'Save & Add Another' }))
 
     await waitFor(() => {
@@ -150,6 +159,7 @@ describe('QuestionLibraryPage – bulk add', () => {
     await openCreateModal()
 
     await fillTitle('Question 1')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: 'Save & Add Another' }))
 
     await waitFor(() => {
@@ -163,6 +173,7 @@ describe('QuestionLibraryPage – bulk add', () => {
     await openCreateModal()
 
     await fillTitle('Q1')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: 'Save & Add Another' }))
 
     await waitFor(() => {
@@ -170,6 +181,7 @@ describe('QuestionLibraryPage – bulk add', () => {
     })
 
     await fillTitle('Q2')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: 'Save & Add Another' }))
 
     await waitFor(() => {
@@ -185,12 +197,14 @@ describe('QuestionLibraryPage – bulk add', () => {
     await openCreateModal()
 
     await fillTitle('Q1')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: 'Save & Add Another' }))
     await waitFor(() => {
       expect(screen.getByText('1 question(s) queued')).toBeInTheDocument()
     })
 
     await fillTitle('Q2')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: /Save All/ }))
 
     await waitFor(() => {
@@ -211,6 +225,7 @@ describe('QuestionLibraryPage – bulk add', () => {
     await openCreateModal()
 
     await fillTitle('Solo Question')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
@@ -241,6 +256,7 @@ describe('QuestionLibraryPage – bulk add', () => {
     await openCreateModal()
 
     await fillTitle('Q1')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: 'Save & Add Another' }))
     await waitFor(() => {
       expect(screen.getByText('1 question(s) queued')).toBeInTheDocument()
@@ -259,6 +275,7 @@ describe('QuestionLibraryPage – bulk add', () => {
     await openCreateModal()
 
     await fillTitle('Q1')
+    await fillOptions()
     await userEvent.click(screen.getByRole('button', { name: 'Save & Add Another' }))
     await waitFor(() => {
       expect(screen.getByText('1 question(s) queued')).toBeInTheDocument()

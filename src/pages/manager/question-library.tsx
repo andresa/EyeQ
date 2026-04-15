@@ -63,8 +63,8 @@ const defaultDraft = (): QuestionEditorState => ({
   description: '',
   required: true,
   options: [
-    { id: createUUID(), label: 'Option 1' },
-    { id: createUUID(), label: 'Option 2' },
+    { id: createUUID(), label: '' },
+    { id: createUUID(), label: '' },
   ],
   correctAnswer: undefined,
   categoryId: null,
@@ -196,6 +196,13 @@ const QuestionLibraryPage = () => {
     if (!stripMarkdown(editing.title?.trim() ?? '')) {
       message.error('Title is required')
       return false
+    }
+    if (editing.type === 'single_choice' || editing.type === 'multiple_choice') {
+      const nonEmpty = (editing.options ?? []).filter((o) => o.label.trim())
+      if (nonEmpty.length < 2) {
+        message.error('Choice questions need at least two non-empty options')
+        return false
+      }
     }
     if (!editing.id && (!companyId || !managerId)) {
       message.error('Cannot create question: missing company or manager context')
@@ -580,6 +587,8 @@ const QuestionLibraryPage = () => {
                     <Input
                       value={opt.label}
                       onChange={(e) => updateOption(idx, e.target.value)}
+                      placeholder="Option label"
+                      aria-label="Option label"
                       className="flex-1"
                     />
                     <Button

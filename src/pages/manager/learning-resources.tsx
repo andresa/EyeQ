@@ -37,8 +37,8 @@ const isMeaningfulRichText = (value?: string | null) =>
   typeof value === 'string' && stripMarkdown(value).length > 0
 
 const createDefaultOptions = (): TestComponentOption[] => [
-  { id: createUUID(), label: 'Option 1' },
-  { id: createUUID(), label: 'Option 2' },
+  { id: createUUID(), label: '' },
+  { id: createUUID(), label: '' },
 ]
 
 const defaultArticleDraft = (): ArticleEditorState => ({
