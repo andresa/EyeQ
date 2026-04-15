@@ -523,17 +523,6 @@ const QuestionLibraryPage = () => {
         {editing && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <Typography.Text strong>Title</Typography.Text>
-              <RichTextEditor
-                key={`${editing.id ?? `new-${pendingQuestions.length}`}-title`}
-                value={editing.title}
-                onChange={(title) => updateEditing({ title })}
-                placeholder="Question title"
-                singleLine
-                ariaLabel="Question title"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
               <Typography.Text strong>Type</Typography.Text>
               <Selection
                 value={editing.type}
@@ -543,17 +532,14 @@ const QuestionLibraryPage = () => {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Typography.Text strong>Category</Typography.Text>
-              <Selection
-                value={editing.categoryId ?? undefined}
-                onChange={(v) => updateEditing({ categoryId: v || null })}
-                options={[
-                  { value: '', label: 'Uncategorised' },
-                  ...categories.map((c) => ({ value: c.id, label: c.name })),
-                ]}
-                allowClear
-                placeholder="Select category"
-                className="w-full"
+              <Typography.Text strong>Title</Typography.Text>
+              <RichTextEditor
+                key={`${editing.id ?? `new-${pendingQuestions.length}`}-title`}
+                value={editing.title}
+                onChange={(title) => updateEditing({ title })}
+                placeholder="Question title"
+                singleLine
+                ariaLabel="Question title"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -571,14 +557,6 @@ const QuestionLibraryPage = () => {
               companyId={companyId}
               onChange={(imageId) => updateEditing({ imageId })}
             />
-            {editing.type !== 'info' && (
-              <Checkbox
-                checked={editing.required}
-                onChange={(e) => updateEditing({ required: e.target.checked })}
-              >
-                Required
-              </Checkbox>
-            )}
             {isChoiceType && (
               <div className="flex flex-col gap-2">
                 <Typography.Text strong>Options</Typography.Text>
@@ -653,6 +631,28 @@ const QuestionLibraryPage = () => {
                   />
                 )}
               </div>
+            )}
+            <div className="flex flex-col gap-1">
+              <Typography.Text strong>Category</Typography.Text>
+              <Selection
+                value={editing.categoryId ?? undefined}
+                onChange={(v) => updateEditing({ categoryId: v || null })}
+                options={[
+                  { value: '', label: 'Uncategorised' },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                allowClear
+                placeholder="Select category"
+                className="w-full"
+              />
+            </div>
+            {editing.type !== 'info' && (
+              <Checkbox
+                checked={editing.required}
+                onChange={(e) => updateEditing({ required: e.target.checked })}
+              >
+                Required
+              </Checkbox>
             )}
             <div className="flex items-center">
               <Checkbox
