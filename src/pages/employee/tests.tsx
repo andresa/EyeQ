@@ -1,17 +1,6 @@
-import {
-  Alert,
-  Button,
-  Card,
-  Grid,
-  Input,
-  Modal,
-  Spin,
-  Table,
-  Tag,
-  Typography,
-} from 'antd'
+import { Alert, Button, Card, Grid, Input, Modal, Spin, Table, Typography } from 'antd'
 import Selection from '../../components/atoms/Selection'
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
@@ -22,27 +11,8 @@ import { useSession } from '../../hooks/useSession'
 import { useInfiniteList } from '../../hooks/useInfiniteList'
 import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
 import StatusBadge from '../../components/atoms/StatusBadge'
+import ScoreTag from '../../components/atoms/ScoreTag'
 import { ClipboardList } from 'lucide-react'
-
-function getScoreTag(record: TestInstance): ReactNode {
-  const score = record.score
-  if (record.status === 'marked' && score != null) {
-    let color: string
-    if (score >= 70) color = 'green'
-    else if (score >= 50) color = 'orange'
-    else color = 'red'
-    return (
-      <Tag className="w-[40px] text-center" color={color}>
-        {score}
-      </Tag>
-    )
-  }
-  return (
-    <Tag className="w-[40px] text-center" color="blue">
-      -
-    </Tag>
-  )
-}
 
 const statusOptions: { label: string; value: TestInstanceStatus | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -254,7 +224,7 @@ const EmployeeTestsPage = () => {
                     </Typography.Text>
                     <div className="flex items-center justify-between gap-2">
                       <StatusBadge status={record.status} />
-                      {getScoreTag(record)}
+                      <ScoreTag instance={record} />
                     </div>
                     <div className="flex flex-wrap flex-col gap-x-3 gap-y-0 text-sm">
                       <Typography.Text type="secondary">
@@ -305,7 +275,9 @@ const EmployeeTestsPage = () => {
                 dataIndex: 'score',
                 align: 'center',
                 key: 'score',
-                render: (_: unknown, record: TestInstance) => getScoreTag(record),
+                render: (_: unknown, record: TestInstance) => (
+                  <ScoreTag instance={record} />
+                ),
               },
               {
                 title: 'Due',

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import SubmissionHistoryColumn from '../../../src/components/molecules/SubmissionHistoryColumn'
+import type { LiveScore } from '../../../src/components/molecules/SubmissionHistoryColumn'
 import type { TestInstance } from '../../../src/types'
 import { mockTestInstance } from '../../helpers/fixtures'
 
@@ -8,11 +9,20 @@ function setup(
   props: {
     instance?: Partial<TestInstance>
     employeeName?: string
+    liveScore?: LiveScore
+    isMarking?: boolean
   } = {},
 ) {
   const instance = mockTestInstance(props.instance)
   const employeeName = props.employeeName ?? 'Jane Doe'
-  render(<SubmissionHistoryColumn instance={instance} employeeName={employeeName} />)
+  render(
+    <SubmissionHistoryColumn
+      instance={instance}
+      employeeName={employeeName}
+      liveScore={props.liveScore}
+      isMarking={props.isMarking}
+    />,
+  )
   return { instance, employeeName }
 }
 
@@ -335,6 +345,94 @@ describe('SubmissionHistoryColumn', () => {
       })
 
       expect(screen.getByText(/Duration: 1h 30m/)).toBeInTheDocument()
+    })
+  })
+
+  describe('live score progress', () => {
+    it('does not render progress when isMarking is false', () => {
+      setup({
+        instance: { status: 'completed' },
+        liveScore: { total: 10, correct: 5, incorrect: 3, marked: 8, percent: 63 },
+        isMarking: false,
+      })
+
+      expect(screen.queryByText('5 correct')).not.toBeInTheDocument()
+      expect(screen.queryByText('63%')).not.toBeInTheDocument()
+    })
+
+    it('does not render progress when liveScore is undefined', () => {
+      setup({
+        instance: { status: 'completed' },
+        isMarking: true,
+      })
+
+      expect(screen.queryByText(/correct/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/marked/)).not.toBeInTheDocument()
+    })
+
+    it('renders progress circle when isMarking and liveScore are provided', () => {
+      setup({
+        instance: { status: 'completed' },
+        liveScore: { total: 10, correct: 7, incorrect: 3, marked: 10, percent: 70 },
+        isMarking: true,
+      })
+
+      expect(screen.getByText('70%')).toBeInTheDocument()
+      expect(screen.getByText('7 correct')).toBeInTheDocument()
+      expect(screen.getByText('3 incorrect')).toBeInTheDocument()
+      expect(screen.getByText('10/10 marked')).toBeInTheDocument()
+    })
+
+    it('shows 0% when no questions have been marked yet', () => {
+      setup({
+        instance: { status: 'completed' },
+        liveScore: { total: 5, correct: 0, incorrect: 0, marked: 0, percent: 0 },
+        isMarking: true,
+      })
+
+      expect(screen.getByText('0%')).toBeInTheDocument()
+      expect(screen.getByText('0 correct')).toBeInTheDocument()
+      expect(screen.getByText('0 incorrect')).toBeInTheDocument()
+      expect(screen.getByText('0/5 marked')).toBeInTheDocument()
+    })
+
+    it('shows partial progress mid-marking', () => {
+      setup({
+        instance: { status: 'completed' },
+        liveScore: { total: 8, correct: 2, incorrect: 1, marked: 3, percent: 67 },
+        isMarking: true,
+      })
+
+      expect(screen.getByText('67%')).toBeInTheDocument()
+      expect(screen.getByText('2 correct')).toBeInTheDocument()
+      expect(screen.getByText('1 incorrect')).toBeInTheDocument()
+      expect(screen.getByText('3/8 marked')).toBeInTheDocument()
+    })
+
+    it('shows 100% when all answers are correct', () => {
+      setup({
+        instance: { status: 'completed' },
+        liveScore: { total: 4, correct: 4, incorrect: 0, marked: 4, percent: 100 },
+        isMarking: true,
+      })
+
+      expect(screen.getByText('100%')).toBeInTheDocument()
+      expect(screen.getByText('4 correct')).toBeInTheDocument()
+      expect(screen.getByText('0 incorrect')).toBeInTheDocument()
+      expect(screen.getByText('4/4 marked')).toBeInTheDocument()
+    })
+
+    it('shows 0% when all marked answers are incorrect', () => {
+      setup({
+        instance: { status: 'completed' },
+        liveScore: { total: 6, correct: 0, incorrect: 3, marked: 3, percent: 0 },
+        isMarking: true,
+      })
+
+      expect(screen.getByText('0%')).toBeInTheDocument()
+      expect(screen.getByText('0 correct')).toBeInTheDocument()
+      expect(screen.getByText('3 incorrect')).toBeInTheDocument()
+      expect(screen.getByText('3/6 marked')).toBeInTheDocument()
     })
   })
 })

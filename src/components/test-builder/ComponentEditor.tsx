@@ -1,4 +1,4 @@
-import { Checkbox, Switch } from 'antd'
+import { Checkbox, Switch, Tooltip } from 'antd'
 import Selection from '../atoms/Selection'
 import RichTextEditor from '../atoms/RichTextEditor'
 import { useQuery } from '@tanstack/react-query'
@@ -6,6 +6,7 @@ import type { TestComponent } from '../../types'
 import { listQuestionCategories } from '../../services/manager'
 import OptionEditor from './OptionEditor'
 import ImageUpload from './ImageUpload'
+import { Info } from 'lucide-react'
 
 interface ComponentEditorProps {
   component: TestComponent
@@ -113,20 +114,29 @@ const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProp
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
-          <Checkbox
-            checked={component.saveToLibrary}
-            onChange={(event) => update({ saveToLibrary: event.target.checked })}
-          >
-            Save to library
-          </Checkbox>
-          {canAddToFlashCards ? (
+          <div className="flex items-center">
+            <Checkbox
+              checked={component.saveToLibrary}
+              onChange={(event) => update({ saveToLibrary: event.target.checked })}
+            >
+              Save to library
+            </Checkbox>
+            <Tooltip title="Save this question to the Question Library so it can be reused in other tests">
+              <Info size={16} className="text-gray-400" />
+            </Tooltip>
+          </div>
+          <div className="flex items-center">
             <Checkbox
               checked={component.addToFlashCards}
               onChange={(event) => update({ addToFlashCards: event.target.checked })}
+              disabled={!canAddToFlashCards}
             >
               Add to Flash Cards
             </Checkbox>
-          ) : null}
+            <Tooltip title="Create a flash card from this question. Requires a choice question with a correct answer selected.">
+              <Info size={16} className="text-gray-400" />
+            </Tooltip>
+          </div>
         </div>
         {component.type !== 'info' && (
           <Switch
