@@ -63,8 +63,8 @@ const defaultDraft = (): QuestionEditorState => ({
   description: '',
   required: true,
   options: [
-    { id: createUUID(), label: 'Option 1' },
-    { id: createUUID(), label: 'Option 2' },
+    { id: createUUID(), label: '' },
+    { id: createUUID(), label: '' },
   ],
   correctAnswer: undefined,
   categoryId: null,
@@ -196,6 +196,13 @@ const QuestionLibraryPage = () => {
     if (!stripMarkdown(editing.title?.trim() ?? '')) {
       message.error('Title is required')
       return false
+    }
+    if (editing.type === 'single_choice' || editing.type === 'multiple_choice') {
+      const nonEmpty = (editing.options ?? []).filter((o) => o.label.trim())
+      if (nonEmpty.length < 2) {
+        message.error('Choice questions need at least two non-empty options')
+        return false
+      }
     }
     if (!editing.id && (!companyId || !managerId)) {
       message.error('Cannot create question: missing company or manager context')
@@ -484,6 +491,7 @@ const QuestionLibraryPage = () => {
       </div>
 
       <Modal
+        destroyOnHidden
         title={editing?.id ? 'Edit Question' : 'Create Question'}
         open={!!editing}
         onCancel={handleCancel}
@@ -515,17 +523,6 @@ const QuestionLibraryPage = () => {
         {editing && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <Typography.Text strong>Title</Typography.Text>
-              <RichTextEditor
-                key={`${editing.id ?? `new-${pendingQuestions.length}`}-title`}
-                value={editing.title}
-                onChange={(title) => updateEditing({ title })}
-                placeholder="Question title"
-                singleLine
-                ariaLabel="Question title"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
               <Typography.Text strong>Type</Typography.Text>
               <Selection
                 value={editing.type}
@@ -535,17 +532,14 @@ const QuestionLibraryPage = () => {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Typography.Text strong>Category</Typography.Text>
-              <Selection
-                value={editing.categoryId ?? undefined}
-                onChange={(v) => updateEditing({ categoryId: v || null })}
-                options={[
-                  { value: '', label: 'Uncategorised' },
-                  ...categories.map((c) => ({ value: c.id, label: c.name })),
-                ]}
-                allowClear
-                placeholder="Select category"
-                className="w-full"
+              <Typography.Text strong>Title</Typography.Text>
+              <RichTextEditor
+                key={`${editing.id ?? `new-${pendingQuestions.length}`}-title`}
+                value={editing.title}
+                onChange={(title) => updateEditing({ title })}
+                placeholder="Question title"
+                singleLine
+                ariaLabel="Question title"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -563,14 +557,6 @@ const QuestionLibraryPage = () => {
               companyId={companyId}
               onChange={(imageId) => updateEditing({ imageId })}
             />
-            {editing.type !== 'info' && (
-              <Checkbox
-                checked={editing.required}
-                onChange={(e) => updateEditing({ required: e.target.checked })}
-              >
-                Required
-              </Checkbox>
-            )}
             {isChoiceType && (
               <div className="flex flex-col gap-2">
                 <Typography.Text strong>Options</Typography.Text>
@@ -579,6 +565,8 @@ const QuestionLibraryPage = () => {
                     <Input
                       value={opt.label}
                       onChange={(e) => updateOption(idx, e.target.value)}
+                      placeholder="Option label"
+                      aria-label="Option label"
                       className="flex-1"
                     />
                     <Button
@@ -643,6 +631,28 @@ const QuestionLibraryPage = () => {
                   />
                 )}
               </div>
+            )}
+            <div className="flex flex-col gap-1">
+              <Typography.Text strong>Category</Typography.Text>
+              <Selection
+                value={editing.categoryId ?? undefined}
+                onChange={(v) => updateEditing({ categoryId: v || null })}
+                options={[
+                  { value: '', label: 'Uncategorised' },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                allowClear
+                placeholder="Select category"
+                className="w-full"
+              />
+            </div>
+            {editing.type !== 'info' && (
+              <Checkbox
+                checked={editing.required}
+                onChange={(e) => updateEditing({ required: e.target.checked })}
+              >
+                Required
+              </Checkbox>
             )}
             <div className="flex items-center">
               <Checkbox

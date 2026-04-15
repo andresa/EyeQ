@@ -15,7 +15,9 @@ interface UploadUrlBody {
   contentType?: string
 }
 
-const uploadUrlHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const uploadUrlHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -48,7 +50,7 @@ const uploadUrlHandler = async (request: HttpRequest): Promise<HttpResponseInit>
       : body.contentType === 'image/webp'
         ? 'webp'
         : 'jpg'
-  const blobName = `${body.companyId}/${createId('img')}.${ext}`
+  const blobName = `${body.companyId}--${createId('img')}.${ext}`
   const { url } = generateUploadSas(blobName, body.contentType)
 
   return jsonResponse(200, {
@@ -57,7 +59,9 @@ const uploadUrlHandler = async (request: HttpRequest): Promise<HttpResponseInit>
   })
 }
 
-const readImageHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const readImageHandler = async (
+  request: HttpRequest,
+): Promise<HttpResponseInit> => {
   const queryToken = request.query.get('token')
   const user = queryToken
     ? await authenticateByToken(queryToken)
@@ -72,7 +76,7 @@ const readImageHandler = async (request: HttpRequest): Promise<HttpResponseInit>
   }
 
   const decoded = decodeURIComponent(imageId)
-  const companyId = decoded.split('/')[0]
+  const companyId = decoded.split('--')[0]
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'Invalid imageId format.' })
   }

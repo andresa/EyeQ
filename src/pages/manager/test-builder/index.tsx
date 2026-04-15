@@ -41,8 +41,8 @@ const createComponent = (type: ComponentType): TestComponent => {
     return {
       ...base,
       options: [
-        { id: createUUID(), label: 'Option 1' },
-        { id: createUUID(), label: 'Option 2' },
+        { id: createUUID(), label: '' },
+        { id: createUUID(), label: '' },
       ],
     }
   }
@@ -389,6 +389,18 @@ const TestBuilderPage = () => {
       }
       if (sections.length === 0) {
         message.error('Add at least one section.')
+        return
+      }
+
+      const hasEmptyOptions = sections.some((s) =>
+        s.components.some((c) => {
+          if (c.type !== 'single_choice' && c.type !== 'multiple_choice') return false
+          const nonEmpty = (c.options ?? []).filter((o) => o.label.trim())
+          return nonEmpty.length < 2
+        }),
+      )
+      if (hasEmptyOptions) {
+        message.error('Choice questions need at least two non-empty options.')
         return
       }
 
