@@ -484,6 +484,7 @@ const QuestionLibraryPage = () => {
       </div>
 
       <Modal
+        destroyOnHidden
         title={editing?.id ? 'Edit Question' : 'Create Question'}
         open={!!editing}
         onCancel={handleCancel}
