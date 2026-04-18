@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { Spin } from 'antd'
 import { getSessionToken } from '../../services/api'
 
-const QuestionImage = ({ imageId }: { imageId?: string | null }) => {
+interface QuestionImageProps {
+  imageId?: string | null
+  compact?: boolean
+}
+
+const QuestionImage = ({ imageId, compact }: QuestionImageProps) => {
   const [loaded, setLoaded] = useState(false)
 
   if (!imageId) return null
@@ -11,12 +16,12 @@ const QuestionImage = ({ imageId }: { imageId?: string | null }) => {
   const src = token ? `${base}?token=${encodeURIComponent(token)}` : base
 
   return (
-    <div className="flex items-center justify-center">
-      {!loaded && <Spin />}
+    <div className={compact ? 'flex items-center' : 'flex items-center justify-center'}>
+      {!loaded && <Spin size={compact ? 'small' : 'default'} />}
       <img
         src={src}
-        alt="Question graphic"
-        className="max-h-[400px] max-w-full rounded-lg object-contain"
+        alt={compact ? 'Option graphic' : 'Question graphic'}
+        className={`max-w-full rounded-lg object-contain ${compact ? 'max-h-[100px]' : 'max-h-[400px]'}`}
         style={loaded ? undefined : { width: 0, height: 0, overflow: 'hidden' }}
         onLoad={() => setLoaded(true)}
       />

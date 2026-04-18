@@ -5,6 +5,7 @@ import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/ht
 import { paginatedQuery } from '../shared/pagination.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
+import { normaliseOptions, type NormalisedOption } from '../shared/normalise.js'
 
 const CONTAINER = 'flashCards'
 const PARTITION_KEY = '/companyId'
@@ -15,6 +16,7 @@ type FlashCardType = (typeof VALID_TYPES)[number]
 interface FlashCardOptionInput {
   id?: string
   label?: string
+  imageId?: string | null
 }
 
 interface FlashCardInput {
@@ -36,7 +38,7 @@ type UpdateBody = FlashCardInput
 interface NormalisedFlashCardInput {
   type: FlashCardType
   title: string
-  options: { id: string; label: string }[]
+  options: NormalisedOption[]
   correctAnswer: string | string[]
   imageId: string | null
   categoryId: string | null
@@ -52,14 +54,6 @@ const normaliseNullableId = (value?: string | null) => {
   const trimmed = value?.trim()
   return trimmed ? trimmed : null
 }
-
-const normaliseOptions = (options?: FlashCardOptionInput[]) =>
-  (Array.isArray(options) ? options : [])
-    .map((option) => ({
-      id: option.id?.trim() ?? '',
-      label: option.label?.trim() ?? '',
-    }))
-    .filter((option) => option.id && option.label)
 
 const normaliseCorrectAnswer = (value: string) => value.trim()
 
@@ -78,7 +72,11 @@ const normaliseFlashCardInput = (
     return { error: 'Flash card title is required.' }
   }
 
-  const options = normaliseOptions(input.options)
+  const optionsResult = normaliseOptions(input.options)
+  if (optionsResult.error || !optionsResult.data) {
+    return { error: optionsResult.error ?? 'Invalid options.' }
+  }
+  const options = optionsResult.data
   if (options.length < 2) {
     return { error: 'Flash cards must have at least two options.' }
   }

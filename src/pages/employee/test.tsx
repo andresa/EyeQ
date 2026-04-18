@@ -52,7 +52,10 @@ const renderComponentInput = (component: TestComponent) => {
           <div className="flex flex-col gap-4">
             {(component.options || []).map((option) => (
               <Radio key={option.id} value={option.id}>
-                {option.label}
+                <div className="flex flex-col gap-1">
+                  {option.label && <span>{option.label}</span>}
+                  <QuestionImage imageId={option.imageId} compact />
+                </div>
               </Radio>
             ))}
           </div>
@@ -64,7 +67,10 @@ const renderComponentInput = (component: TestComponent) => {
           <div className="flex flex-col gap-4">
             {(component.options || []).map((option) => (
               <Checkbox key={option.id} value={option.id}>
-                {option.label}
+                <div className="flex flex-col gap-1">
+                  {option.label && <span>{option.label}</span>}
+                  <QuestionImage imageId={option.imageId} compact />
+                </div>
               </Checkbox>
             ))}
           </div>

@@ -305,3 +305,39 @@ describe('QuestionLibraryPage – bulk add', () => {
     expect(screen.queryByText('Discard queued questions?')).not.toBeInTheDocument()
   })
 })
+
+describe('QuestionLibraryPage – option label validation', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('rejects save when one of the options is missing a label', async () => {
+    setup()
+    render(<QuestionLibraryPage />, { wrapper: Wrapper })
+    await openCreateModal()
+
+    await fillTitle('Has blank option')
+    const optionInputs = screen.getAllByLabelText('Option label')
+    await userEvent.clear(optionInputs[0])
+    await userEvent.type(optionInputs[0], 'A')
+    await userEvent.clear(optionInputs[1])
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/every option must have a label/i)).toBeInTheDocument()
+    })
+    expect(createQuestionLibraryItems).not.toHaveBeenCalled()
+  })
+
+  it('allows save when every option has a label', async () => {
+    setup()
+    render(<QuestionLibraryPage />, { wrapper: Wrapper })
+    await openCreateModal()
+
+    await fillTitle('All labelled')
+    await fillOptions(['A', 'B'])
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(createQuestionLibraryItems).toHaveBeenCalledTimes(1)
+    })
+  })
+})

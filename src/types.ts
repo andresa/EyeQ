@@ -149,7 +149,10 @@ export interface TestSection {
 export interface TestComponentOption {
   id: UUID
   label: string
+  imageId?: string | null
 }
+
+export const IMAGE_ONLY_LABEL = '(image)'
 
 export interface TestComponent {
   id: UUID

@@ -392,15 +392,17 @@ const TestBuilderPage = () => {
         return
       }
 
-      const hasEmptyOptions = sections.some((s) =>
+      const hasOptionProblems = sections.some((s) =>
         s.components.some((c) => {
           if (c.type !== 'single_choice' && c.type !== 'multiple_choice') return false
-          const nonEmpty = (c.options ?? []).filter((o) => o.label.trim())
-          return nonEmpty.length < 2
+          const opts = c.options ?? []
+          return opts.length < 2 || opts.some((o) => !o.label.trim())
         }),
       )
-      if (hasEmptyOptions) {
-        message.error('Choice questions need at least two non-empty options.')
+      if (hasOptionProblems) {
+        message.error(
+          'Choice questions need at least two options, and every option must have a label.',
+        )
         return
       }
 

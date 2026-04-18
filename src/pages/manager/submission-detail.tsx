@@ -30,6 +30,8 @@ import { useSession } from '../../hooks/useSession'
 import {
   buildResponseMap,
   formatCorrectAnswer,
+  getAnswerOptionImageIds,
+  getCorrectAnswerImageIds,
   isAnswerCorrect,
   type MarkState,
   resolveAnswer,
@@ -314,6 +316,9 @@ const SubmissionDetailPage = () => {
                           <Typography.Text>
                             {resolveAnswer(component, response)}
                           </Typography.Text>
+                          {getAnswerOptionImageIds(component, response).map((imgId) => (
+                            <QuestionImage key={imgId} imageId={imgId} compact />
+                          ))}
                         </div>
                       </div>
                     </Card>
@@ -395,6 +400,9 @@ const SubmissionDetailPage = () => {
                             <Typography.Text>
                               {resolveAnswer(component, response)}
                             </Typography.Text>
+                            {getAnswerOptionImageIds(component, response).map((imgId) => (
+                              <QuestionImage key={imgId} imageId={imgId} compact />
+                            ))}
                           </div>
                           {correctAnswerLabel ? (
                             <div className="flex flex-col gap-1">
@@ -407,6 +415,11 @@ const SubmissionDetailPage = () => {
                               <Typography.Text type="secondary">
                                 {correctAnswerLabel}
                               </Typography.Text>
+                              {getCorrectAnswerImageIds(component, correctAnswer).map(
+                                (imgId) => (
+                                  <QuestionImage key={imgId} imageId={imgId} compact />
+                                ),
+                              )}
                             </div>
                           ) : null}
                         </div>

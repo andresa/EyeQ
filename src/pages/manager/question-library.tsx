@@ -26,11 +26,12 @@ import {
   listQuestionLibrary,
   updateQuestionLibraryItem,
 } from '../../services/manager'
-import type {
-  ComponentType,
-  FlashCardType,
-  QuestionLibraryItem,
-  TestComponentOption,
+import {
+  IMAGE_ONLY_LABEL,
+  type ComponentType,
+  type FlashCardType,
+  type QuestionLibraryItem,
+  type TestComponentOption,
 } from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { usePaginatedQuery } from '../../hooks/usePaginatedQuery'
@@ -198,9 +199,11 @@ const QuestionLibraryPage = () => {
       return false
     }
     if (editing.type === 'single_choice' || editing.type === 'multiple_choice') {
-      const nonEmpty = (editing.options ?? []).filter((o) => o.label.trim())
-      if (nonEmpty.length < 2) {
-        message.error('Choice questions need at least two non-empty options')
+      const opts = editing.options ?? []
+      if (opts.length < 2 || opts.some((o) => !o.label.trim())) {
+        message.error(
+          'Choice questions need at least two options, and every option must have a label',
+        )
         return false
       }
     }
@@ -320,10 +323,10 @@ const QuestionLibraryPage = () => {
     setEditing({ ...editing, ...updates })
   }
 
-  const updateOption = (index: number, label: string) => {
+  const updateOption = (index: number, updates: Partial<TestComponentOption>) => {
     if (!editing?.options) return
     const updated = [...editing.options]
-    updated[index] = { ...updated[index], label }
+    updated[index] = { ...updated[index], ...updates }
     updateEditing({ options: updated })
   }
 
@@ -352,7 +355,10 @@ const QuestionLibraryPage = () => {
 
   const addOption = () => {
     if (!editing) return
-    const options = [...(editing.options || []), { id: createUUID(), label: '' }]
+    const options = [
+      ...(editing.options || []),
+      { id: createUUID(), label: '', imageId: null },
+    ]
     updateEditing({ options })
   }
 
@@ -561,21 +567,29 @@ const QuestionLibraryPage = () => {
               <div className="flex flex-col gap-2">
                 <Typography.Text strong>Options</Typography.Text>
                 {(editing.options || []).map((opt: TestComponentOption, idx: number) => (
-                  <div key={opt.id} className="flex gap-2 items-center">
-                    <Input
-                      value={opt.label}
-                      onChange={(e) => updateOption(idx, e.target.value)}
-                      placeholder="Option label"
-                      aria-label="Option label"
-                      className="flex-1"
-                    />
-                    <Button
-                      size="small"
-                      type="text"
-                      icon={<Trash2 size={20} />}
-                      className="text-red-500"
-                      onClick={() => removeOption(idx)}
-                      disabled={(editing.options?.length ?? 0) <= 1}
+                  <div key={opt.id} className="flex flex-col gap-1">
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        value={opt.label}
+                        onChange={(e) => updateOption(idx, { label: e.target.value })}
+                        placeholder="Option label"
+                        aria-label="Option label"
+                        className="flex-1"
+                      />
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<Trash2 size={20} />}
+                        className="text-red-500"
+                        onClick={() => removeOption(idx)}
+                        disabled={(editing.options?.length ?? 0) <= 1}
+                      />
+                    </div>
+                    <ImageUpload
+                      compact
+                      imageId={opt.imageId}
+                      companyId={companyId}
+                      onChange={(imageId) => updateOption(idx, { imageId })}
                     />
                   </div>
                 ))}
@@ -604,7 +618,7 @@ const QuestionLibraryPage = () => {
                     }
                     options={(editing.options || []).map((o) => ({
                       value: o.id,
-                      label: o.label || '(empty)',
+                      label: o.label || (o.imageId ? IMAGE_ONLY_LABEL : '(empty)'),
                     }))}
                     allowClear
                     placeholder="Select correct answer"
@@ -624,7 +638,7 @@ const QuestionLibraryPage = () => {
                     }
                     options={(editing.options || []).map((o) => ({
                       value: o.id,
-                      label: o.label || '(empty)',
+                      label: o.label || (o.imageId ? IMAGE_ONLY_LABEL : '(empty)'),
                     }))}
                     placeholder="Select correct answers"
                     className="w-full"

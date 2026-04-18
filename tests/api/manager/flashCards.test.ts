@@ -204,6 +204,96 @@ describe('manager/flashCards', () => {
 
       expect(response.status).toBe(403)
     })
+
+    describe('option imageId handling', () => {
+      it('preserves imageId on options when provided', async () => {
+        setup()
+        const itemWithImage = {
+          type: 'single_choice',
+          title: 'Question?',
+          options: [
+            { id: 'o1', label: 'A', imageId: 'img_1' },
+            { id: 'o2', label: 'B' },
+          ],
+          correctAnswer: 'o1',
+        }
+        const request = mockRequest({
+          method: 'POST',
+          body: { companyId: 'c1', items: [itemWithImage] },
+        })
+        const response = await createFlashCardsHandler(request)
+
+        expect(response.status).toBe(201)
+        const storedOptions = response.jsonBody?.data[0].options
+        expect(storedOptions[0]).toMatchObject({ id: 'o1', label: 'A', imageId: 'img_1' })
+        expect(storedOptions[1]).toEqual({ id: 'o2', label: 'B' })
+        expect(storedOptions[1]).not.toHaveProperty('imageId')
+      })
+
+      it('strips falsy imageId from options', async () => {
+        setup()
+        const itemWithFalsyImage = {
+          type: 'single_choice',
+          title: 'Question?',
+          options: [
+            { id: 'o1', label: 'A', imageId: null },
+            { id: 'o2', label: 'B', imageId: '' },
+          ],
+          correctAnswer: 'o1',
+        }
+        const request = mockRequest({
+          method: 'POST',
+          body: { companyId: 'c1', items: [itemWithFalsyImage] },
+        })
+        const response = await createFlashCardsHandler(request)
+
+        expect(response.status).toBe(201)
+        const storedOptions = response.jsonBody?.data[0].options
+        expect(storedOptions[0]).not.toHaveProperty('imageId')
+        expect(storedOptions[1]).not.toHaveProperty('imageId')
+      })
+
+      it('rejects option with id but no label (image-only option)', async () => {
+        setup()
+        const itemWithImageOnlyOption = {
+          type: 'single_choice',
+          title: 'Question?',
+          options: [
+            { id: 'o1', label: 'A', imageId: 'img_1' },
+            { id: 'o2', label: '', imageId: 'img_2' },
+          ],
+          correctAnswer: 'o1',
+        }
+        const request = mockRequest({
+          method: 'POST',
+          body: { companyId: 'c1', items: [itemWithImageOnlyOption] },
+        })
+        const response = await createFlashCardsHandler(request)
+
+        expect(response.status).toBe(400)
+        expect(response.jsonBody?.error).toMatch(/label/i)
+      })
+
+      it('rejects when all options lack labels', async () => {
+        setup()
+        const itemAllImageOnly = {
+          type: 'single_choice',
+          title: 'Question?',
+          options: [
+            { id: 'o1', label: '', imageId: 'img_1' },
+            { id: 'o2', label: '', imageId: 'img_2' },
+          ],
+          correctAnswer: 'o1',
+        }
+        const request = mockRequest({
+          method: 'POST',
+          body: { companyId: 'c1', items: [itemAllImageOnly] },
+        })
+        const response = await createFlashCardsHandler(request)
+
+        expect(response.status).toBe(400)
+      })
+    })
   })
 
   describe('getFlashCardHandler', () => {
@@ -276,6 +366,49 @@ describe('manager/flashCards', () => {
       const response = await updateFlashCardHandler(request)
 
       expect(response.status).toBe(404)
+    })
+
+    it('preserves option imageId on update', async () => {
+      setup()
+      const existing = {
+        id: 'fc_1',
+        companyId: 'c1',
+        type: 'single_choice',
+        title: 'Original',
+        options: [
+          { id: 'o1', label: 'A' },
+          { id: 'o2', label: 'B' },
+        ],
+        correctAnswer: 'o1',
+        imageId: null,
+        categoryId: null,
+      }
+      mockContainer.items.query.mockReturnValue({
+        fetchAll: vi.fn().mockResolvedValue({ resources: [existing] }),
+      })
+      const replace = vi.fn().mockResolvedValue({})
+      mockContainer.item.mockReturnValue({
+        read: vi.fn().mockResolvedValue({ resource: existing }),
+        replace,
+        delete: vi.fn(),
+      })
+
+      const request = mockRequest({
+        method: 'PUT',
+        params: { cardId: 'fc_1' },
+        body: {
+          options: [
+            { id: 'o1', label: 'A', imageId: 'img_new' },
+            { id: 'o2', label: 'B' },
+          ],
+        },
+      })
+      const response = await updateFlashCardHandler(request)
+
+      expect(response.status).toBe(200)
+      const storedOptions = response.jsonBody?.data.options
+      expect(storedOptions[0]).toMatchObject({ id: 'o1', label: 'A', imageId: 'img_new' })
+      expect(storedOptions[1]).not.toHaveProperty('imageId')
     })
   })
 
