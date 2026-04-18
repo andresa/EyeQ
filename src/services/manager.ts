@@ -242,7 +242,7 @@ export const createQuestionLibraryItems = (payload: {
     title: string
     description?: string
     required?: boolean
-    options?: { id: string; label: string }[]
+    options?: { id: string; label: string; imageId?: string | null }[]
     correctAnswer?: string | string[]
     categoryId?: string | null
     imageId?: string | null
@@ -424,7 +424,7 @@ export const createFlashCards = (payload: {
   items: {
     type: FlashCardType
     title: string
-    options: { id: string; label: string }[]
+    options: { id: string; label: string; imageId?: string | null }[]
     correctAnswer: string | string[]
     imageId?: string | null
     categoryId?: string | null

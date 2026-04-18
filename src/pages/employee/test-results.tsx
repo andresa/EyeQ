@@ -5,38 +5,14 @@ import { useQuery } from '@tanstack/react-query'
 import EmployeeLayout from '../../layouts/EmployeeLayout'
 import RichText from '../../components/atoms/RichText'
 import { fetchEmployeeTestInstanceResults } from '../../services/employee'
-import type { ResponseRecord, TestComponent } from '../../types'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import { ClipboardList } from 'lucide-react'
 import QuestionImage from '../../components/atoms/QuestionImage'
-
-const buildResponseMap = (responses: ResponseRecord[]) =>
-  responses.reduce((map, response) => {
-    map.set(response.questionId, response)
-    return map
-  }, new Map<string, ResponseRecord>())
-
-const resolveAnswer = (component: TestComponent, response?: ResponseRecord) => {
-  if (!response) return 'No response'
-  if (component.type === 'text') {
-    return response.textAnswer || 'No response'
-  }
-  const rawAnswer = response.answer
-  if (Array.isArray(rawAnswer)) {
-    if (!component.options) return rawAnswer.join(', ')
-    return rawAnswer
-      .map(
-        (optionId) => component.options?.find((option) => option.id === optionId)?.label,
-      )
-      .filter(Boolean)
-      .join(', ')
-  }
-  if (typeof rawAnswer === 'string') {
-    if (!component.options) return rawAnswer
-    return component.options.find((option) => option.id === rawAnswer)?.label || rawAnswer
-  }
-  return 'No response'
-}
+import {
+  buildResponseMap,
+  resolveAnswer,
+  getAnswerOptionImageIds,
+} from '../manager/submission-utils'
 
 const EmployeeTestResultsPage = () => {
   const { instanceId } = useParams()
@@ -96,6 +72,7 @@ const EmployeeTestResultsPage = () => {
                   )
                 }
                 const response = responseMap.get(component.id)
+                const answerImageIds = getAnswerOptionImageIds(component, response)
                 return (
                   <Card key={component.id} type="inner">
                     <Typography.Text strong>
@@ -108,6 +85,9 @@ const EmployeeTestResultsPage = () => {
                     <Typography.Text>
                       {resolveAnswer(component, response)}
                     </Typography.Text>
+                    {answerImageIds.map((imgId) => (
+                      <QuestionImage key={imgId} imageId={imgId} compact />
+                    ))}
                     {isMarked ? (
                       <div className="flex gap-4 mt-2">
                         {response?.isCorrect ? (

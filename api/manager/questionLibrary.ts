@@ -4,6 +4,7 @@ import { jsonResponse, paginatedJsonResponse, parseJsonBody } from '../shared/ht
 import { paginatedQuery } from '../shared/pagination.js'
 import { createId, nowIso } from '../shared/utils.js'
 import { getAuthenticatedUser, requireManager } from '../shared/auth.js'
+import { normaliseOptions } from '../shared/normalise.js'
 
 const CONTAINER = 'questionLibrary'
 const PARTITION_KEY = '/companyId'
@@ -13,7 +14,7 @@ interface LibraryItemInput {
   title: string
   description?: string
   required?: boolean
-  options?: { id: string; label: string }[]
+  options?: { id: string; label: string; imageId?: string | null }[]
   correctAnswer?: string | string[]
   categoryId?: string
   imageId?: string | null
@@ -30,11 +31,13 @@ interface UpdateBody {
   title?: string
   description?: string
   required?: boolean
-  options?: { id: string; label: string }[]
+  options?: { id: string; label: string; imageId?: string | null }[]
   correctAnswer?: string | string[]
   categoryId?: string | null
   imageId?: string | null
 }
+
+const CHOICE_TYPES = ['single_choice', 'multiple_choice']
 
 const getItemById = async (itemId: string) => {
   const container = await getContainer(CONTAINER, PARTITION_KEY)
@@ -47,7 +50,7 @@ const getItemById = async (itemId: string) => {
   return resources[0]
 }
 
-const listHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const listHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   const companyId = request.query.get('companyId')
   if (!companyId) {
     return jsonResponse(400, { success: false, error: 'companyId is required.' })
@@ -105,7 +108,7 @@ const listHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   return jsonResponse(200, { success: true, data: resources })
 }
 
-const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -131,6 +134,24 @@ const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
   for (const item of body.items) {
     if (!item.title || !item.type) continue
 
+    let options = item.options ?? []
+    if (CHOICE_TYPES.includes(item.type)) {
+      const result = normaliseOptions(item.options)
+      if (result.error || !result.data) {
+        return jsonResponse(400, {
+          success: false,
+          error: result.error ?? 'Invalid options.',
+        })
+      }
+      if (result.data.length < 2) {
+        return jsonResponse(400, {
+          success: false,
+          error: 'Choice questions must have at least two options.',
+        })
+      }
+      options = result.data
+    }
+
     const doc = {
       id: createId('ql'),
       companyId: body.companyId,
@@ -139,7 +160,7 @@ const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
       title: item.title,
       description: item.description ?? '',
       required: item.required ?? false,
-      options: item.options ?? [],
+      options,
       correctAnswer: item.correctAnswer,
       categoryId: item.categoryId ?? null,
       imageId: item.imageId ?? null,
@@ -152,7 +173,7 @@ const createHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
   return jsonResponse(201, { success: true, data: created })
 }
 
-const getHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const getHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -177,7 +198,7 @@ const getHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   return jsonResponse(200, { success: true, data: item })
 }
 
-const updateHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const updateHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError
@@ -201,13 +222,32 @@ const updateHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
 
   const body = await parseJsonBody<UpdateBody>(request)
 
+  const effectiveType = body?.type ?? existing.type
+  let options = body?.options ?? existing.options
+  if (body?.options && CHOICE_TYPES.includes(effectiveType)) {
+    const result = normaliseOptions(body.options)
+    if (result.error || !result.data) {
+      return jsonResponse(400, {
+        success: false,
+        error: result.error ?? 'Invalid options.',
+      })
+    }
+    if (result.data.length < 2) {
+      return jsonResponse(400, {
+        success: false,
+        error: 'Choice questions must have at least two options.',
+      })
+    }
+    options = result.data
+  }
+
   const updated = {
     ...existing,
-    type: body?.type ?? existing.type,
+    type: effectiveType,
     title: body?.title ?? existing.title,
     description: body?.description ?? existing.description,
     required: body?.required ?? existing.required,
-    options: body?.options ?? existing.options,
+    options,
     correctAnswer:
       body?.correctAnswer !== undefined ? body.correctAnswer : existing.correctAnswer,
     categoryId: body?.categoryId !== undefined ? body.categoryId : existing.categoryId,
@@ -220,7 +260,7 @@ const updateHandler = async (request: HttpRequest): Promise<HttpResponseInit> =>
   return jsonResponse(200, { success: true, data: updated })
 }
 
-const deleteHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
+export const deleteHandler = async (request: HttpRequest): Promise<HttpResponseInit> => {
   const user = await getAuthenticatedUser(request)
   const authError = requireManager(user)
   if (authError) return authError

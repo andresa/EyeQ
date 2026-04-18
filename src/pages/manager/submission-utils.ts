@@ -1,4 +1,7 @@
-import type { ResponseRecord, TestComponent } from '../../types'
+import { IMAGE_ONLY_LABEL, type ResponseRecord, type TestComponent } from '../../types'
+
+const getOptionLabel = (option: { label: string; imageId?: string | null }) =>
+  option.label || (option.imageId ? IMAGE_ONLY_LABEL : '')
 
 export const buildResponseMap = (responses: ResponseRecord[]) =>
   responses.reduce((map, response) => {
@@ -18,17 +21,46 @@ export const resolveAnswer = (
   if (Array.isArray(rawAnswer)) {
     if (!component.options) return rawAnswer.join(', ')
     return rawAnswer
-      .map(
-        (optionId) => component.options?.find((option) => option.id === optionId)?.label,
-      )
+      .map((optionId) => {
+        const option = component.options?.find((o) => o.id === optionId)
+        return option ? getOptionLabel(option) : undefined
+      })
       .filter(Boolean)
       .join(', ')
   }
   if (typeof rawAnswer === 'string') {
     if (!component.options) return rawAnswer
-    return component.options.find((option) => option.id === rawAnswer)?.label || rawAnswer
+    const option = component.options.find((o) => o.id === rawAnswer)
+    return option ? getOptionLabel(option) : rawAnswer
   }
   return 'No response'
+}
+
+export const getAnswerOptionImageIds = (
+  component: TestComponent,
+  response?: ResponseRecord,
+): string[] => {
+  if (!response || !component.options) return []
+  const rawAnswer = response.answer
+  const answerIds = Array.isArray(rawAnswer)
+    ? rawAnswer
+    : typeof rawAnswer === 'string'
+      ? [rawAnswer]
+      : []
+  return answerIds
+    .map((id) => component.options?.find((o) => o.id === id)?.imageId)
+    .filter((imageId): imageId is string => !!imageId)
+}
+
+export const getCorrectAnswerImageIds = (
+  component: TestComponent,
+  correctAnswer?: string | string[] | null,
+): string[] => {
+  if (!correctAnswer || !component.options) return []
+  const answerIds = Array.isArray(correctAnswer) ? correctAnswer : [correctAnswer]
+  return answerIds
+    .map((id) => component.options?.find((o) => o.id === id)?.imageId)
+    .filter((imageId): imageId is string => !!imageId)
 }
 
 export const isAnswerCorrect = (
@@ -65,16 +97,15 @@ export const formatCorrectAnswer = (
     return Array.isArray(correctAnswer) ? correctAnswer.join(', ') : correctAnswer
   if (Array.isArray(correctAnswer)) {
     return correctAnswer
-      .map(
-        (optionId) => component.options?.find((option) => option.id === optionId)?.label,
-      )
+      .map((optionId) => {
+        const option = component.options?.find((o) => o.id === optionId)
+        return option ? getOptionLabel(option) : undefined
+      })
       .filter(Boolean)
       .join(', ')
   }
-  return (
-    component.options.find((option) => option.id === correctAnswer)?.label ||
-    correctAnswer
-  )
+  const option = component.options.find((o) => o.id === correctAnswer)
+  return option ? getOptionLabel(option) : correctAnswer
 }
 
 export interface MarkState {

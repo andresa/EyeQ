@@ -16,6 +16,7 @@ import {
   listEmployeeFlashCards,
 } from '../../services/employee'
 import type { FlashCard } from '../../types'
+import { IMAGE_ONLY_LABEL } from '../../types'
 
 const stripMarkdown = (value: string) =>
   value
@@ -29,11 +30,21 @@ const resolveCorrectAnswerLabels = (flashCard: FlashCard) => {
     : [flashCard.correctAnswer]
 
   return selectedIds
-    .map(
-      (answerId) =>
-        flashCard.options.find((option) => option.id === answerId)?.label || answerId,
-    )
+    .map((answerId) => {
+      const option = flashCard.options.find((o) => o.id === answerId)
+      return option?.label || (option?.imageId ? IMAGE_ONLY_LABEL : answerId)
+    })
     .filter(Boolean)
+}
+
+const resolveCorrectAnswerImageIds = (flashCard: FlashCard): string[] => {
+  const selectedIds = Array.isArray(flashCard.correctAnswer)
+    ? flashCard.correctAnswer
+    : [flashCard.correctAnswer]
+
+  return selectedIds
+    .map((answerId) => flashCard.options.find((o) => o.id === answerId)?.imageId)
+    .filter((imageId): imageId is string => !!imageId)
 }
 
 const ArticlesTab = ({ companyId }: { companyId: string }) => {
@@ -215,6 +226,10 @@ const FlashCardsTab = ({ companyId }: { companyId: string }) => {
   const currentFlashCard = flashCards[currentIndex]
   const currentAnswers = useMemo(
     () => (currentFlashCard ? resolveCorrectAnswerLabels(currentFlashCard) : []),
+    [currentFlashCard],
+  )
+  const currentAnswerImageIds = useMemo(
+    () => (currentFlashCard ? resolveCorrectAnswerImageIds(currentFlashCard) : []),
     [currentFlashCard],
   )
 
@@ -399,6 +414,9 @@ const FlashCardsTab = ({ companyId }: { companyId: string }) => {
                       </Tag>
                     ))}
                   </div>
+                  {currentAnswerImageIds.map((imgId) => (
+                    <QuestionImage key={imgId} imageId={imgId} compact />
+                  ))}
                 </div>
               </Card>
             </div>

@@ -74,6 +74,7 @@ const ComponentEditor = ({ component, companyId, onChange }: ComponentEditorProp
         <OptionEditor
           options={component.options || []}
           type={component.type}
+          companyId={companyId}
           correctAnswer={component.correctAnswer}
           onChange={(options) => {
             if (component.type === 'single_choice') {

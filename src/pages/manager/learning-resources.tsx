@@ -22,7 +22,13 @@ import {
   updateArticle,
   updateFlashCard,
 } from '../../services/manager'
-import type { Article, FlashCard, FlashCardType, TestComponentOption } from '../../types'
+import {
+  IMAGE_ONLY_LABEL,
+  type Article,
+  type FlashCard,
+  type FlashCardType,
+  type TestComponentOption,
+} from '../../types'
 import { useSession } from '../../hooks/useSession'
 import { createUUID } from '../../utils/uuid'
 import { formatDateTime } from '../../utils/date'
@@ -37,8 +43,8 @@ const isMeaningfulRichText = (value?: string | null) =>
   typeof value === 'string' && stripMarkdown(value).length > 0
 
 const createDefaultOptions = (): TestComponentOption[] => [
-  { id: createUUID(), label: '' },
-  { id: createUUID(), label: '' },
+  { id: createUUID(), label: '', imageId: null },
+  { id: createUUID(), label: '', imageId: null },
 ]
 
 const defaultArticleDraft = (): ArticleEditorState => ({
@@ -420,11 +426,11 @@ const FlashCardsTabContent = ({ companyId }: { companyId: string }) => {
       queryKey: ['manager-learning-resources-flash-cards'],
     })
 
-  const updateOption = (index: number, label: string) => {
+  const updateOption = (index: number, updates: Partial<TestComponentOption>) => {
     setEditingFlashCard((prev) => {
       if (!prev) return prev
       const options = [...prev.options]
-      options[index] = { ...options[index], label }
+      options[index] = { ...options[index], ...updates }
       return { ...prev, options }
     })
   }
@@ -457,7 +463,10 @@ const FlashCardsTabContent = ({ companyId }: { companyId: string }) => {
   const addOption = () => {
     setEditingFlashCard((prev) =>
       prev
-        ? { ...prev, options: [...prev.options, { id: createUUID(), label: '' }] }
+        ? {
+            ...prev,
+            options: [...prev.options, { id: createUUID(), label: '', imageId: null }],
+          }
         : prev,
     )
   }
@@ -499,12 +508,15 @@ const FlashCardsTabContent = ({ companyId }: { companyId: string }) => {
       return
     }
 
-    const options = editingFlashCard.options
-      .map((option) => ({ ...option, label: option.label.trim() }))
-      .filter((option) => option.label)
+    const options = editingFlashCard.options.map((option) => ({
+      ...option,
+      label: option.label.trim(),
+    }))
 
-    if (options.length < 2) {
-      message.error('Flash cards need at least two non-empty options')
+    if (options.length < 2 || options.some((option) => !option.label)) {
+      message.error(
+        'Flash cards need at least two options, and every option must have a label',
+      )
       return
     }
 
@@ -757,20 +769,30 @@ const FlashCardsTabContent = ({ companyId }: { companyId: string }) => {
             <div className="flex flex-col gap-2">
               <Typography.Text strong>Options</Typography.Text>
               {editingFlashCard.options.map((option, index) => (
-                <div key={option.id} className="flex items-center gap-2">
-                  <Input
-                    value={option.label}
-                    onChange={(event) => updateOption(index, event.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    size="small"
-                    type="text"
-                    icon={<Trash2 size={18} />}
-                    className="text-red-500"
-                    onClick={() => removeOption(index)}
-                    disabled={editingFlashCard.options.length <= 2}
-                    aria-label="Remove option"
+                <div key={option.id} className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={option.label}
+                      onChange={(event) =>
+                        updateOption(index, { label: event.target.value })
+                      }
+                      className="flex-1"
+                    />
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={<Trash2 size={18} />}
+                      className="text-red-500"
+                      onClick={() => removeOption(index)}
+                      disabled={editingFlashCard.options.length <= 2}
+                      aria-label="Remove option"
+                    />
+                  </div>
+                  <ImageUpload
+                    compact
+                    imageId={option.imageId}
+                    companyId={companyId}
+                    onChange={(imageId) => updateOption(index, { imageId })}
                   />
                 </div>
               ))}
@@ -797,7 +819,8 @@ const FlashCardsTabContent = ({ companyId }: { companyId: string }) => {
                   }
                   options={editingFlashCard.options.map((option) => ({
                     value: option.id,
-                    label: option.label || '(empty)',
+                    label:
+                      option.label || (option.imageId ? IMAGE_ONLY_LABEL : '(empty)'),
                   }))}
                   allowClear
                   placeholder="Select correct answer"
@@ -818,7 +841,8 @@ const FlashCardsTabContent = ({ companyId }: { companyId: string }) => {
                   }
                   options={editingFlashCard.options.map((option) => ({
                     value: option.id,
-                    label: option.label || '(empty)',
+                    label:
+                      option.label || (option.imageId ? IMAGE_ONLY_LABEL : '(empty)'),
                   }))}
                   placeholder="Select correct answers"
                   className="w-full"

@@ -14,9 +14,16 @@ interface ImageUploadProps {
   companyId?: string
   onChange: (imageId: string | null) => void
   disabled?: boolean
+  compact?: boolean
 }
 
-const ImageUpload = ({ imageId, companyId, onChange, disabled }: ImageUploadProps) => {
+const ImageUpload = ({
+  imageId,
+  companyId,
+  onChange,
+  disabled,
+  compact,
+}: ImageUploadProps) => {
   const { message } = App.useApp()
   const [uploading, setUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -109,10 +116,12 @@ const ImageUpload = ({ imageId, companyId, onChange, disabled }: ImageUploadProp
   if (displayUrl) {
     return (
       <div className="relative group rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-center min-h-[120px]">
+        <div
+          className={`flex items-center justify-center ${compact ? 'min-h-[60px]' : 'min-h-[120px]'}`}
+        >
           {uploading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
-              <Spin description="Uploading..." />
+              <Spin description={compact ? undefined : 'Uploading...'} />
             </div>
           )}
           {!imageLoaded && !previewUrl && (
@@ -122,8 +131,8 @@ const ImageUpload = ({ imageId, companyId, onChange, disabled }: ImageUploadProp
           )}
           <img
             src={displayUrl}
-            alt="Question graphic"
-            className="max-w-full max-h-[300px] object-contain"
+            alt={compact ? 'Option graphic' : 'Question graphic'}
+            className={`max-w-full object-contain ${compact ? 'max-h-[150px]' : 'max-h-[300px]'}`}
             onLoad={() => setImageLoaded(true)}
           />
         </div>
@@ -162,10 +171,10 @@ const ImageUpload = ({ imageId, companyId, onChange, disabled }: ImageUploadProp
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click()
         }}
-        className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors text-gray-500 text-sm"
+        className={`flex items-center gap-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors text-gray-500 text-sm ${compact ? 'px-2 py-1' : 'px-3 py-2'}`}
       >
-        <ImagePlus size={16} />
-        <span>Add image (max {MAX_FILE_SIZE_MB} MB)</span>
+        <ImagePlus size={compact ? 14 : 16} />
+        <span>{compact ? 'Add image' : `Add image (max ${MAX_FILE_SIZE_MB} MB)`}</span>
       </div>
     </>
   )

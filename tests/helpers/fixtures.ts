@@ -7,6 +7,7 @@ import type {
   TestInstance,
   TestSection,
   TestComponent,
+  TestComponentOption,
   ResponseRecord,
   QuestionLibraryItem,
   QuestionCategory,
@@ -103,6 +104,17 @@ export function mockEmployeeRecord(overrides: Partial<Employee> = {}): Employee 
     createdAt: '2025-01-01T00:00:00.000Z',
     isActive: true,
     invitationStatus: 'none',
+    ...overrides,
+  }
+}
+
+export function mockOptionWithImage(
+  overrides: Partial<TestComponentOption> = {},
+): TestComponentOption {
+  return {
+    id: nextId('opt'),
+    label: 'Option',
+    imageId: nextId('img'),
     ...overrides,
   }
 }
