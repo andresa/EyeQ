@@ -23,12 +23,8 @@ import {
   submitTestInstance,
   timeoutTestInstance,
 } from '../../services/employee'
-import type {
-  ResponsePayload,
-  ResponseRecord,
-  TestComponent,
-  TestInstanceDetails,
-} from '../../types'
+import type { ResponsePayload, TestComponent, TestInstanceDetails } from '../../types'
+import { buildFormValues } from './test-utils'
 import { SaveOutlined } from '@ant-design/icons'
 import StandardPageHeading from '../../components/molecules/StandardPageHeading'
 import QuestionImage from '../../components/atoms/QuestionImage'
@@ -81,25 +77,6 @@ const renderComponentInput = (component: TestComponent) => {
     default:
       return null
   }
-}
-
-const buildFormValues = (
-  components: TestComponent[],
-  responses: ResponseRecord[],
-): Record<string, unknown> => {
-  const responseMap = new Map(responses.map((r) => [r.questionId, r]))
-  const values: Record<string, unknown> = {}
-  for (const component of components) {
-    if (component.type === 'info') continue
-    const response = responseMap.get(component.id)
-    if (!response) continue
-    if (component.type === 'text') {
-      values[`q_${component.id}`] = response.textAnswer ?? undefined
-    } else {
-      values[`q_${component.id}`] = response.answer ?? undefined
-    }
-  }
-  return values
 }
 
 interface TestFormProps {
@@ -210,6 +187,7 @@ const TestForm = ({ instanceId, data, onExpired }: TestFormProps) => {
     if (data.responses && data.responses.length > 0) {
       const values = buildFormValues(components, data.responses)
       form.setFieldsValue(values)
+      lastSavedRef.current = JSON.stringify(form.getFieldsValue())
     }
     isInitializedRef.current = true
   }, [components, data.responses, form])
@@ -410,6 +388,11 @@ const TestForm = ({ instanceId, data, onExpired }: TestFormProps) => {
                                 <RichText content={component.description} />
                               </Typography.Text>
                             )}
+                            {component.imageId && (
+                              <div className="max-w-[400px] mt-1">
+                                <QuestionImage imageId={component.imageId} />
+                              </div>
+                            )}
                           </div>
                         }
                         rules={
@@ -418,14 +401,7 @@ const TestForm = ({ instanceId, data, onExpired }: TestFormProps) => {
                             : []
                         }
                       >
-                        <div className="flex flex-col gap-2">
-                          <div className="max-w-[400px]">
-                            {component.imageId && (
-                              <QuestionImage imageId={component.imageId} />
-                            )}
-                          </div>
-                          {renderComponentInput(component)}
-                        </div>
+                        {renderComponentInput(component)}
                       </Form.Item>
                     )
                   })}
@@ -493,6 +469,8 @@ const EmployeeTestPage = () => {
       }
       return response.data
     },
+    staleTime: 0,
+    gcTime: 0,
   })
 
   const handleExpired = useCallback(() => {
@@ -586,5 +564,7 @@ const EmployeeTestPage = () => {
     />
   )
 }
+
+export { TestForm }
 
 export default EmployeeTestPage
